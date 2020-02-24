@@ -145,6 +145,7 @@ def main():
 
         avg_round_duration = (avg_round_duration * i / (i+1)) + ((timeit.default_timer() - start_time) / (i+1))
 
+        halved_eval_every = False
         # Test model
         if (i + 1) % eval_every == 0 or (i + 1) == num_rounds:
             start_time = timeit.default_timer()
@@ -153,7 +154,14 @@ def main():
             avg_eval_duration = (avg_eval_duration * (eval_count-1) / eval_count) + ((timeit.default_timer() - start_time) / eval_count)
             if average_test_metrics['accuracy'] >= args.target_accuracy:
                 print("Reached test_accuracy: %g after %d rounds" % (average_test_metrics['accuracy'], i + 1))
+                with open('results.txt', 'a+') as f:
+                    f.write("Reached test_accuracy: %g after %d rounds" % (average_test_metrics['accuracy'], i + 1))
                 break
+            elif average_test_metrics['accuracy'] >= args.target_accuracy - 0.05:
+                eval_every = 1
+            elif not laved_eval_every and average_test_metrics['accuracy'] >= args.target_accuracy - 0.1:
+                eval_every = eval_every / 2
+                halved_eval_every = True
 
     # Close models
     # server.close_model()
