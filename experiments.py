@@ -18,7 +18,7 @@ params = {
     'poison_from':  [0],
 }
 
-trials_per_setup = 4
+trials_per_setup = 2
 
 file_name = 'results.txt'
     
