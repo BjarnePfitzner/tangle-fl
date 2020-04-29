@@ -159,7 +159,7 @@ def main():
                 break
             elif average_test_metrics['accuracy'] >= args.target_accuracy - 0.05:
                 eval_every = 1
-            elif not laved_eval_every and average_test_metrics['accuracy'] >= args.target_accuracy - 0.1:
+            elif not halved_eval_every and average_test_metrics['accuracy'] >= args.target_accuracy - 0.1:
                 eval_every = eval_every / 2
                 halved_eval_every = True
 
