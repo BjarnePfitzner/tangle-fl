@@ -3,6 +3,7 @@ import tensorflow as tf
 import sys
 
 from .tip_selector import TipSelector
+from .accuracy_tip_selector import AccuracyTipSelector
 from .malicious_tip_selector import MaliciousTipSelector
 from .transaction import Transaction
 from .poison_type import PoisonType
@@ -17,7 +18,8 @@ class Node:
 
   def choose_tips(self, num_tips=2, sample_size=2, selector=None):
       if selector is None:
-          selector = TipSelector(self.tangle)
+        #   selector = TipSelector(self.tangle)
+          selector = AccuracyTipSelector(self.tangle, self.client)
 
       if len(self.tangle.transactions) < num_tips:
           return [self.tangle.transactions[self.tangle.genesis] for i in range(SELECTED_TIPS)]
@@ -68,7 +70,8 @@ class Node:
 
       # Use a cached tip selector
       if selector is None:
-          selector = TipSelector(self.tangle)
+        #   selector = TipSelector(self.tangle)
+          selector = AccuracyTipSelector(self.tangle, self.client)
 
       for i in range(num_sampling_rounds):
           tips = self.choose_tips(selector=selector)
@@ -131,7 +134,8 @@ class Node:
 
   def process_next_batch(self, num_epochs, batch_size, num_tips=2, sample_size=2, reference_avg_top=1):
     # if self.poison_type == PoisonType.NONE:
-    selector = TipSelector(self.tangle)
+    # selector = TipSelector(self.tangle)
+    selector = AccuracyTipSelector(self.tangle, self.client)
     # else:
     #     selector = MaliciousTipSelector(self.tangle)
 
