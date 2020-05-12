@@ -5,18 +5,19 @@ from tempfile import TemporaryFile
 import numpy as np
 
 class Transaction:
-    def __init__(self, weights, parents, id=None, tag=None, malicious=False):
+    def __init__(self, weights, parents, client_id, id=None, tag=None, malicious=False):
+        self.weights = weights
         self.parents = parents
+        self.client_id = client_id
+        self.tag = tag
         self.id = id
+        self.malicious = malicious
 
         # if len(parents) > 0:
         #     self.height = max([p.height for p in parents]) + 1
         # else:
         #     self.height = 1
 
-        self.weights = weights
-        self.tag = tag
-        self.malicious = malicious
 
     # @classmethod
     # def fromfile(cls, id):

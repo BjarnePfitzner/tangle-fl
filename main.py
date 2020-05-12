@@ -85,7 +85,7 @@ def main():
     tangle_tag = f'{clients_per_round}_clients_'
 
     if start_from_round == 0:
-        genesis = Transaction(client_model.get_params(), [], tag=0)
+        genesis = Transaction(client_model.get_params(), [], "", tag=0)
         tangle = Tangle({genesis.name(): genesis}, genesis.name())
         tangle.save(tangle_tag + str(0), global_loss, global_accuracy, norm)
     else:

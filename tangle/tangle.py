@@ -63,7 +63,7 @@ class Tangle:
         return metrics
 
     def save(self, tangle_name, global_loss, global_accuracy, norm):
-        n = [{'name': t.name(), 'time': t.tag, 'malicious': t.malicious, 'parents': list(t.parents)} for _, t in self.transactions.items()]
+        n = [{'name': t.name(), 'time': t.tag, 'malicious': t.malicious, 'parents': list(t.parents), 'issuer': t.client_id } for _, t in self.transactions.items()]
 
         with open(f'tangle_data/tangle_{tangle_name}.json', 'w') as outfile:
             json.dump({'nodes': n, 'genesis': self.genesis, 'global_loss': global_loss, 'global_accuracy': global_accuracy, 'norm': norm}, outfile)
@@ -75,7 +75,14 @@ class Tangle:
       with open(f'tangle_data/tangle_{tangle_name}.json', 'r') as tanglefile:
           t = json.load(tanglefile)
 
-      transactions = {n['name']: Transaction(None, set(n['parents']), n['name'], n['time'], n['malicious'] if 'malicious' in n else False) for n in t['nodes']}
+      transactions = {n['name']: Transaction(
+                                    None,
+                                    set(n['parents']),
+                                    n['issuer'],
+                                    n['name'],
+                                    n['time'],
+                                    n['malicious'] if 'malicious' in n else False
+                                ) for n in t['nodes']}
       tangle = cls(transactions, t['genesis'])
       tangle.name = tangle_name
       return tangle
