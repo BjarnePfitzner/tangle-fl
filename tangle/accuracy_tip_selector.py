@@ -36,3 +36,10 @@ class AccuracyTipSelector(TipSelector):
     @staticmethod
     def ratings_to_weight(ratings):
         return ratings
+    
+    @staticmethod
+    def weighted_choice(approvers, weights):
+        # Instead of a weigthed choice, always select the maximum.
+        # If there is no unique maximum, choose the first one
+
+        return approvers[weights.index(max(weights))]
