@@ -10,9 +10,9 @@ For comprehensibility these three datasets are explained in a chronological orde
 
 ## A. Shamir et al. [3]
 
-Generate $` ` n ` `$ i.i.d. (independent and identically distributed - sampled from the same distribution) samples $` (x,y) `$.
+Generate $` n `$ i.i.d. (independent and identically distributed - sampled from the same distribution) samples $` (x,y) `$.
 
-### Input $` ` x ` `$
+### Input $` x `$
 
 The input $` x \in \mathbb{R}^{500} `$, is a 500-dimensional vector sampled from $` x \in \mathcal{N}(0,\Sigma) `$, where $` \Sigma_{j,j}=j^{-1.2} `$ is a diagonal covariance matrix. $` x `$ is hence sampled from a multivariate normal distribution with mean 0 and the covariance matrix $` \Sigma `$. $` \Sigma `$ being diagonal (0 everywhere but on the diagonal) makes the (500) dimnesions of the normal distribution linearly independent (each feature in $` x `$ is independent of each other and has hence not any relation to it's other features) with shrinking variances in the dimensions (the values on the diagonal). The smaller the variance in the normal distirbution the more likely a sample is closer to the mean (here 0). 
 
