@@ -1,36 +1,154 @@
+import argparse
+import datetime
+import json
 import os
 import shutil
+import subprocess
+import sys
+
 from sklearn.model_selection import ParameterGrid
 
+
+#############################################################################
+############################# Parameter section #############################
+#############################################################################
+
+data_generation_path = "leaf/data/synthetic/"
+data_generation_command = "(rm -r data || true) && (rm -r meta || true) && python main.py -num-tasks 1000 -num-classes 5 -num-dim 60"
+data_preprocessing_command = "./preprocess.sh -s niid --sf 1.0 -k 5 -t sample --tf 0.85"
+
 params = {
-    'dataset': ['femnist'],
-    'model': ['cnn'],
-    'num_rounds': [150],
-    'eval_every': [10],
-    'clients_per_round':  [10, 35, 50],
-    'num_tips':  [2, 3, 5],
-    'sample_size':  [1, 2, 5],
-    'reference_avg_top':  [1, 2, 10, 50],
-    'target_accuracy':  [0.7],
-    'learning_rate':  [0.06],
-    'poison_type':  ['NONE'],
-    'poison_fraction':  [0.3],
-    'poison_from':  [0],
+    'dataset': ['synthetic'],   # is expected to be one value to construct default experiment name
+    'model': ['log_reg'],       # is expected to be one value to construct default experiment name
+    'num_rounds': [1],
+    'eval_every': [-1],
+    'clients_per_round': [1],
+    'num_tips': [2],
+    'sample_size': [2],
+    'reference_avg_top': [1],
+    'target_accuracy': [1],
+    'learning_rate':  [0.005],
+    'poison_type': ['NONE'],
+    'poison_fraction': [0],
+    'poison_from': [1],
 }
 
-trials_per_setup = 2
+##############################################################################
+########################## End of Parameter section ##########################
+##############################################################################
 
-file_name = 'results.txt'
+def main():
+    traings_data_output_filename = 'data_generation.log'
+    setup_filename = '1_setup.log'
+    console_output_filename = '2_training.log'
+
+    args = parse_args()
+    if not args.name:
+        args.name = '%s-%s' % (params['dataset'][0], params['model'][0])
+    experiment_folder = prepare_exp_folder(args.name)
+
+    git_hash = get_git_hash()
+    cwd = get_current_working_directory()
+    generate_and_preprocess_data(experiment_folder + '/' + traings_data_output_filename)
+    change_working_directory_to(cwd)
+    run_and_document_experiments(args, experiment_folder, setup_filename, console_output_filename, git_hash)
+
+def parse_args():
+    parser = argparse.ArgumentParser(description='Run and document an experiment.')
+    parser.add_argument('--name', help='The name of the experiment. Results will be stored under experiments/<name>. Default: <dataset>-<model>')
+    parser.add_argument('--overwrite_okay', type=bool, default=False, help='Overwrite existing experiment with same name. Default: False')
+    args = parser.parse_args()
+
+    return args
+
+def prepare_exp_folder(exp_name, overwrite_okay=False):
+    experiment_folder = 'experiments/' + exp_name
+
+     # check, if existing experiment exists
+    if (not overwrite_okay and os.path.exists(experiment_folder)):
+        print('[Error]: Experiment "%s" already exists! To overwrite set --overwrite_okay to True' % exp_name, file=sys.stderr)
+        exit(1)
     
-for p in ParameterGrid(params):
-    with open(file_name, 'a+') as file:
-        file.write('\n----------STARTING NEW PARAMETER SETUP--------\n')
-    for i in range(trials_per_setup):
-        os.system('rm -rf tangle_data')
-        p['sample_size'] = p['sample_size'] * p['num_tips']
-        command = "python3 main.py -dataset %s -model %s --num-rounds %s --eval-every %s --clients-per-round %s --num-tips %s --sample-size %s --reference-avg-top %s --target-accuracy %s -lr %s --poison-type %s --poison-fraction %s --poison-from %s"
+    os.makedirs(experiment_folder, exist_ok=True)
+
+    return experiment_folder
+
+def get_git_hash():
+    proc = subprocess.Popen(['git', 'rev-parse', '--verify', 'HEAD'], stdout=subprocess.PIPE)
+    try:
+        git_hash, errs = proc.communicate(timeout=3)
+        git_hash = git_hash.decode("utf-8")
+    except subprocess.TimeoutExpired:
+        proc.kill()
+        outs, errs = proc.communicate()
+        git_hash = 'Could not get Githash!: %s' % errs
+    
+    return git_hash
+
+def get_current_working_directory():
+    return os.getcwd()
+
+def generate_and_preprocess_data(traings_data_output_file):
+    with open(traings_data_output_file, 'w+') as file:
+        print('Data generation command: %s' % data_generation_command, file=file)
+        print('Data preprocessing command: %s' % data_preprocessing_command, file=file)
+        print('', file=file)
+
+    with open(traings_data_output_file, 'a+') as file:
+        # change to data generation dir
+        os.chdir(data_generation_path)
+
+        print('Generating data...')
+        generation = subprocess.Popen(data_generation_command, shell=True, stdout=file, stderr=file)
+        generation.wait()
+
+        print('Preprocessing data...')
+        preprocessing = subprocess.Popen(data_preprocessing_command, shell=True, stdout=file, stderr=file)
+        preprocessing.wait()
+
+def change_working_directory_to(working_directory):
+    os.chdir(working_directory)
+
+def run_and_document_experiments(args, experiment_folder, setup_filename, console_output_filename, git_hash):
+    for idx, p in enumerate(ParameterGrid(params)):
+        # Create folder for that run
+        experiment_folder = experiment_folder + '/config_%s' % idx
+        os.makedirs(experiment_folder, exist_ok=True)
+
+        # Prepare execution command
+        command = 'python3 main.py -dataset %s -model %s --num-rounds %s --eval-every %s --clients-per-round %s --num-tips %s --sample-size %s --reference-avg-top %s --target-accuracy %s -lr %s --poison-type %s --poison-fraction %s --poison-from %s'
         parameters = (p['dataset'], p['model'], p['num_rounds'], p['eval_every'], p['clients_per_round'], p['num_tips'], p['sample_size'], p['reference_avg_top'], p['target_accuracy'], p['learning_rate'], p['poison_type'], p['poison_fraction'], p['poison_from'])
         command = command % parameters
-        with open(file_name, 'a+') as file:
-            file.write('\n\n' + command + '\n')
-        os.system(command)
+
+        start_time = datetime.datetime.now()
+
+        # Print Parameters and command
+        with open(experiment_folder + '/' + setup_filename, 'w+') as file:
+            print('Data generation command: %s' % data_generation_command, file=file)
+            print('Data preprocessing command: %s' % data_preprocessing_command, file=file)
+            print('', file=file)
+            print('StartTime: %s' % start_time, file=file)
+            print('Githash: %s' % git_hash, file=file)
+            print('Parameters:', file=file)
+            print(json.dumps(p, indent=4), file=file)
+            print('Command: %s' % command, file=file)
+
+        # Execute training
+        print('Training started...')
+        with open(experiment_folder + '/' + console_output_filename, 'w+') as file:
+            training = subprocess.Popen([command], shell=True, stdout=file, stderr=file)
+            training.wait()
+
+        # Archive training data
+        print('Training finished. Storing results...')
+        subprocess.Popen(['cp', '-r', 'tangle_data', experiment_folder]).wait()
+        subprocess.Popen(['cp', 'results.txt', '%s/3_results.txt' % experiment_folder]).wait()
+
+        # Document end of training
+        with open(experiment_folder + '/' + setup_filename, 'a+') as file:
+            end_time = datetime.datetime.now()
+            print('EndTime: %s' % end_time, file=file)
+            print('Duration Training: %s' % (end_time - start_time), file=file)
+
+if __name__ == "__main__":
+    main()

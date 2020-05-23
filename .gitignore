@@ -2,5 +2,6 @@
 .vscode/
 viewer/tangle_*.json
 tangle_data/
+results.txt
 data/
 __pycache__
