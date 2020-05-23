@@ -45,7 +45,7 @@ def main():
     args = parse_args()
     if not args.name:
         args.name = '%s-%s' % (params['dataset'][0], params['model'][0])
-    experiment_folder = prepare_exp_folder(args.name)
+    experiment_folder = prepare_exp_folder(args.name, args.overwrite_okay)
 
     git_hash = get_git_hash()
     cwd = get_current_working_directory()
