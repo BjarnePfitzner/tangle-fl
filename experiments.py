@@ -141,8 +141,8 @@ def run_and_document_experiments(args, experiment_folder, setup_filename, consol
 
         # Archive training data
         print('Training finished. Storing results...')
-        subprocess.Popen(['cp', '-r', 'tangle_data', experiment_folder]).wait()
-        subprocess.Popen(['cp', 'results.txt', '%s/3_results.txt' % experiment_folder]).wait()
+        subprocess.Popen(['mv', 'tangle_data', experiment_folder + '/']).wait()
+        subprocess.Popen(['mv', 'results.txt', '%s/3_results.txt' % experiment_folder]).wait()
 
         # Document end of training
         with open(experiment_folder + '/' + setup_filename, 'a+') as file:
