@@ -27781,7 +27781,7 @@ var rightMargin = 10;
 var bottomMargin = 290;
 
 var iterationMin = 0;
-var iterationMax = 70;
+var iterationMax = 200;
 var iterationDefault = window.location.hash && parseInt(window.location.hash.slice(1)) || 67;
 
 var Handle = _rcSlider2.default.Handle;
@@ -28200,12 +28200,12 @@ var TangleContainer = function (_React$Component) {
             { className: 'top-bar-row' },
             _react2.default.createElement(
               'form',
-              { id: 'experimentForm' },
+              { id: 'experimentForm', action: 'javascript:void(0);', onSubmit: this.selectExperiment.bind(this) },
               _react2.default.createElement(
                 'label',
                 null,
                 'Experiment:',
-                _react2.default.createElement('input', { id: 'expNameInput', type: 'text', placeholder: 'Experiment Name', onChange: this.resetConfigInput.bind(this) })
+                _react2.default.createElement('input', { id: 'expNameInput', name: 'tangle_experiment_name', type: 'text', placeholder: 'Experiment Name', autoComplete: 'on', onChange: this.resetConfigInput.bind(this) })
               ),
               _react2.default.createElement(
                 'label',
@@ -28221,27 +28221,27 @@ var TangleContainer = function (_React$Component) {
               ),
               _react2.default.createElement(
                 'button',
-                { type: 'button', onClick: this.selectExperiment.bind(this) },
+                { type: 'submit' },
                 'Select Experiment'
               )
             ),
             _react2.default.createElement(
               'form',
-              { id: 'clientIdForm' },
+              { id: 'clientIdForm', action: 'javascript:void(0);', onSubmit: this.submitClientId.bind(this), onReset: this.resetClientId.bind(this) },
               _react2.default.createElement(
                 'label',
                 null,
                 'Highlight Transactions of: ',
-                _react2.default.createElement('input', { id: 'clientIdInput', type: 'text', placeholder: 'clientId' })
+                _react2.default.createElement('input', { id: 'clientIdInput', name: 'tangle_highligthed_client', type: 'text', placeholder: 'clientId', autoComplete: 'on' })
               ),
               _react2.default.createElement(
                 'button',
-                { type: 'button', onClick: this.submitClientId.bind(this) },
+                { type: 'submit' },
                 'Submit'
               ),
               _react2.default.createElement(
                 'button',
-                { type: 'reset', onClick: this.resetClientId.bind(this) },
+                { type: 'reset' },
                 'Reset'
               )
             )
