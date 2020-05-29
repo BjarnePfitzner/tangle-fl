@@ -2,6 +2,7 @@ import argparse
 import datetime
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -43,9 +44,9 @@ def main():
     console_output_filename = '2_training.log'
 
     args = parse_args()
-    if not args.name:
-        args.name = '%s-%s' % (params['dataset'][0], params['model'][0])
-    experiment_folder = prepare_exp_folder(args.name, args.overwrite_okay)
+    experiment_folder = prepare_exp_folder(args)
+
+    print("[Info]: Experiment results and log data will be stored at %s" % experiment_folder)
 
     git_hash = get_git_hash()
     cwd = get_current_working_directory()
@@ -55,17 +56,37 @@ def main():
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Run and document an experiment.')
-    parser.add_argument('--name', help='The name of the experiment. Results will be stored under experiments/<name>. Default: <dataset>-<model>')
+    parser.add_argument('--name', help='The name of the experiment. Results will be stored under experiments/<name>. Default: <dataset>-<model>-<exp_number>')
     parser.add_argument('--overwrite_okay', type=bool, default=False, help='Overwrite existing experiment with same name. Default: False')
     args = parser.parse_args()
 
     return args
 
-def prepare_exp_folder(exp_name, overwrite_okay=False):
-    experiment_folder = 'experiments/' + exp_name
+def prepare_exp_folder(args):
+    experiments_base = 'experiments'
+
+    if not args.name:
+        default_prefix = "%s-%s" % (params['dataset'][0], params['model'][0])
+        
+        # Find other experiments with default names
+        all_experiments = next(os.walk(experiments_base))[1]
+        default_exps = [exp for exp in all_experiments if re.match("^(%s-\d+)$" % default_prefix, exp)]
+
+        # Find the last experiments with default name and increment id
+        if len(default_exps) == 0:
+            next_default_exp_id = 0
+        else:
+            default_exp_ids = [int(exp.split("-")[2]) for exp in default_exps]
+            next_default_exp_id = default_exp_ids[-1] + 1
+        
+        args.name = "%s-%d" % (default_prefix, next_default_exp_id)
+    
+    exp_name = args.name
+
+    experiment_folder = experiments_base + '/' + exp_name
 
      # check, if existing experiment exists
-    if (not overwrite_okay and os.path.exists(experiment_folder)):
+    if (os.path.exists(experiment_folder) and not args.overwrite_okay):
         print('[Error]: Experiment "%s" already exists! To overwrite set --overwrite_okay to True' % exp_name, file=sys.stderr)
         exit(1)
     
