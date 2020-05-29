@@ -43,6 +43,8 @@ def main():
     setup_filename = '1_setup.log'
     console_output_filename = '2_training.log'
 
+    exit_if_repo_not_clean()
+
     args = parse_args()
     experiment_folder = prepare_exp_folder(args)
 
@@ -53,6 +55,21 @@ def main():
     generate_and_preprocess_data(experiment_folder + '/' + traings_data_output_filename)
     change_working_directory_to(cwd)
     run_and_document_experiments(args, experiment_folder, setup_filename, console_output_filename, git_hash)
+
+def exit_if_repo_not_clean():
+    proc = subprocess.Popen(['git', 'status', '--porcelain'], stdout=subprocess.PIPE)
+
+    try:
+        dirty_files, errs = proc.communicate(timeout=3)
+    except subprocess.TimeoutExpired:
+        proc.kill()
+        outs, errs = proc.communicate()
+        print('[Error]: Could not check git status!: %s' % errs, file=sys.stderr)
+        exit(1)
+    
+    if dirty_files:
+        print('[Error]: You have uncommited changes. Please commit them before continuing. No experiments will be executed.', file=sys.stderr)
+        exit(1)
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Run and document an experiment.')
