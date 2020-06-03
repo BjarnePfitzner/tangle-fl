@@ -32,6 +32,10 @@ params = {
     'poison_type': ['NONE'],
     'poison_fraction': [0],
     'poison_from': [1],
+    'acc-tip-selection-strategy': ['WALK'],
+    'acc-cumulate-ratings': ['False'],
+    'acc-ratings-to-weights': ['LINEAR'],
+    'acc-select-from-weights': ['WEIGHTED_CHOICE']
 }
 
 ##############################################################################
@@ -157,8 +161,42 @@ def run_and_document_experiments(args, experiment_folder, setup_filename, consol
         os.makedirs(experiment_folder, exist_ok=True)
 
         # Prepare execution command
-        command = 'python3 main.py -dataset %s -model %s --num-rounds %s --eval-every %s --clients-per-round %s --num-tips %s --sample-size %s --reference-avg-top %s --target-accuracy %s -lr %s --poison-type %s --poison-fraction %s --poison-from %s'
-        parameters = (p['dataset'], p['model'], p['num_rounds'], p['eval_every'], p['clients_per_round'], p['num_tips'], p['sample_size'], p['reference_avg_top'], p['target_accuracy'], p['learning_rate'], p['poison_type'], p['poison_fraction'], p['poison_from'])
+        command = 'python main.py ' \
+            '-dataset %s ' \
+            '-model %s ' \
+            '--num-rounds %s ' \
+            '--eval-every %s ' \
+            '--clients-per-round %s ' \
+            '--num-tips %s ' \
+            '--sample-size %s ' \
+            '--reference-avg-top %s ' \
+            '--target-accuracy %s ' \
+            '-lr %s ' \
+            '--poison-type %s ' \
+            '--poison-fraction %s ' \
+            '--poison-from %s '\
+            '--acc-tip-selection-strategy %s ' \
+            '--acc-cumulate-ratings %s ' \
+            '--acc-ratings-to-weights %s ' \
+            '--acc-select-from-weights %s'
+        parameters = (
+            p['dataset'],
+            p['model'],
+            p['num_rounds'],
+            p['eval_every'],
+            p['clients_per_round'],
+            p['num_tips'],
+            p['sample_size'],
+            p['reference_avg_top'],
+            p['target_accuracy'],
+            p['learning_rate'],
+            p['poison_type'],
+            p['poison_fraction'],
+            p['poison_from'],
+            p['acc-tip-selection-strategy'],
+            p['acc-cumulate-ratings'],
+            p['acc-ratings-to-weights'],
+            p['acc-select-from-weights'])
         command = command % parameters
 
         start_time = datetime.datetime.now()
