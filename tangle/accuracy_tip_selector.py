@@ -26,8 +26,20 @@ class AccuracyTipSelector(TipSelector):
         for x, tx in self.tangle.transactions.items():
             for unique_parent in tx.parents:
                 self.approving_transactions[unique_parent].append(x)
+        
+        self.tips = []
+        for x, tx in self.tangle.transactions.items():
+            if len(self.approving_transactions[x]) == 0:
+                self.tips.append(x)
 
         self.ratings = self.compute_ratings(client)
+    
+    def tip_selection(self, num_tips):
+        if self.settings[AccuracyTipSelectorSettings.SELECTION_STRATEGY] == "GLOBAL":
+            self.tips.sort(key=lambda x: self.ratings[x], reverse=True)
+            return self.tips[0:num_tips]
+        else:
+            return super(AccuracyTipSelector, self).tip_selection(num_tips)
 
     def compute_ratings(self, client):
         rating = {}
