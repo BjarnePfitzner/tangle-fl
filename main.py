@@ -21,7 +21,7 @@ from client import Client
 from server import Server
 from model import ServerModel
 
-from tangle import Tangle, Transaction, PoisonType, train_single, test_single
+from tangle import Tangle, Transaction, PoisonType, train_single, test_single, AccuracyTipSelectorSettings
 
 from utils.args import parse_args
 from utils.model_utils import read_data
@@ -38,6 +38,12 @@ def main():
     mp.set_start_method('spawn')
 
     args = parse_args()
+
+    tip_selection_settings = {}
+    tip_selection_settings[AccuracyTipSelectorSettings.SELECTION_STRATEGY] = args.acc_tip_selection_strategy
+    tip_selection_settings[AccuracyTipSelectorSettings.CUMULATE_RATINGS] = args.acc_cumulate_ratings
+    tip_selection_settings[AccuracyTipSelectorSettings.RATINGS_TO_WEIGHT] = args.acc_ratings_to_weights
+    tip_selection_settings[AccuracyTipSelectorSettings.SELECT_FROM_WEIGHTS] = args.acc_select_from_weights
 
     start_from_round = 0
 
@@ -106,7 +112,7 @@ def main():
     stat_writer_fn = get_stat_writer_function(client_ids, client_groups, client_num_samples, args)
     sys_writer_fn = get_sys_writer_function(args)
     start_time = timeit.default_timer()
-    print_stats(0, tangle, random_sample(clients, int(len(clients) * 0.1)), client_num_samples, args, stat_writer_fn, args.use_val_set, (poison_type != PoisonType.NONE))
+    print_stats(0, tangle, random_sample(clients, int(len(clients) * 0.1)), client_num_samples, args, stat_writer_fn, args.use_val_set, (poison_type != PoisonType.NONE), tip_selection_settings)
 
     # Set up execution timing
     avg_eval_duration = timeit.default_timer() - start_time
@@ -132,7 +138,8 @@ def main():
         # Simulate server model training on selected clients' data
         sys_metrics = tangle.run_nodes(train_single, server.selected_clients, i + 1,
                                        num_epochs=args.num_epochs, batch_size=args.batch_size,
-                                       malicious_clients=malicious_clients, poison_type=poison_type)
+                                       malicious_clients=malicious_clients, poison_type=poison_type,
+                                       tip_selection_settings=tip_selection_settings)
         # norm.append(np.array(norm_this_round).mean(axis=0).tolist() if len(norm_this_round) else [])
         sys_writer_fn(i + 1, c_ids, sys_metrics, c_groups, c_num_samples)
 
@@ -149,7 +156,7 @@ def main():
         # Test model
         if (i + 1) % eval_every == 0 or (i + 1) == num_rounds:
             start_time = timeit.default_timer()
-            average_test_metrics = print_stats(i + 1, tangle, random_sample(clients, int(len(clients) * 0.1)), client_num_samples, args, stat_writer_fn, args.use_val_set, (poison_type != PoisonType.NONE))
+            average_test_metrics = print_stats(i + 1, tangle, random_sample(clients, int(len(clients) * 0.1)), client_num_samples, args, stat_writer_fn, args.use_val_set, (poison_type != PoisonType.NONE), tip_selection_settings)
             eval_count = eval_count + 1
             avg_eval_duration = (avg_eval_duration * (eval_count-1) / eval_count) + ((timeit.default_timer() - start_time) / eval_count)
             if average_test_metrics['accuracy'] >= args.target_accuracy:
@@ -237,14 +244,14 @@ def get_sys_writer_function(args):
 
 
 def print_stats(
-    num_round, tangle, clients, num_samples, args, writer, use_val_set, print_conf_matrix):
+    num_round, tangle, clients, num_samples, args, writer, use_val_set, print_conf_matrix, tip_selection_settings):
 
-    train_stat_metrics = tangle.test_model(test_single, clients, set_to_use='train')
+    train_stat_metrics = tangle.test_model(test_single, clients, tip_selection_settings, set_to_use='train')
     print_metrics(train_stat_metrics, num_samples, num_round, prefix='train_')
     writer(num_round, train_stat_metrics, 'train')
 
     eval_set = 'test' if not use_val_set else 'val'
-    test_stat_metrics = tangle.test_model(test_single, clients, set_to_use=eval_set)
+    test_stat_metrics = tangle.test_model(test_single, clients, tip_selection_settings, set_to_use=eval_set)
     average_test_metrics = print_metrics(test_stat_metrics, num_samples, num_round, prefix='{}_'.format(eval_set), print_conf_matrix=print_conf_matrix)
     writer(num_round, test_stat_metrics, eval_set)
 

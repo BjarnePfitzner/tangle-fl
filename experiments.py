@@ -15,8 +15,8 @@ from sklearn.model_selection import ParameterGrid
 #############################################################################
 
 data_generation_path = "leaf/data/synthetic/"
-data_generation_command = "(rm -r data || true) && (rm -r meta || true) && python main.py -num-tasks 1000 -num-classes 5 -num-dim 60"
-data_preprocessing_command = "./preprocess.sh -s niid --sf 1.0 -k 5 -t sample --tf 0.85"
+data_generation_commands = ["rm -r data", "rm -r meta", "python main.py -num-tasks 1000 -num-classes 5 -num-dim 60"]
+data_preprocessing_commands = ["bash ./preprocess.sh -s niid --sf 1.0 -k 5 -t sample --tf 0.85"]
 
 params = {
     'dataset': ['synthetic'],   # is expected to be one value to construct default experiment name
@@ -128,8 +128,8 @@ def get_current_working_directory():
 
 def generate_and_preprocess_data(traings_data_output_file):
     with open(traings_data_output_file, 'w+') as file:
-        print('Data generation command: %s' % data_generation_command, file=file)
-        print('Data preprocessing command: %s' % data_preprocessing_command, file=file)
+        print('Data generation commands: %s' % data_generation_commands, file=file)
+        print('Data preprocessing commands: %s' % data_preprocessing_commands, file=file)
         print('', file=file)
 
     with open(traings_data_output_file, 'a+') as file:
@@ -137,12 +137,15 @@ def generate_and_preprocess_data(traings_data_output_file):
         os.chdir(data_generation_path)
 
         print('Generating data...')
-        generation = subprocess.Popen(data_generation_command, shell=True, stdout=file, stderr=file)
-        generation.wait()
+        for command in data_generation_commands:
+            generation = subprocess.Popen(command.split(" "), stdout=file, stderr=file)
+            generation.wait()
+            
 
         print('Preprocessing data...')
-        preprocessing = subprocess.Popen(data_preprocessing_command, shell=True, stdout=file, stderr=file)
-        preprocessing.wait()
+        for command in data_preprocessing_commands:
+            preprocessing = subprocess.Popen(command.split(" "), stdout=file, stderr=file)
+            preprocessing.wait()
 
 def change_working_directory_to(working_directory):
     os.chdir(working_directory)
@@ -162,8 +165,8 @@ def run_and_document_experiments(args, experiment_folder, setup_filename, consol
 
         # Print Parameters and command
         with open(experiment_folder + '/' + setup_filename, 'w+') as file:
-            print('Data generation command: %s' % data_generation_command, file=file)
-            print('Data preprocessing command: %s' % data_preprocessing_command, file=file)
+            print('Data generation commands: %s' % data_generation_commands, file=file)
+            print('Data preprocessing commands: %s' % data_preprocessing_commands, file=file)
             print('', file=file)
             print('StartTime: %s' % start_time, file=file)
             print('Githash: %s' % git_hash, file=file)
@@ -174,7 +177,7 @@ def run_and_document_experiments(args, experiment_folder, setup_filename, consol
         # Execute training
         print('Training started...')
         with open(experiment_folder + '/' + console_output_filename, 'w+') as file:
-            training = subprocess.Popen([command], shell=True, stdout=file, stderr=file)
+            training = subprocess.Popen(command.split(" "), stdout=file, stderr=file)
             training.wait()
 
         # Archive training data

@@ -22,7 +22,7 @@ class Tangle:
     def add_transaction(self, tip):
         self.transactions[tip.name()] = tip
 
-    def run_nodes(self, train_fn, clients, rnd, num_epochs=1, batch_size=10, malicious_clients=None, poison_type=PoisonType.NONE):
+    def run_nodes(self, train_fn, clients, rnd, num_epochs=1, batch_size=10, malicious_clients=None, poison_type=PoisonType.NONE, tip_selection_settings={}):
         norm_this_round = []
         new_transactions = []
 
@@ -31,7 +31,7 @@ class Tangle:
                    BYTES_READ_KEY: 0,
                    LOCAL_COMPUTATIONS_KEY: 0} for c in clients}
 
-        train_params = [[client.id, client.group, client.model.flops, random.randint(0, 4294967295), client.train_data, client.eval_data, self.name, (client.id in malicious_clients), poison_type] for client in clients]
+        train_params = [[client.id, client.group, client.model.flops, random.randint(0, 4294967295), client.train_data, client.eval_data, self.name, (client.id in malicious_clients), poison_type, tip_selection_settings] for client in clients]
 
         results = self.process_pool.starmap(train_fn, train_params)
 
@@ -51,10 +51,10 @@ class Tangle:
 
         return sys_metrics
 
-    def test_model(self, test_fn, clients_to_test, set_to_use='test'):
+    def test_model(self, test_fn, clients_to_test, tip_selection_settings, set_to_use='test'):
         metrics = {}
 
-        test_params = [[client.id, client.group, client.model.flops, random.randint(0, 4294967295), client.train_data, client.eval_data, self.name, set_to_use] for client in clients_to_test]
+        test_params = [[client.id, client.group, client.model.flops, random.randint(0, 4294967295), client.train_data, client.eval_data, self.name, set_to_use, tip_selection_settings] for client in clients_to_test]
         results = self.process_pool.starmap(test_fn, test_params)
 
         for client, c_metrics in results:
