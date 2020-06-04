@@ -9,6 +9,7 @@ from client import Client
 
 from .tangle import Tangle
 from .node import Node
+from .accuracy_tip_selector import AccuracyTipSelector
 
 def build_client(u, g, flops, train_data, eval_data):
     args = parse_args()
@@ -35,7 +36,7 @@ def build_client(u, g, flops, train_data, eval_data):
     client_model.flops = flops
     return Client(u, g, train_data, eval_data, client_model)
 
-def train_single(u, g, flops, seed, train_data, eval_data, tangle_name, malicious_node, poison_type):
+def train_single(u, g, flops, seed, train_data, eval_data, tangle_name, malicious_node, poison_type, tip_selection_settings):
     # Suppress tf warnings
     tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
@@ -52,7 +53,7 @@ def train_single(u, g, flops, seed, train_data, eval_data, tangle_name, maliciou
         node = Node(client, tangle)
 
     args = parse_args()
-    tx, metrics, comp = node.process_next_batch(args.num_epochs, args.batch_size, args.num_tips, args.sample_size, args.reference_avg_top)
+    tx, metrics, comp = node.process_next_batch(args.num_epochs, args.batch_size, args.num_tips, args.sample_size, args.reference_avg_top, tip_selection_settings)
 
     sys_metrics = {BYTES_WRITTEN_KEY: 0,
                    BYTES_READ_KEY: 0,
@@ -63,7 +64,7 @@ def train_single(u, g, flops, seed, train_data, eval_data, tangle_name, maliciou
 
     return tx, metrics, u, sys_metrics
 
-def test_single(u, g, flops, seed, train_data, eval_data, tangle_name, set_to_use):
+def test_single(u, g, flops, seed, train_data, eval_data, tangle_name, set_to_use, tip_selection_settings):
     # Suppress tf warnings
     tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
@@ -76,7 +77,8 @@ def test_single(u, g, flops, seed, train_data, eval_data, tangle_name, set_to_us
     tangle = Tangle.fromfile(tangle_name)
     node = Node(client, tangle)
     args = parse_args()
-    reference_txs, reference, reference_poison_score = node.obtain_reference_params(avg_top=args.reference_avg_top)
+    selector = AccuracyTipSelector(tangle, client, tip_selection_settings)
+    reference_txs, reference, reference_poison_score = node.obtain_reference_params(selector=selector, avg_top=args.reference_avg_top)
     node.client.model.set_params(reference)
     metrics = node.client.test(set_to_use)
 

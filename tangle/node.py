@@ -3,6 +3,7 @@ import tensorflow as tf
 import sys
 
 from .tip_selector import TipSelector
+from .accuracy_tip_selector import AccuracyTipSelector
 from .malicious_tip_selector import MaliciousTipSelector
 from .transaction import Transaction
 from .poison_type import PoisonType
@@ -15,10 +16,7 @@ class Node:
     self.tangle = tangle
     self.poison_type = poison_type
 
-  def choose_tips(self, num_tips=2, sample_size=2, selector=None):
-      if selector is None:
-          selector = TipSelector(self.tangle)
-
+  def choose_tips(self, selector, num_tips=2, sample_size=2):
       if len(self.tangle.transactions) < num_tips:
           return [self.tangle.transactions[self.tangle.genesis] for i in range(SELECTED_TIPS)]
 
@@ -54,7 +52,7 @@ class Node:
 
       return tip_txs
 
-  def compute_confidence(self, selector=None, approved_transactions_cache={}):
+  def compute_confidence(self, selector, approved_transactions_cache={}):
       num_sampling_rounds = 35
 
       transaction_confidence = {x: 0 for x in self.tangle.transactions}
@@ -65,10 +63,6 @@ class Node:
               approved_transactions_cache[transaction] = result
 
           return approved_transactions_cache[transaction]
-
-      # Use a cached tip selector
-      if selector is None:
-          selector = TipSelector(self.tangle)
 
       for i in range(num_sampling_rounds):
           tips = self.choose_tips(selector=selector)
@@ -98,7 +92,7 @@ class Node:
 
       return {tx: int(self.tangle.transactions[tx].malicious) + sum([self.tangle.transactions[transaction].malicious for transaction in compute_approved_transactions(tx)]) for tx in transactions}
 
-  def obtain_reference_params(self, avg_top=1, selector=None):
+  def obtain_reference_params(self, selector, avg_top=1):
       # Establish the 'current best'/'reference' weights from the tangle
 
       approved_transactions_cache = {}
@@ -129,9 +123,10 @@ class Node:
   def average_model_params(self, *params):
     return sum(params) / len(params)
 
-  def process_next_batch(self, num_epochs, batch_size, num_tips=2, sample_size=2, reference_avg_top=1):
+  def process_next_batch(self, num_epochs, batch_size, num_tips=2, sample_size=2, reference_avg_top=1, tip_selection_settings={}):
     # if self.poison_type == PoisonType.NONE:
-    selector = TipSelector(self.tangle)
+    # selector = TipSelector(self.tangle)
+    selector = AccuracyTipSelector(self.tangle, self.client, tip_selection_settings)
     # else:
     #     selector = MaliciousTipSelector(self.tangle)
 
@@ -141,20 +136,20 @@ class Node:
     c_metrics = self.client.test('test')
 
     # Obtain number of tips from the tangle
-    tips = self.choose_tips(num_tips=num_tips, sample_size=sample_size, selector=selector)
+    tips = self.choose_tips(selector=selector, num_tips=num_tips, sample_size=sample_size)
 
     if self.poison_type == PoisonType.RANDOM:
         weights = self.client.model.get_params()
         malicious_weights = [np.random.RandomState().normal(size=w.shape) for w in weights]
         print('generated malicious weights')
-        return Transaction(malicious_weights, set([tip.name() for tip in tips]), malicious=True), None, None
+        return Transaction(malicious_weights, set([tip.name() for tip in tips]), self.client.id, malicious=True), None, None
     elif self.poison_type == PoisonType.LABELFLIP:
         # Todo Choose tips or reference model?
         averaged_weights = self.average_model_params(*[tip.load_weights() for tip in tips])
         self.client.model.set_params(averaged_weights)
         self.client.train(num_epochs, batch_size)
         print('trained on label-flip data')
-        return Transaction(self.client.model.get_params(), set([tip.name() for tip in tips]), malicious=True), None, None
+        return Transaction(self.client.model.get_params(), set([tip.name() for tip in tips]), self.client.id, malicious=True), None, None
     else:
         # Perform averaging
 
@@ -174,6 +169,6 @@ class Node:
 
         c_averaged_model_metrics = self.client.test('test')
         if c_averaged_model_metrics['loss'] < c_metrics['loss']:
-            return Transaction(self.client.model.get_params(), set([tip.name() for tip in tips])), c_averaged_model_metrics, comp
+            return Transaction(self.client.model.get_params(), set([tip.name() for tip in tips]), self.client.id), c_averaged_model_metrics, comp
 
     return None, None, None
