@@ -98,6 +98,7 @@ def prepare_exp_folder(args):
             next_default_exp_id = 0
         else:
             default_exp_ids = [int(exp.split("-")[2]) for exp in default_exps]
+            default_exp_ids.sort()
             next_default_exp_id = default_exp_ids[-1] + 1
         
         args.name = "%s-%d" % (default_prefix, next_default_exp_id)
