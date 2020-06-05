@@ -15,7 +15,7 @@ from sklearn.model_selection import ParameterGrid
 #############################################################################
 
 data_generation_path = "leaf/data/synthetic/"
-data_generation_commands = ["rm -r data", "rm -r meta", "python main.py -num-tasks 1000 -num-classes 5 -num-dim 60"]
+data_generation_commands = ["rm -r data", "rm -r meta", "python main.py -num-tasks 1000 -num-classes 5 -num-dim 60 --prob-clusters 0.2 0.3 0.3 0.2"]
 data_preprocessing_commands = ["bash ./preprocess.sh -s niid --sf 1.0 -k 5 -t sample --tf 0.85"]
 
 params = {
