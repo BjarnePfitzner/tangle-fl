@@ -31,7 +31,7 @@ class Tangle:
                    BYTES_READ_KEY: 0,
                    LOCAL_COMPUTATIONS_KEY: 0} for c in clients}
 
-        train_params = [[client.id, client.group, client.model.flops, random.randint(0, 4294967295), client.train_data, client.eval_data, self.name, (client.id in malicious_clients), poison_type, tip_selection_settings] for client in clients]
+        train_params = [[client.id, client.cluster_id, client.group, client.model.flops, random.randint(0, 4294967295), client.train_data, client.eval_data, self.name, (client.id in malicious_clients), poison_type, tip_selection_settings] for client in clients]
 
         results = self.process_pool.starmap(train_fn, train_params)
 
@@ -54,7 +54,7 @@ class Tangle:
     def test_model(self, test_fn, clients_to_test, tip_selection_settings, set_to_use='test'):
         metrics = {}
 
-        test_params = [[client.id, client.group, client.model.flops, random.randint(0, 4294967295), client.train_data, client.eval_data, self.name, set_to_use, tip_selection_settings] for client in clients_to_test]
+        test_params = [[client.id, client.cluster_id, client.group, client.model.flops, random.randint(0, 4294967295), client.train_data, client.eval_data, self.name, set_to_use, tip_selection_settings] for client in clients_to_test]
         results = self.process_pool.starmap(test_fn, test_params)
 
         for client, c_metrics in results:
@@ -63,7 +63,7 @@ class Tangle:
         return metrics
 
     def save(self, tangle_name, global_loss, global_accuracy, norm):
-        n = [{'name': t.name(), 'time': t.tag, 'malicious': t.malicious, 'parents': list(t.parents), 'issuer': t.client_id } for _, t in self.transactions.items()]
+        n = [{'name': t.name(), 'time': t.tag, 'malicious': t.malicious, 'parents': list(t.parents), 'issuer': t.client_id, 'clusterId': t.cluster_id } for _, t in self.transactions.items()]
 
         with open(f'tangle_data/tangle_{tangle_name}.json', 'w') as outfile:
             json.dump({'nodes': n, 'genesis': self.genesis, 'global_loss': global_loss, 'global_accuracy': global_accuracy, 'norm': norm}, outfile)
@@ -79,6 +79,7 @@ class Tangle:
                                     None,
                                     set(n['parents']),
                                     n['issuer'],
+                                    n['clusterId'],
                                     n['name'],
                                     n['time'],
                                     n['malicious'] if 'malicious' in n else False

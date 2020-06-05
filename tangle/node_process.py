@@ -11,7 +11,7 @@ from .tangle import Tangle
 from .node import Node
 from .accuracy_tip_selector import AccuracyTipSelector
 
-def build_client(u, g, flops, train_data, eval_data):
+def build_client(u, cid, g, flops, train_data, eval_data):
     args = parse_args()
 
     model_path = '%s.%s' % (args.dataset, args.model)
@@ -34,9 +34,9 @@ def build_client(u, g, flops, train_data, eval_data):
     tf.reset_default_graph()
     client_model = ClientModel(1234, *model_params)
     client_model.flops = flops
-    return Client(u, g, train_data, eval_data, client_model)
+    return Client(u, cid, g, train_data, eval_data, client_model)
 
-def train_single(u, g, flops, seed, train_data, eval_data, tangle_name, malicious_node, poison_type, tip_selection_settings):
+def train_single(u, cid, g, flops, seed, train_data, eval_data, tangle_name, malicious_node, poison_type, tip_selection_settings):
     # Suppress tf warnings
     tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
@@ -44,7 +44,7 @@ def train_single(u, g, flops, seed, train_data, eval_data, tangle_name, maliciou
     np.random.seed(12 + seed)
     tf.compat.v1.set_random_seed(123 + seed)
 
-    client = build_client(u, g, flops, train_data, eval_data)
+    client = build_client(u, cid, g, flops, train_data, eval_data)
 
     tangle = Tangle.fromfile(tangle_name)
     if malicious_node:
@@ -64,7 +64,7 @@ def train_single(u, g, flops, seed, train_data, eval_data, tangle_name, maliciou
 
     return tx, metrics, u, sys_metrics
 
-def test_single(u, g, flops, seed, train_data, eval_data, tangle_name, set_to_use, tip_selection_settings):
+def test_single(u, cid, g, flops, seed, train_data, eval_data, tangle_name, set_to_use, tip_selection_settings):
     # Suppress tf warnings
     tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
@@ -72,7 +72,7 @@ def test_single(u, g, flops, seed, train_data, eval_data, tangle_name, set_to_us
     np.random.seed(12 + seed)
     tf.compat.v1.set_random_seed(123 + seed)
 
-    client = build_client(u, g, flops, train_data, eval_data)
+    client = build_client(u, cid, g, flops, train_data, eval_data)
 
     tangle = Tangle.fromfile(tangle_name)
     node = Node(client, tangle)

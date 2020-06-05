@@ -91,7 +91,7 @@ def main():
     tangle_tag = f'{clients_per_round}_clients_'
 
     if start_from_round == 0:
-        genesis = Transaction(client_model.get_params(), [], "", tag=0)
+        genesis = Transaction(client_model.get_params(), [], "", None, tag=0)
         tangle = Tangle({genesis.name(): genesis}, genesis.name())
         tangle.save(tangle_tag + str(0), global_loss, global_accuracy, norm)
     else:
@@ -184,10 +184,10 @@ def random_sample(clients, sample_size):
     """Choose a subset of clients to perform the model validation. Only to be used during development to speed up experiment run times"""
     return np.random.choice(clients, min(sample_size, len(clients)), replace=False)
 
-def create_clients(users, groups, train_data, test_data, model):
+def create_clients(users, cluster_ids, groups, train_data, test_data, model):
     if len(groups) == 0:
         groups = [[] for _ in users]
-    clients = [Client(u, g, train_data[u], test_data[u], model) for u, g in zip(users, groups)]
+    clients = [Client(u, cid, g, train_data[u], test_data[u], model) for u, cid, g in zip(users, cluster_ids, groups)]
     return clients
 
 def setup_clients(dataset, model=None, use_val_set=False, poison_fraction=0, poison_type=PoisonType.NONE):
@@ -200,9 +200,9 @@ def setup_clients(dataset, model=None, use_val_set=False, poison_fraction=0, poi
     train_data_dir = os.path.join('leaf', 'data', dataset, 'data', 'train')
     test_data_dir = os.path.join('leaf', 'data', dataset, 'data', eval_set)
 
-    users, groups, train_data, test_data = read_data(train_data_dir, test_data_dir)
+    users, cluster_ids, groups, train_data, test_data = read_data(train_data_dir, test_data_dir)
 
-    clients = create_clients(users, groups, train_data, test_data, model)
+    clients = create_clients(users, cluster_ids, groups, train_data, test_data, model)
 
     num_malicious_clients = math.floor(len(clients) * poison_fraction)
     malicious_clients = [client.id for client in clients[:num_malicious_clients]]
