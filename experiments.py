@@ -21,9 +21,9 @@ data_preprocessing_commands = ["bash ./preprocess.sh -s niid --sf 1.0 -k 5 -t sa
 params = {
     'dataset': ['synthetic'],   # is expected to be one value to construct default experiment name
     'model': ['log_reg'],       # is expected to be one value to construct default experiment name
-    'num_rounds': [1],
+    'num_rounds': [200],
     'eval_every': [-1],
-    'clients_per_round': [1],
+    'clients_per_round': [10],
     'num_tips': [2],
     'sample_size': [2],
     'reference_avg_top': [1],
@@ -33,7 +33,7 @@ params = {
     'poison_fraction': [0],
     'poison_from': [1],
     'acc-tip-selection-strategy': ['WALK'],
-    'acc-cumulate-ratings': ['False'],
+    'acc-cumulate-ratings': ['False', 'True'],
     'acc-ratings-to-weights': ['LINEAR'],
     'acc-select-from-weights': ['WEIGHTED_CHOICE']
 }
@@ -47,7 +47,7 @@ def main():
     setup_filename = '1_setup.log'
     console_output_filename = '2_training.log'
 
-    exit_if_repo_not_clean()
+    #exit_if_repo_not_clean()
 
     args = parse_args()
     experiment_folder = prepare_exp_folder(args)
@@ -85,10 +85,11 @@ def parse_args():
 
 def prepare_exp_folder(args):
     experiments_base = 'experiments'
+    os.makedirs(experiments_base, exist_ok=True)
 
     if not args.name:
         default_prefix = "%s-%s" % (params['dataset'][0], params['model'][0])
-        
+
         # Find other experiments with default names
         all_experiments = next(os.walk(experiments_base))[1]
         default_exps = [exp for exp in all_experiments if re.match("^(%s-\d+)$" % default_prefix, exp)]
