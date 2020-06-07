@@ -156,10 +156,10 @@ def generate_and_preprocess_data(traings_data_output_file):
 def change_working_directory_to(working_directory):
     os.chdir(working_directory)
 
-def run_and_document_experiments(args, experiment_folder, setup_filename, console_output_filename, git_hash):
+def run_and_document_experiments(args, experiments_dir, setup_filename, console_output_filename, git_hash):
     for idx, p in enumerate(ParameterGrid(params)):
         # Create folder for that run
-        experiment_folder = experiment_folder + '/config_%s' % idx
+        experiment_folder = experiments_dir + '/config_%s' % idx
         os.makedirs(experiment_folder, exist_ok=True)
 
         # Prepare execution command
