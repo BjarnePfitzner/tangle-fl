@@ -9,7 +9,6 @@ import sys
 
 from sklearn.model_selection import ParameterGrid
 
-
 #############################################################################
 ############################# Parameter section #############################
 #############################################################################
@@ -146,7 +145,7 @@ def generate_and_preprocess_data(traings_data_output_file):
         for command in data_generation_commands:
             generation = subprocess.Popen(command.split(" "), stdout=file, stderr=file)
             generation.wait()
-            
+
 
         print('Preprocessing data...')
         for command in data_preprocessing_commands:
@@ -157,7 +156,9 @@ def change_working_directory_to(working_directory):
     os.chdir(working_directory)
 
 def run_and_document_experiments(args, experiments_dir, setup_filename, console_output_filename, git_hash):
-    for idx, p in enumerate(ParameterGrid(params)):
+    parameter_grid = ParameterGrid(params)
+    print(f'Starting experiments for {len(parameter_grid)} parameter combinations...')
+    for idx, p in enumerate(parameter_grid):
         # Create folder for that run
         experiment_folder = experiments_dir + '/config_%s' % idx
         os.makedirs(experiment_folder, exist_ok=True)
