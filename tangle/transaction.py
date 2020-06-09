@@ -5,11 +5,10 @@ from tempfile import TemporaryFile
 import numpy as np
 
 class Transaction:
-    def __init__(self, weights, parents, client_id, cluster_id, id=None, tag=None, malicious=False):
+    def __init__(self, weights, parents, client_id, id=None, tag=None, malicious=False):
         self.weights = weights
         self.parents = parents
         self.client_id = client_id
-        self.cluster_id = cluster_id
         self.tag = tag
         self.id = id
         self.malicious = malicious
