@@ -8,13 +8,13 @@ from .tip_selector import TipSelector
 from baseline_constants import ACCURACY_KEY
 
 # Adopted from https://docs.iota.org/docs/node-software/0.1/iri/references/iri-configuration-options
-ALPHA = 0.001
 
 class AccuracyTipSelectorSettings(Enum):
     SELECTION_STRATEGY = 0
     CUMULATE_RATINGS = 1
     RATINGS_TO_WEIGHT = 2
-    SELECT_FROM_WEIGHTS = 3
+    ALPHA = 3
+    SELECT_FROM_WEIGHTS = 4
 
 class AccuracyTipSelector(TipSelector):
     def __init__(self, tangle, client, settings):
@@ -48,7 +48,7 @@ class AccuracyTipSelector(TipSelector):
         for tx_id, tx in self.tangle.transactions.items():
             client.model.set_params(tx.load_weights())
             rating[tx_id] = client.test('train')[ACCURACY_KEY]
-        
+
         if self.settings[AccuracyTipSelectorSettings.CUMULATE_RATINGS]:
             def cumulate_ratings(future_set, ratings):
                 cumulated = 0
@@ -68,6 +68,8 @@ class AccuracyTipSelector(TipSelector):
     def ratings_to_weight(self, ratings):
         if self.settings[AccuracyTipSelectorSettings.RATINGS_TO_WEIGHT] == 'LINEAR':
             return ratings
+        else:
+            super(AccuracyTipSelector, AccuracyTipSelector).ratings_to_weight(ratings,alpha=self.settings[AccuracyTipSelectorSettings.ALPHA])
     
     def weighted_choice(self, approvers, weights):
     
