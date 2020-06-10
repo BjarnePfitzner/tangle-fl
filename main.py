@@ -44,6 +44,7 @@ def main():
     tip_selection_settings[AccuracyTipSelectorSettings.CUMULATE_RATINGS] = args.acc_cumulate_ratings
     tip_selection_settings[AccuracyTipSelectorSettings.RATINGS_TO_WEIGHT] = args.acc_ratings_to_weights
     tip_selection_settings[AccuracyTipSelectorSettings.SELECT_FROM_WEIGHTS] = args.acc_select_from_weights
+    tip_selection_settings[AccuracyTipSelectorSettings.ALPHA] = args.acc_alpha
 
     start_from_round = 0
 
