@@ -34,7 +34,8 @@ params = {
     'acc-tip-selection-strategy': ['WALK'],
     'acc-cumulate-ratings': ['False', 'True'],
     'acc-ratings-to-weights': ['LINEAR'],
-    'acc-select-from-weights': ['WEIGHTED_CHOICE']
+    'acc-select-from-weights': ['WEIGHTED_CHOICE'],
+    'acc-alpha': [0.001]
 }
 
 ##############################################################################
