@@ -31,9 +31,6 @@ def main():
     cluster_id = '2'        # Arbitrary value, as it has no effect on the calculation, nor will it be in the output
     ########################
 
-    tangle_name = '%s_clients_%s' % (num_clients, last_generation)
-    tangle_path = os.path.join('experiments', experiment_name, 'config_%s' % config, 'tangle_data')
-
     tip_selection_settings = { AccuracyTipSelectorSettings.SELECTION_STRATEGY: 'WALK',
                                AccuracyTipSelectorSettings.CUMULATE_RATINGS: False,
                                AccuracyTipSelectorSettings.RATINGS_TO_WEIGHT: 'LINEAR',
@@ -47,26 +44,17 @@ def main():
     users, cluster_ids, groups, train_data, test_data = read_data(train_data_dir, test_data_dir)
     print("Loading data... complete")
 
-    # Copy tangle data from experiments folder, because:
-    #   * working directory needs to be "learning-tangle", because relative import paths are used
-    #   * it is not possible to specify the tangle file path directly, because it will be prefixed with a hardcoded string (tangle.py)
-    print("Copying data...")
-    os.makedirs('tangle_data', exist_ok=True)
+    # Change into result folder within the experiment folder
+    result_path = os.path.join('experiments', experiment_name, 'config_%s' % config)
+    os.chdir(result_path)
 
-    # Copy tangle file
-    tangle_file = os.path.join(tangle_path, 'tangle_%s.json' % tangle_name)
-    copy(tangle_file, 'tangle_data')
-
-    # Copy transaction data
-    tangle_transactions = os.path.join(tangle_path, 'transactions')
-    copy_tree(tangle_transactions, os.path.join('tangle_data', 'transactions'))
-    print("Copying data... completed")
+    # To execute the step add leaf framework to path
+    models_path = os.path.join(sys.path[0], 'leaf', 'models')
+    sys.path.insert(1, models_path)
 
     # Perform the step
+    tangle_name = '%s_clients_%s' % (num_clients, last_generation)
     print(train_single(client_id, cluster_id, last_generation + 1, 0, 0, train_data[client_id], test_data[client_id], tangle_name, False, PoisonType.NONE, tip_selection_settings))
-
-    # Delete copied data
-    rmtree('tangle_data')
 
 if __name__ == '__main__':
     main()
