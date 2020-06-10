@@ -34,7 +34,8 @@ params = {
     'acc-tip-selection-strategy': ['WALK'],
     'acc-cumulate-ratings': ['False', 'True'],
     'acc-ratings-to-weights': ['LINEAR'],
-    'acc-select-from-weights': ['WEIGHTED_CHOICE']
+    'acc-select-from-weights': ['WEIGHTED_CHOICE'],
+    'acc-alpha': [1]
 }
 
 ##############################################################################
@@ -76,7 +77,7 @@ def exit_if_repo_not_clean():
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Run and document an experiment.')
-    parser.add_argument('--name', help='The name of the experiment. Results will be stored under experiments/<name>. Default: <dataset>-<model>-<exp_number>')
+    parser.add_argument('--name', help='The name of the ex1periment. Results will be stored under experiments/<name>. Default: <dataset>-<model>-<exp_number>')
     parser.add_argument('--overwrite_okay', type=bool, default=False, help='Overwrite existing experiment with same name. Default: False')
     args = parser.parse_args()
 
@@ -181,7 +182,8 @@ def run_and_document_experiments(args, experiments_dir, setup_filename, console_
             '--acc-tip-selection-strategy %s ' \
             '--acc-cumulate-ratings %s ' \
             '--acc-ratings-to-weights %s ' \
-            '--acc-select-from-weights %s'
+            '--acc-select-from-weights %s' \
+            '--acc-alpha %s'
         parameters = (
             p['dataset'],
             p['model'],
@@ -199,7 +201,8 @@ def run_and_document_experiments(args, experiments_dir, setup_filename, console_
             p['acc-tip-selection-strategy'],
             p['acc-cumulate-ratings'],
             p['acc-ratings-to-weights'],
-            p['acc-select-from-weights'])
+            p['acc-select-from-weights'],
+            p['acc-alpha'])
         command = command % parameters
 
         start_time = datetime.datetime.now()

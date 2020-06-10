@@ -103,10 +103,10 @@ class TipSelector:
         return approvers[-1]
 
     @staticmethod
-    def ratings_to_weight(ratings):
+    def ratings_to_weight(ratings, alpha=ALPHA):
         highest_rating = max(ratings)
         normalized_ratings = [r - highest_rating for r in ratings]
-        return [np.exp(r * ALPHA) for r in normalized_ratings]
+        return [np.exp(r * alpha) for r in normalized_ratings]
 
     @staticmethod
     def ratings_to_probability(ratings):
