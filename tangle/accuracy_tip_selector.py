@@ -69,7 +69,7 @@ class AccuracyTipSelector(TipSelector):
         if self.settings[AccuracyTipSelectorSettings.RATINGS_TO_WEIGHT] == 'LINEAR':
             return ratings
         else:
-            super(AccuracyTipSelector, AccuracyTipSelector).ratings_to_weight(ratings,alpha=self.settings[AccuracyTipSelectorSettings.ALPHA])
+            return super(AccuracyTipSelector, AccuracyTipSelector).ratings_to_weight(ratings,alpha=self.settings[AccuracyTipSelectorSettings.ALPHA])
     
     def weighted_choice(self, approvers, weights):
     
