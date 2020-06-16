@@ -22,20 +22,20 @@ def main():
     args = parse_args()
 
     ###### Parameters ######
-    experiment_name = 'synthetic-log_reg-0'
+    experiment_name = 'femnist-cnn-0'
     config = 0
-    last_generation = 5     # The generation from where to start
-    num_clients = 3         # The number of clients used per round
+    last_generation = 80     # The generation from where to start
+    num_clients = 10         # The number of clients used per round
 
-    client_id = '96'
+    client_id = 'f3478_49'
     cluster_id = '2'        # Arbitrary value, as it has no effect on the calculation, nor will it be in the output
     ########################
 
     tip_selection_settings = { AccuracyTipSelectorSettings.SELECTION_STRATEGY: 'WALK',
                                AccuracyTipSelectorSettings.CUMULATE_RATINGS: False,
-                               AccuracyTipSelectorSettings.RATINGS_TO_WEIGHT: 'LINEAR',
+                               AccuracyTipSelectorSettings.RATINGS_TO_WEIGHT: 'EXPONENTIAL',
                                AccuracyTipSelectorSettings.SELECT_FROM_WEIGHTS: 'WEIGHTED_CHOICE',
-                               AccuracyTipSelectorSettings.ALPHA: 0.001 }
+                               AccuracyTipSelectorSettings.ALPHA: 0.01 }
 
     train_data_dir = os.path.join('leaf', 'data', args.dataset, 'data', 'train')
     test_data_dir = os.path.join('leaf', 'data', args.dataset, 'data', 'test')
