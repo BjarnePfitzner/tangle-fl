@@ -49819,7 +49819,8 @@ var loadTangle = exports.loadTangle = async function loadTangle(_ref) {
       expConfig = _ref.expConfig,
       numClients = _ref.numClients;
 
-  var res = await fetch('/experiments/' + expName + '/config_' + expConfig + '/tangle_data/tangle_' + numClients + '_clients_' + iteration + '.json');
+  var res = void 0;
+  if (expConfig == "") res = await fetch('/tangle_data/tangle_' + numClients + '_clients_' + iteration + '.json');else res = await fetch('/experiments/' + expName + '/config_' + expConfig + '/tangle_data/tangle_' + numClients + '_clients_' + iteration + '.json');
   var data = await res.json();
 
   var nodes = data.nodes.map(function (x) {
