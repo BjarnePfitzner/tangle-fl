@@ -5,7 +5,7 @@ from tempfile import TemporaryFile
 import numpy as np
 
 class Transaction:
-    def __init__(self, weights, parents, client_id, cluster_id, id=None, tag=None, malicious=False):
+    def __init__(self, weights, parents, client_id, cluster_id, id=None, tag=None, malicious=False, tangle_dir="."):
         self.weights = weights
         self.parents = parents
         self.client_id = client_id
@@ -13,6 +13,7 @@ class Transaction:
         self.tag = tag
         self.id = id
         self.malicious = malicious
+        self.tangle_dir = tangle_dir
 
         # if len(parents) > 0:
         #     self.height = max([p.height for p in parents]) + 1
@@ -31,7 +32,7 @@ class Transaction:
     def load_weights(self):
         if self.weights is None and self.id is not None:
             # data = np.load(f'tangle_data/transactions/{self.id}')
-            self.weights = np.load(f'tangle_data/transactions/{self.id}.npy', allow_pickle=True)
+            self.weights = np.load(f'{self.tangle_dir}/tangle_data/transactions/{self.id}.npy', allow_pickle=True)
 
         return self.weights
 
@@ -42,7 +43,7 @@ class Transaction:
                 tmpfile.seek(0)
                 self.id = self.hash_file(tmpfile)
 
-            with open(f'tangle_data/transactions/{self.id}.npy', 'wb') as tx_file:
+            with open(f'{self.tangle_dir}/tangle_data/transactions/{self.id}.npy', 'wb') as tx_file:
                 self.save(tx_file)
         return self.id
 

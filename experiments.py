@@ -182,7 +182,8 @@ def run_and_document_experiments(args, experiments_dir, setup_filename, console_
             '--acc-tip-selection-strategy %s ' \
             '--acc-cumulate-ratings %s ' \
             '--acc-ratings-to-weights %s ' \
-            '--acc-select-from-weights %s'
+            '--acc-select-from-weights %s ' \
+            '--tangle-dir %s'
         parameters = (
             p['dataset'],
             p['model'],
@@ -200,7 +201,8 @@ def run_and_document_experiments(args, experiments_dir, setup_filename, console_
             p['acc-tip-selection-strategy'],
             p['acc-cumulate-ratings'],
             p['acc-ratings-to-weights'],
-            p['acc-select-from-weights'])
+            p['acc-select-from-weights'],
+            experiment_folder)
         command = command % parameters
 
         start_time = datetime.datetime.now()
@@ -222,12 +224,8 @@ def run_and_document_experiments(args, experiments_dir, setup_filename, console_
             training = subprocess.Popen(command.split(" "), stdout=file, stderr=file)
             training.wait()
 
-        # Archive training data
-        print('Training finished. Storing results...')
-        subprocess.Popen(['mv', 'tangle_data', experiment_folder + '/']).wait()
-        subprocess.Popen(['mv', 'results.txt', '%s/3_results.txt' % experiment_folder]).wait()
-
         # Document end of training
+        print('Training finished. Documenting results...')
         with open(experiment_folder + '/' + setup_filename, 'a+') as file:
             end_time = datetime.datetime.now()
             print('EndTime: %s' % end_time, file=file)

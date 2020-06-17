@@ -46,13 +46,13 @@ def train_single(u, cid, g, flops, seed, train_data, eval_data, tangle_name, mal
 
     client = build_client(u, cid, g, flops, train_data, eval_data)
 
-    tangle = Tangle.fromfile(tangle_name)
+    args = parse_args()
+    tangle = Tangle.fromfile(tangle_name, args.tangle_dir)
     if malicious_node:
         node = Node(client, tangle, poison_type)
     else:
         node = Node(client, tangle)
 
-    args = parse_args()
     tx, metrics, comp = node.process_next_batch(args.num_epochs, args.batch_size, args.num_tips, args.sample_size, args.reference_avg_top, tip_selection_settings)
 
     sys_metrics = {BYTES_WRITTEN_KEY: 0,
@@ -74,9 +74,9 @@ def test_single(u, cid, g, flops, seed, train_data, eval_data, tangle_name, set_
 
     client = build_client(u, cid, g, flops, train_data, eval_data)
 
-    tangle = Tangle.fromfile(tangle_name)
-    node = Node(client, tangle)
     args = parse_args()
+    tangle = Tangle.fromfile(tangle_name, args.tangle_dir)
+    node = Node(client, tangle)
     selector = AccuracyTipSelector(tangle, client, tip_selection_settings)
     reference_txs, reference, reference_poison_score = node.obtain_reference_params(selector=selector, avg_top=args.reference_avg_top)
     node.client.model.set_params(reference)

@@ -12,9 +12,12 @@ from .node import Node
 from .poison_type import PoisonType
 
 class Tangle:
-    def __init__(self, transactions, genesis):
+    tangle_dir = "."
+
+    def __init__(self, transactions, genesis, tangle_dir):
         self.transactions = transactions
         self.genesis = genesis
+        self.tangle_dir = tangle_dir
         if current_process().name == 'MainProcess':
             os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
             self.process_pool = Pool(10)
@@ -65,14 +68,14 @@ class Tangle:
     def save(self, tangle_name, global_loss, global_accuracy, norm):
         n = [{'name': t.name(), 'time': t.tag, 'malicious': t.malicious, 'parents': list(t.parents), 'issuer': t.client_id, 'clusterId': t.cluster_id } for _, t in self.transactions.items()]
 
-        with open(f'tangle_data/tangle_{tangle_name}.json', 'w') as outfile:
+        with open(f'{self.tangle_dir}/tangle_data/tangle_{tangle_name}.json', 'w') as outfile:
             json.dump({'nodes': n, 'genesis': self.genesis, 'global_loss': global_loss, 'global_accuracy': global_accuracy, 'norm': norm}, outfile)
 
         self.name = tangle_name
 
     @classmethod
-    def fromfile(cls, tangle_name):
-      with open(f'tangle_data/tangle_{tangle_name}.json', 'r') as tanglefile:
+    def fromfile(cls, tangle_name, tangle_dir):
+      with open(f'{tangle_dir}/tangle_data/tangle_{tangle_name}.json', 'r') as tanglefile:
           t = json.load(tanglefile)
 
       transactions = {n['name']: Transaction(
@@ -82,8 +85,9 @@ class Tangle:
                                     n['clusterId'],
                                     n['name'],
                                     n['time'],
-                                    n['malicious'] if 'malicious' in n else False
+                                    n['malicious'] if 'malicious' in n else False,
+                                    tangle_dir
                                 ) for n in t['nodes']}
-      tangle = cls(transactions, t['genesis'])
+      tangle = cls(transactions, t['genesis'], tangle_dir)
       tangle.name = tangle_name
       return tangle

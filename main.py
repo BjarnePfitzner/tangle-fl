@@ -82,7 +82,7 @@ def main():
     client_model = ClientModel(args.seed, *model_params)
 
     # Create tangle and tangle metrics
-    os.makedirs('tangle_data/transactions', exist_ok=True)
+    os.makedirs('%s/tangle_data/transactions' % args.tangle_dir, exist_ok=True)
 
     # Legacy metrics variables (not used)
     global_loss = [],
@@ -92,11 +92,11 @@ def main():
     tangle_tag = f'{clients_per_round}_clients_'
 
     if start_from_round == 0:
-        genesis = Transaction(client_model.get_params(), [], "", None, tag=0)
-        tangle = Tangle({genesis.name(): genesis}, genesis.name())
+        genesis = Transaction(client_model.get_params(), [], "", None, tag=0, tangle_dir=args.tangle_dir)
+        tangle = Tangle({genesis.name(): genesis}, genesis.name(), args.tangle_dir)
         tangle.save(tangle_tag + str(0), global_loss, global_accuracy, norm)
     else:
-        tangle = Tangle.fromfile(tangle_tag + str(start_from_round))
+        tangle = Tangle.fromfile(tangle_tag + str(start_from_round), args.tangle_dir)
 
     # Create server
     server = Server(client_model)
@@ -162,7 +162,7 @@ def main():
             avg_eval_duration = (avg_eval_duration * (eval_count-1) / eval_count) + ((timeit.default_timer() - start_time) / eval_count)
             if average_test_metrics['accuracy'] >= args.target_accuracy:
                 print("Reached test_accuracy: %g after %d rounds" % (average_test_metrics['accuracy'], i + 1))
-                with open('results.txt', 'a+') as f:
+                with open('%s/3_results.txt' % args.tangle_dir, 'a+') as f:
                     f.write("Reached test_accuracy: %g after %d rounds" % (average_test_metrics['accuracy'], i + 1))
                 break
             elif average_test_metrics['accuracy'] >= args.target_accuracy - 0.05:
@@ -256,7 +256,7 @@ def print_stats(
     average_test_metrics = print_metrics(test_stat_metrics, num_samples, num_round, prefix='{}_'.format(eval_set), print_conf_matrix=print_conf_matrix)
     writer(num_round, test_stat_metrics, eval_set)
 
-    with open('results.txt', 'a+') as file:
+    with open('%s/3_results.txt' % args.tangle_dir, 'a+') as file:
         file.write('Round %d \n' % num_round)
         file.write(str(average_test_metrics) + '\n')
     return average_test_metrics
