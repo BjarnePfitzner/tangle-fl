@@ -32,12 +32,6 @@ class Model(ABC):
         with self.graph.as_default():
             self.sess.run(tf.global_variables_initializer())
 
-        if current_process().name == 'MainProcess':
-            with self.graph.as_default():
-                metadata = tf.RunMetadata()
-                opts = tf.profiler.ProfileOptionBuilder.float_operation()
-                self.flops = tf.profiler.profile(self.graph, run_meta=metadata, cmd='scope', options=opts).total_float_ops
-
         np.random.seed(self.seed)
 
     def set_params(self, model_params):
@@ -87,7 +81,6 @@ class Model(ABC):
             num_epochs: Number of epochs to train.
             batch_size: Size of training batches.
         Return:
-            comp: Number of FLOPs computed while training given data
             update: List of np.ndarray weights, with each weight array
                 corresponding to a variable in the resulting graph
         """
@@ -95,8 +88,7 @@ class Model(ABC):
             self.run_epoch(data, batch_size)
 
         update = self.get_params()
-        comp = num_epochs * (len(data['y'])//batch_size) * batch_size * self.flops
-        return comp, update
+        return update
 
     def run_epoch(self, data, batch_size):
 

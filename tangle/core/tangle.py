@@ -41,19 +41,19 @@ class Tangle:
         self.name = tangle_name
 
     @classmethod
-    def fromfile(cls, tangle_name):
-      with open(f'tangle_data/tangle_{tangle_name}.json', 'r') as tanglefile:
-          t = json.load(tanglefile)
+    def fromfile(cls, tangle_data_dir, tangle_name):
+        with open(f'{tangle_data_dir}/tangle_{tangle_name}.json', 'r') as tanglefile:
+            t = json.load(tanglefile)
 
-      transactions = {n['name']: Transaction(
-                                    None,
-                                    set(n['parents']),
-                                    n['issuer'],
-                                    n['clusterId'],
-                                    n['name'],
-                                    n['time'],
-                                    n['malicious'] if 'malicious' in n else False
-                                ) for n in t['nodes']}
-      tangle = cls(transactions, t['genesis'])
-      tangle.name = tangle_name
-      return tangle
+        transactions = {n['name']: Transaction(
+                                        None,
+                                        set(n['parents']),
+                                        n['issuer'],
+                                        n['clusterId'],
+                                        n['name'],
+                                        n['time'],
+                                        n['malicious'] if 'malicious' in n else False
+                                    ) for n in t['nodes']}
+        tangle = cls(transactions, t['genesis'])
+        tangle.name = tangle_name
+        return tangle
