@@ -19,12 +19,12 @@ class FilesystemTransactionStore:
         return self.hash_file(tmpfile)
 
     def save(self, tx):
+        tx.id = self.compute_transaction_id(tx)
+
         os.makedirs(self.tx_path, exist_ok=True)
 
         with open(f'{self.tx_path}/{tx.name()}.npy', 'wb') as tx_file:
             self._save(tx, tx_file)
-
-        tx.id = self.compute_transaction_id(tx)
 
     def _save(self, tx, file):
         np.save(file, tx.weights, allow_pickle=True)
