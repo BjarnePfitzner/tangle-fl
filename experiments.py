@@ -38,6 +38,12 @@ params = {
     'acc-alpha': [0.001]
 }
 
+tip_selector_start_rounds = {
+    'tip_selector': [],
+    'acc_tip_selector': [],
+    'mal_tip_selector': []
+}
+
 ##############################################################################
 ########################## End of Parameter section ##########################
 ##############################################################################
@@ -204,6 +210,13 @@ def run_and_document_experiments(args, experiments_dir, setup_filename, console_
             p['acc-select-from-weights'],
             experiment_folder)
         command = command % parameters
+
+        for start_round in tip_selector_start_rounds['tip_selector']:
+            command += ' --tip-selector-from %s' %start_round
+        for start_round in tip_selector_start_rounds['acc_tip_selector']:
+            command += ' --acc-tip-selector-from %s' %start_round
+        for start_round in tip_selector_start_rounds['mal_tip_selector']:
+            command += ' --mal-tip-selector-from %s' %start_round
 
         start_time = datetime.datetime.now()
 
