@@ -17,6 +17,11 @@ class RayLab(Lab):
     def create_node_transactions(self, tangle, round, clients):
         @ray.remote
         def _create_node_transaction(tangle, round, client_id, cluster_id, train_data, eval_data, seed, model_config, tx_store):
+            import tensorflow as tf
+
+            # Suppress tf warnings
+            tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
+ 
             return Lab.create_node_transaction(tangle, round, client_id, cluster_id, train_data, eval_data, seed, model_config, tx_store)
 
         futures = [_create_node_transaction.remote(tangle, round, client_id, cluster_id, self.train_data[client_id], self.test_data[client_id], self.config.seed, self.model_config, self.tx_store)

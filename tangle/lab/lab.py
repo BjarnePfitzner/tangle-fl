@@ -114,7 +114,8 @@ class Lab:
         client_model = Lab.create_client_model(seed, model_config)
         node = Node(tangle, tx_store, TipSelector, client_id, cluster_id, train_data, eval_data, client_model)
         tx = node.create_transaction(model_config.num_epochs, model_config.batch_size)
-        tx_store.save(tx)
+        if tx is not None:
+            tx_store.save(tx)
 
         return tx
 
@@ -161,6 +162,7 @@ class Lab:
                 clients = self.select_clients(round, self.clients, num_nodes)
 
                 for tx in self.create_node_transactions(tangle, round, clients):
-                    tangle.add_transaction(tx)
+                    if tx is not None:
+                        tangle.add_transaction(tx)
 
             tangle.save(self.config.tangle_dir, round)
