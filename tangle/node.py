@@ -5,6 +5,7 @@ import sys
 from .tip_selector import TipSelector
 from .accuracy_tip_selector import AccuracyTipSelector
 from .malicious_tip_selector import MaliciousTipSelector
+from .helper import TipSelectorIdentifiers
 from .transaction import Transaction
 from .poison_type import PoisonType
 
@@ -126,13 +127,13 @@ class Node:
     return sum(params) / len(params)
 
   def process_next_batch(self, num_epochs, batch_size, num_tips=2, sample_size=2, reference_avg_top=1, tip_selection_settings={}):
-    # if self.poison_type == PoisonType.NONE:
-    # selector = TipSelector(self.tangle)
-    selector = AccuracyTipSelector(self.tangle, self.client, tip_selection_settings)
-    # else:
-    #     selector = MaliciousTipSelector(self.tangle)
-
     args = parse_args()
+    if tip_selection_settings['tip_selector_to_use'] == TipSelectorIdentifiers.ACCURACY_TIP_SELECTOR:
+        selector = AccuracyTipSelector(self.tangle, self.client, tip_selection_settings)
+    elif tip_selection_settings['tip_selector_to_use'] == TipSelectorIdentifiers.TIP_SELECTOR:
+        selector = TipSelector(self.tangle)
+    elif tip_selection_settings['tip_selector_to_use'] == TipSelectorIdentifiers.MALICIOUS_TIP_SELECTOR:
+        selector = MaliciousTipSelector(self.tangle)
 
     # Compute reference metrics
     reference_txs, reference, _ = self.obtain_reference_params(avg_top=reference_avg_top, selector=selector)

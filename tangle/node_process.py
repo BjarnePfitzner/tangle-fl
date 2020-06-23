@@ -9,7 +9,10 @@ from client import Client
 
 from .tangle import Tangle
 from .node import Node
+from .tip_selector import TipSelector
 from .accuracy_tip_selector import AccuracyTipSelector
+from .malicious_tip_selector import MaliciousTipSelector
+from .helper import TipSelectorIdentifiers
 
 def build_client(u, cid, g, flops, train_data, eval_data):
     args = parse_args()
@@ -77,7 +80,14 @@ def test_single(u, cid, g, flops, seed, train_data, eval_data, tangle_name, set_
     args = parse_args()
     tangle = Tangle.fromfile(tangle_name, args.tangle_dir)
     node = Node(client, tangle)
-    selector = AccuracyTipSelector(tangle, client, tip_selection_settings)
+
+    if tip_selection_settings['tip_selector_to_use'] == TipSelectorIdentifiers.ACCURACY_TIP_SELECTOR:
+        selector = AccuracyTipSelector(tangle, client, tip_selection_settings)
+    elif tip_selection_settings['tip_selector_to_use'] == TipSelectorIdentifiers.TIP_SELECTOR:
+        selector = TipSelector(tangle)
+    elif tip_selection_settings['tip_selector_to_use'] == TipSelectorIdentifiers.MALICIOUS_TIP_SELECTOR:
+        selector = MaliciousTipSelector(tangle)
+    
     reference_txs, reference, reference_poison_score = node.obtain_reference_params(selector=selector, avg_top=args.reference_avg_top)
     node.client.model.set_params(reference)
     metrics = node.client.test(set_to_use)

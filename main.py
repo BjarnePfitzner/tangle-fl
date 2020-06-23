@@ -21,7 +21,7 @@ from client import Client
 from server import Server
 from model import ServerModel
 
-from tangle import Tangle, Transaction, PoisonType, train_single, test_single, AccuracyTipSelectorSettings
+from tangle import Tangle, Transaction, PoisonType, train_single, test_single, AccuracyTipSelectorSettings, determineTipSelector
 
 from utils.args import parse_args
 from utils.model_utils import read_data
@@ -113,6 +113,8 @@ def main():
     stat_writer_fn = get_stat_writer_function(client_ids, client_groups, client_num_samples, args)
     sys_writer_fn = get_sys_writer_function(args)
     start_time = timeit.default_timer()
+
+    tip_selection_settings['tip_selector_to_use'] = determineTipSelector(args, 0)
     print_stats(0, tangle, random_sample(clients, int(len(clients) * 0.1)), client_num_samples, args, stat_writer_fn, args.use_val_set, (poison_type != PoisonType.NONE), tip_selection_settings)
 
     # Set up execution timing
@@ -126,6 +128,8 @@ def main():
         time_remaining = avg_eval_duration * (rounds_remaining // eval_every) + avg_round_duration * rounds_remaining
         print('--- Round %d of %d: Training %d Clients --- Time remaining: ~ %d min' % (i + 1, num_rounds, clients_per_round, time_remaining // 60))
         start_time = timeit.default_timer()
+
+        tip_selection_settings['tip_selector_to_use'] = determineTipSelector(args, i + 1)
 
         # Select clients to train this round
         if i >= poison_from:

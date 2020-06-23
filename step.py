@@ -13,7 +13,7 @@ sys.path.insert(1, './leaf/models')
 import numpy as np
 import tensorflow as tf
 
-from tangle import Tangle, train_single, AccuracyTipSelectorSettings
+from tangle import Tangle, train_single, AccuracyTipSelectorSettings, TipSelectorIdentifiers
 from utils.model_utils import read_data
 from utils.args import parse_args
 
@@ -27,11 +27,14 @@ def main():
     last_generation = 80     # The generation from where to start
     num_clients = 10         # The number of clients used per round
 
+    tip_selector_to_use = TipSelectorIdentifiers.ACCURACY_TIP_SELECTOR
+
     client_id = 'f3478_49'
     cluster_id = '2'        # Arbitrary value, as it has no effect on the calculation, nor will it be in the output
     ########################
 
-    tip_selection_settings = { AccuracyTipSelectorSettings.SELECTION_STRATEGY: 'WALK',
+    tip_selection_settings = { 'tip_selector_to_use': tip_selector_to_use,
+                               AccuracyTipSelectorSettings.SELECTION_STRATEGY: 'WALK',
                                AccuracyTipSelectorSettings.CUMULATE_RATINGS: False,
                                AccuracyTipSelectorSettings.RATINGS_TO_WEIGHT: 'EXPONENTIAL',
                                AccuracyTipSelectorSettings.SELECT_FROM_WEIGHTS: 'WEIGHTED_CHOICE',
