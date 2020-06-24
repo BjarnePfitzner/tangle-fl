@@ -1,8 +1,7 @@
 import numpy as np
 
 class Transaction:
-    def __init__(self, weights, parents, client_id, cluster_id, id=None, tag=None, malicious=False, tangle_dir="."):
-        self.weights = weights
+    def __init__(self, parents, client_id, cluster_id, id=None, tag=None, malicious=False):
         self.parents = parents
         self.client_id = client_id
         self.cluster_id = cluster_id

@@ -63,7 +63,7 @@ class Lab:
 
         self.clients, self.train_data, self.test_data = self.setup_clients(self.model_config.dataset)
 
-        self.tx_store = FilesystemTransactionStore(self.config.tangle_tx_dir)
+        self.tx_store = FilesystemTransactionStore(self.config.tangle_dir, self.config.tangle_tx_dir)
 
     def setup_clients(self, dataset):
         eval_set = 'test' if not self.model_config.use_val_set else 'val'
@@ -97,10 +97,10 @@ class Lab:
 
         client_model = self.create_client_model(self.config.seed, self.model_config)
 
-        genesis = Transaction(client_model.get_params(), [], "", None, tag=0)
-        self.tx_store.save(genesis)
+        genesis = Transaction([], "", None, tag=0)
+        self.tx_store.save(genesis, client_model.get_params())
 
-        return genesis.name()
+        return genesis
 
     @staticmethod
     def create_node_transaction(tangle, round, client_id, cluster_id, train_data, eval_data, seed, model_config, tx_store):
@@ -113,11 +113,13 @@ class Lab:
 
         client_model = Lab.create_client_model(seed, model_config)
         node = Node(tangle, tx_store, TipSelector, client_id, cluster_id, train_data, eval_data, client_model)
-        tx = node.create_transaction(model_config.num_epochs, model_config.batch_size)
-        if tx is not None:
-            tx_store.save(tx)
+        tx, tx_weights = node.create_transaction(model_config.num_epochs, model_config.batch_size)
 
-        return tx
+        if tx is not None:
+            tx_store.save(tx, tx_weights)
+            return tx
+
+        return None
 
     def create_node_transactions(self, tangle, round, clients):
         result = [self.create_node_transaction(tangle, round, client_id, cluster_id, self.train_data[client_id], self.test_data[client_id], self.config.seed, self.model_config, self.tx_store)
@@ -157,7 +159,7 @@ class Lab:
         for round in rounds_iter:
             if round == 0:
                 genesis = self.create_genesis()
-                tangle = Tangle({genesis: Transaction(None, [], None, None, genesis)}, genesis)
+                tangle = Tangle({genesis.name(): genesis}, genesis.name())
             else:
                 clients = self.select_clients(round, self.clients, num_nodes)
 

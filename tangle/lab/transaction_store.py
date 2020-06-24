@@ -6,28 +6,29 @@ import numpy as np
 from ..core import TransactionStore
 
 class FilesystemTransactionStore:
-    def __init__(self, tx_path):
+    def __init__(self, tangle_path, tx_path):
+        self.tangle_path = tangle_path
         self.tx_path = tx_path
 
-    def load_transaction_weights(self, tx):
-        return np.load(f'{self.tx_path}/{tx.name()}.npy', allow_pickle=True)
+    def load_transaction_weights(self, tx_id):
+        return np.load(f'{self.tx_path}/{tx_id}.npy', allow_pickle=True)
 
-    def compute_transaction_id(self, tx):
+    def compute_transaction_id(self, tx_weights):
         tmpfile = io.BytesIO()
-        self._save(tx, tmpfile)
+        self._save(tx_weights, tmpfile)
         tmpfile.seek(0)
         return self.hash_file(tmpfile)
 
-    def save(self, tx):
-        tx.id = self.compute_transaction_id(tx)
+    def save(self, tx, tx_weights):
+        tx.id = self.compute_transaction_id(tx_weights)
 
         os.makedirs(self.tx_path, exist_ok=True)
 
-        with open(f'{self.tx_path}/{tx.name()}.npy', 'wb') as tx_file:
-            self._save(tx, tx_file)
+        with open(f'{self.tx_path}/{tx.id}.npy', 'wb') as tx_file:
+            self._save(tx_weights, tx_file)
 
-    def _save(self, tx, file):
-        np.save(file, tx.weights, allow_pickle=True)
+    def _save(self, tx_weights, file):
+        np.save(file, tx_weights, allow_pickle=True)
 
     @staticmethod
     def hash_file(f):

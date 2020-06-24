@@ -126,7 +126,7 @@ class Node:
                 if tip.id in loss_cache.keys():
                     tip_losses.append((tip, loss_cache[tip.id]))
                 else:
-                    self.model.set_params(self.tx_store.load_transaction_weights(tip))
+                    self.model.set_params(self.tx_store.load_transaction_weights(tip.id))
                     loss = self.test('test')['loss']
                     tip_losses.append((tip, loss))
                     loss_cache[tip.id] = loss
@@ -185,7 +185,7 @@ class Node:
             key=lambda kv: kv[1], reverse=True
         )[:avg_top]
         reference_txs = [elem[0] for elem in best]
-        reference_params = self.average_model_params(*[self.tx_store.load_transaction_weights(self.tangle.transactions[elem]) for elem in reference_txs])
+        reference_params = self.average_model_params(*[self.tx_store.load_transaction_weights(elem) for elem in reference_txs])
         return reference_txs, reference_params
 
     def average_model_params(self, *params):
@@ -214,12 +214,12 @@ class Node:
         # in order to prevent over-fitting.
 
         # Here: simple unweighted average
-        averaged_weights = self.average_model_params(*[self.tx_store.load_transaction_weights(tip) for tip in tips])
+        averaged_weights = self.average_model_params(*[self.tx_store.load_transaction_weights(tip.id) for tip in tips])
         self.model.set_params(averaged_weights)
         num_samples, update = self.train(num_epochs, batch_size)
 
         c_averaged_model_metrics = self.test('test')
         if c_averaged_model_metrics['loss'] < c_metrics['loss']:
-            return Transaction(self.model.get_params(), set([tip.name() for tip in tips]), self.id, self.cluster_id)
+            return Transaction(set([tip.name() for tip in tips]), self.id, self.cluster_id), self.model.get_params()
 
-        return None
+        return None, None
