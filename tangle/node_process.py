@@ -12,7 +12,7 @@ from .node import Node
 from .tip_selector import TipSelector
 from .accuracy_tip_selector import AccuracyTipSelector
 from .malicious_tip_selector import MaliciousTipSelector
-from .helper import TipSelectorIdentifiers
+from .tip_selector_identifiers import TipSelectorIdentifiers
 
 def build_client(u, cid, g, flops, train_data, eval_data):
     args = parse_args()
