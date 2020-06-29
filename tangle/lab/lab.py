@@ -8,38 +8,7 @@ from ..models.baseline_constants import MODEL_PARAMS
 from ..core import Tangle, Transaction, Node
 from ..core.tip_selection import TipSelector
 from ..models.utils.model_utils import read_data
-from .transaction_store import FilesystemTransactionStore
-
-
-class ModelConfiguration:
-    dataset: str
-    model: str
-    lr: float
-    use_val_set: bool
-    num_epochs: int
-    batch_size: int
-
-    def __init__(self, dataset, model, lr, use_val_set, num_epochs, batch_size):
-        self.dataset = dataset
-        self.model = model
-        self.lr = lr
-        self.use_val_set = use_val_set
-        self.num_epochs = num_epochs
-        self.batch_size = batch_size
-        super().__init__()
-
-class LabConfiguration:
-    seed: int
-    # start_from_round: int
-    tangle_dir: str
-    tangle_tx_dir: str
-
-    def __init__(self, seed, tangle_dir, tangle_tx_dir):
-        self.seed = seed
-        # self.start_from_round = start_from_round
-        self.tangle_dir = tangle_dir
-        self.tangle_tx_dir = tangle_tx_dir
-        super().__init__()
+from .lab_transaction_store import LabTransactionStore
 
 
 class Lab:
@@ -47,23 +16,13 @@ class Lab:
         self.config = config
         self.model_config = model_config
 
-        # start_from_round = config.start_from_round
-
         # Set the random seed if provided (affects client sampling, and batching)
         random.seed(1 + config.seed)
         np.random.seed(12 + config.seed)
 
-        # if start_from_round == 0:
-        #     genesis = self.create_genesis()
-
-        #     tangle = Tangle({genesis: Transaction(None, [], None, None, genesis)}, genesis)
-        #     tangle.save(config.tangle_dir, 0)
-        # else:
-        #     tangle = Tangle.fromfile(config.tangle_data_dir, str(start_from_round))
-
         self.clients, self.train_data, self.test_data = self.setup_clients(self.model_config.dataset)
 
-        self.tx_store = FilesystemTransactionStore(self.config.tangle_dir, self.config.tangle_tx_dir)
+        self.tx_store = LabTransactionStore(self.config.tangle_dir, self.config.tangle_tx_dir)
 
     def setup_clients(self, dataset):
         eval_set = 'test' if not self.model_config.use_val_set else 'val'

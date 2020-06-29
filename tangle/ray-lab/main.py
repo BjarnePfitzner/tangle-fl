@@ -4,7 +4,6 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import ray
 
 from ..lab import Lab, LabConfiguration, ModelConfiguration, parse_args
-# from ..core import Tangle
 
 class RayLab(Lab):
     def __init__(self, config, model_config):
@@ -33,23 +32,12 @@ class RayLab(Lab):
             # Suppress tf warnings
             tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
-            # tangle = Tangle.fromfile(tx_store.tangle_path, round-1)
- 
             return Lab.create_node_transaction(tangle, round, client_id, cluster_id, train_data, eval_data, seed, model_config, tx_store)
-            # if tx is not None:
-            #     tx.weights = ray.put(tx.weights)
-            #     return tx
-            # return None
 
         futures = [_create_node_transaction.remote(tangle, round, client_id, cluster_id, self.remote_train_data[client_id], self.remote_test_data[client_id], self.config.seed, self.model_config, self.tx_store)
                    for (client_id, cluster_id) in clients]
 
         return ray.get(futures)
-        # for tx in txs:
-        #     if tx is not None:
-        #         tx.weights = ray.get(tx.weights)
-
-        # return txs
 
 def main():
     args = parse_args()
