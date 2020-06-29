@@ -26,8 +26,8 @@ class Lab:
 
     def setup_clients(self, dataset):
         eval_set = 'test' if not self.model_config.use_val_set else 'val'
-        train_data_dir = os.path.join('data', dataset, 'data', 'train')
-        test_data_dir = os.path.join('data', dataset, 'data', eval_set)
+        train_data_dir = os.path.join(self.config.model_data_dir, dataset, 'data', 'train')
+        test_data_dir = os.path.join(self.config.model_data_dir, dataset, 'data', eval_set)
 
         users, cluster_ids, train_data, test_data = read_data(train_data_dir, test_data_dir)
 
@@ -113,7 +113,7 @@ class Lab:
             rounds_iter = range(start_from_round, num_rounds)
 
         if start_from_round > 0:
-            tangle = Tangle.fromfile(self.config.tangle_dir, 0)
+            tangle = self.tx_store.load_tangle(0)
 
         for round in rounds_iter:
             if round == 0:
@@ -126,4 +126,4 @@ class Lab:
                     if tx is not None:
                         tangle.add_transaction(tx)
 
-            tangle.save(self.config.tangle_dir, round)
+            self.tx_store.save_tangle(tangle, round)

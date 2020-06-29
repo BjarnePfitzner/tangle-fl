@@ -4,7 +4,7 @@ import json
 import hashlib
 import numpy as np
 
-from ..core import TransactionStore
+from ..core import TransactionStore, Transaction, Tangle
 
 class LabTransactionStore:
     def __init__(self, tangle_path, tx_path):

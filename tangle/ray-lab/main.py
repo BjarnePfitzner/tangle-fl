@@ -46,6 +46,7 @@ def main():
 
     config = LabConfiguration(
         args.seed,
+        args.model_data_dir,
         args.tangle_dir,
         args.tangle_tx_dir
     )

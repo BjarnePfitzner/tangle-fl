@@ -48,6 +48,11 @@ def add_basic_args(parser):
     parser.add_argument('--use-val-set',
                     help='use validation set;',
                     action='store_true')
+    parser.add_argument('--model-data-dir',
+                    help='dir for model data',
+                    type=str,
+                    default='data',
+                    required=False)
     parser.add_argument('--tangle-dir',
                     help='dir for tangle data (DAG JSON)',
                     type=str,
