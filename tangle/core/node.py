@@ -105,11 +105,11 @@ class Node:
     def model(self, model):
         self._model = model
 
-    def choose_tips(self, selector, num_tips=2, sample_size=2):
+    def choose_tips(self, num_tips=2, sample_size=2):
         if len(self.tangle.transactions) < num_tips:
             return [self.tangle.transactions[self.tangle.genesis] for i in range(2)]
 
-        tips = selector.tip_selection(sample_size)
+        tips = self.tip_selector.tip_selection(sample_size)
 
         no_dups = set(tips)
         if len(no_dups) >= num_tips:
@@ -135,7 +135,7 @@ class Node:
 
         return tip_txs
 
-    def compute_confidence(self, selector, approved_transactions_cache={}):
+    def compute_confidence(self, approved_transactions_cache={}):
         num_sampling_rounds = 35
 
         transaction_confidence = {x: 0 for x in self.tangle.transactions}
@@ -148,7 +148,7 @@ class Node:
             return approved_transactions_cache[transaction]
 
         for i in range(num_sampling_rounds):
-            tips = self.choose_tips(selector=selector)
+            tips = self.choose_tips()
             for tip in tips:
                 for tx in approved_transactions(tip.name()):
                     transaction_confidence[tx] += 1
@@ -165,14 +165,14 @@ class Node:
 
         return {tx: len(compute_approved_transactions(tx)) for tx in transactions}
 
-    def obtain_reference_params(self, selector, avg_top=1):
+    def obtain_reference_params(self, avg_top=1):
         # Establish the 'current best'/'reference' weights from the tangle
 
         approved_transactions_cache = {}
 
         # 1. Perform tip selection n times, establish confidence for each transaction
         # (i.e. which transactions were already approved by most of the current tips?)
-        transaction_confidence = self.compute_confidence(selector=selector, approved_transactions_cache=approved_transactions_cache)
+        transaction_confidence = self.compute_confidence(approved_transactions_cache=approved_transactions_cache)
 
         # 2. Compute cumulative score for transactions
         # (i.e. how many other transactions does a given transaction indirectly approve?)
@@ -192,15 +192,13 @@ class Node:
         return sum(params) / len(params)
 
     def create_transaction(self, num_epochs, batch_size):
-        selector = self.tip_selector(self.tangle)
-
         # Compute reference metrics
-        reference_txs, reference = self.obtain_reference_params(avg_top=self.config.reference_avg_top, selector=selector)
+        reference_txs, reference = self.obtain_reference_params(avg_top=self.config.reference_avg_top)
         self.model.set_params(reference)
         c_metrics = self.test('test')
 
         # Obtain number of tips from the tangle
-        tips = self.choose_tips(selector=selector, num_tips=self.config.num_tips, sample_size=self.config.sample_size)
+        tips = self.choose_tips(num_tips=self.config.num_tips, sample_size=self.config.sample_size)
 
         # Perform averaging
 

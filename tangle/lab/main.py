@@ -3,7 +3,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 from .args import parse_args
 
-from .lab import ModelConfiguration, LabConfiguration, Lab
+from . import ModelConfiguration, LabConfiguration, Lab
 
 def main():
     args = parse_args()
@@ -27,3 +27,4 @@ def main():
     lab = Lab(config, model_config)
 
     lab.train(args.clients_per_round, args.start_from_round, args.num_rounds)
+    lab.validate(args.num_rounds-1)

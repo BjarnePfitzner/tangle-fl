@@ -63,7 +63,6 @@ class LabTransactionStore:
             t = json.load(tanglefile)
 
         transactions = {n['name']: Transaction(
-                                        None,
                                         set(n['parents']),
                                         n['issuer'],
                                         n['clusterId'],
