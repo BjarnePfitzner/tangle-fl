@@ -8,7 +8,6 @@ class Transaction:
         self.tag = tag
         self.id = id
         self.malicious = malicious
-        self.tangle_dir = tangle_dir
 
     def height(self, tangle):
       pass
