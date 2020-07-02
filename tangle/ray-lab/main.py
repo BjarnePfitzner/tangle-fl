@@ -1,6 +1,7 @@
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
+import random
 import ray
 
 from ..lab import Lab, LabConfiguration, ModelConfiguration, parse_args
@@ -39,6 +40,16 @@ class RayLab(Lab):
 
         return ray.get(futures)
 
+    def validate_nodes(self, tangle, clients):
+        @ray.remote
+        def _test_single(tangle, round, client_id, cluster_id, train_data, eval_data, seed, model_config, tx_store, set_to_use):
+            return Lab.test_single(tangle, round, client_id, cluster_id, train_data, eval_data, seed, model_config, tx_store, set_to_use)
+
+        futures = [_test_single.remote(tangle, round, client_id, cluster_id, self.remote_train_data[client_id], self.remote_test_data[client_id], random.randint(0, 4294967295), self.model_config, self.tx_store, 'test')
+                   for (client_id, cluster_id) in clients]
+
+        return ray.get(futures)
+
 def main():
     args = parse_args()
 
@@ -63,3 +74,4 @@ def main():
     lab = RayLab(config, model_config)
 
     lab.train(args.clients_per_round, args.start_from_round, args.num_rounds)
+    print(lab.validate(args.num_rounds-1))
