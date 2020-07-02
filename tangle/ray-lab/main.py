@@ -5,10 +5,11 @@ import random
 import ray
 
 from ..lab import Lab, LabConfiguration, ModelConfiguration, parse_args
+from .ray_transaction_store import RayTransactionStore
 
 class RayLab(Lab):
     def __init__(self, config, model_config):
-        super().__init__(config, model_config)
+        super().__init__(config, model_config, tx_store=RayTransactionStore(config.tangle_dir, config.tangle_tx_dir))
 
         self.remote_train_data = {
             cid : ray.put(data) for (cid, data) in self.train_data.items()
@@ -35,7 +36,7 @@ class RayLab(Lab):
 
             return Lab.create_node_transaction(tangle, round, client_id, cluster_id, train_data, eval_data, seed, model_config, tx_store)
 
-        futures = [_create_node_transaction.remote(tangle, round, client_id, cluster_id, self.remote_train_data[client_id], self.remote_test_data[client_id], self.config.seed, self.model_config, self.tx_store)
+        futures = [_create_node_transaction.remote(tangle, round, client_id, cluster_id, self.remote_train_data[client_id], self.remote_test_data[client_id], random.randint(0, 4294967295), self.model_config, self.tx_store)
                    for (client_id, cluster_id) in clients]
 
         return ray.get(futures)
@@ -74,4 +75,4 @@ def main():
     lab = RayLab(config, model_config)
 
     lab.train(args.clients_per_round, args.start_from_round, args.num_rounds)
-    print(lab.validate(args.num_rounds-1))
+    lab.validate(args.num_rounds-1)

@@ -13,17 +13,16 @@ from .lab_transaction_store import LabTransactionStore
 
 
 class Lab:
-    def __init__(self, config, model_config):
+    def __init__(self, config, model_config, tx_store=None):
         self.config = config
         self.model_config = model_config
+        self.tx_store = tx_store if tx_store is not None else LabTransactionStore(self.config.tangle_dir, self.config.tangle_tx_dir)
 
         # Set the random seed if provided (affects client sampling, and batching)
         random.seed(1 + config.seed)
         np.random.seed(12 + config.seed)
 
         self.clients, self.train_data, self.test_data = self.setup_clients(self.model_config.dataset)
-
-        self.tx_store = LabTransactionStore(self.config.tangle_dir, self.config.tangle_tx_dir)
 
     def setup_clients(self, dataset):
         eval_set = 'test' if not self.model_config.use_val_set else 'val'
