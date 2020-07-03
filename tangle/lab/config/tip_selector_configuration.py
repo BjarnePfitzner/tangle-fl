@@ -3,6 +3,12 @@ import argparse
 class TipSelectorConfiguration:
 
     def define_args(self, parser):
+        parser.add_argument('--tip-selector',
+                        help='tip selection algorithm',
+                        type=str,
+                        choices=['default', 'accuracy'],
+                        default='default')
+
         # Parameters for AccuracyTipSelector
         parser.add_argument('--acc-tip-selection-strategy',
                         help='strategy how to select the next tips',
@@ -32,7 +38,8 @@ class TipSelectorConfiguration:
                         type=float,
                         default=0.001)
 
-    def parse_args(self, args):
+    def parse(self, args):
+        self.tip_selector = args.tip_selector
         self.acc_tip_selection_strategy = args.acc_tip_selection_strategy
         self.acc_cumulate_ratings = args.acc_cumulate_ratings
         self.acc_ratings_to_weights = args.acc_ratings_to_weights

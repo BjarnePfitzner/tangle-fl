@@ -5,17 +5,17 @@ import importlib
 import itertools
 
 from ..models.baseline_constants import MODEL_PARAMS
-from ..models.metrics.writer import print_metrics
 from ..core import Tangle, Transaction, Node
-from ..core.tip_selection import TipSelector
 from ..models.utils.model_utils import read_data
 from .lab_transaction_store import LabTransactionStore
+from .tip_selector_factory import TipSelectorFactory
 
 
 class Lab:
-    def __init__(self, config, model_config, tx_store=None):
+    def __init__(self, config, model_config, tip_selector_config, tx_store=None):
         self.config = config
         self.model_config = model_config
+        self.tip_selector_config = tip_selector_config
         self.tx_store = tx_store if tx_store is not None else LabTransactionStore(self.config.tangle_dir)
 
         # Set the random seed if provided (affects client sampling, and batching)
@@ -62,7 +62,7 @@ class Lab:
         return genesis
 
     @staticmethod
-    def create_node_transaction(tangle, round, client_id, cluster_id, train_data, eval_data, seed, model_config, tx_store):
+    def create_node_transaction(tangle, round, client_id, cluster_id, train_data, eval_data, seed, model_config, tip_selector_config, tx_store):
 
         # import tensorflow as tf
 
@@ -71,7 +71,7 @@ class Lab:
         # tf.compat.v1.set_random_seed(123 + seed)
 
         client_model = Lab.create_client_model(seed, model_config)
-        tip_selector = TipSelector(tangle)
+        tip_selector = TipSelectorFactory(tip_selector_config, tangle).create()
         node = Node(tangle, tx_store, tip_selector, client_id, cluster_id, train_data, eval_data, client_model)
         tx, tx_weights = node.create_transaction(model_config.num_epochs, model_config.batch_size)
 
@@ -82,7 +82,7 @@ class Lab:
         return None
 
     def create_node_transactions(self, tangle, round, clients):
-        result = [self.create_node_transaction(tangle, round, client_id, cluster_id, self.train_data[client_id], self.test_data[client_id], self.config.seed, self.model_config, self.tx_store)
+        result = [self.create_node_transaction(tangle, round, client_id, cluster_id, self.train_data[client_id], self.test_data[client_id], self.config.seed, self.model_config, self.tip_selector_config, self.tx_store)
                   for (client_id, cluster_id) in clients]
 
         return result
@@ -131,7 +131,7 @@ class Lab:
 
 
     @staticmethod
-    def test_single(tangle, round, client_id, cluster_id, train_data, eval_data, seed, model_config, tx_store, set_to_use):
+    def test_single(tangle, round, client_id, cluster_id, train_data, eval_data, seed, model_config, tip_selector_config, tx_store, set_to_use):
         import tensorflow as tf
 
         # Suppress tf warnings
@@ -142,7 +142,7 @@ class Lab:
         tf.compat.v1.set_random_seed(123 + seed)
 
         client_model = Lab.create_client_model(seed, model_config)
-        tip_selector = TipSelector(tangle)
+        tip_selector = TipSelectorFactory(tip_selector_config, tangle).create()
         node = Node(tangle, tx_store, tip_selector, client_id, cluster_id, train_data, eval_data, client_model)
 
         reference_txs, reference = node.obtain_reference_params()
@@ -158,4 +158,4 @@ class Lab:
         return self.validate_nodes(tangle, validation_clients)
 
     def validate_nodes(self, tangle, clients):
-        return [self.test_single(tangle, round, client_id, cluster_id, self.train_data[client_id], self.test_data[client_id], random.randint(0, 4294967295), self.model_config, self.tx_store, 'test') for client_id, cluster_id in clients]
+        return [self.test_single(tangle, round, client_id, cluster_id, self.train_data[client_id], self.test_data[client_id], random.randint(0, 4294967295), self.model_config, self.tip_selector_config, self.tx_store, 'test') for client_id, cluster_id in clients]

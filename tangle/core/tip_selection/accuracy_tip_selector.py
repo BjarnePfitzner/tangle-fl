@@ -5,7 +5,7 @@ import numpy as np
 
 from .tip_selector import TipSelector
 
-from baseline_constants import ACCURACY_KEY
+from ...models.baseline_constants import ACCURACY_KEY
 
 # Adopted from https://docs.iota.org/docs/node-software/0.1/iri/references/iri-configuration-options
 
@@ -17,7 +17,7 @@ class AccuracyTipSelectorSettings(Enum):
     SELECT_FROM_WEIGHTS = 4
 
 class AccuracyTipSelector(TipSelector):
-    def __init__(self, tangle, client, settings):
+    def __init__(self, tangle, settings):
         self.tangle = tangle
         self.settings = settings
 
@@ -26,14 +26,12 @@ class AccuracyTipSelector(TipSelector):
         for x, tx in self.tangle.transactions.items():
             for unique_parent in tx.parents:
                 self.approving_transactions[unique_parent].append(x)
-        
+
         self.tips = []
         for x, tx in self.tangle.transactions.items():
             if len(self.approving_transactions[x]) == 0:
                 self.tips.append(x)
 
-        self.ratings = self.compute_ratings(client)
-    
     def tip_selection(self, num_tips):
         if self.settings[AccuracyTipSelectorSettings.SELECTION_STRATEGY] == "GLOBAL":
             self.tips.sort(key=lambda x: self.ratings[x], reverse=True)
@@ -45,8 +43,8 @@ class AccuracyTipSelector(TipSelector):
         rating = {}
         original_params = client.model.get_params()
 
-        for tx_id, tx in self.tangle.transactions.items():
-            client.model.set_params(tx.load_weights())
+        for tx_id, _ in self.tangle.transactions.items():
+            client.model.set_params(client.tx_store.load_transaction_weights(tx_id))
             rating[tx_id] = client.test('train')[ACCURACY_KEY]
 
         if self.settings[AccuracyTipSelectorSettings.CUMULATE_RATINGS]:
@@ -55,28 +53,28 @@ class AccuracyTipSelector(TipSelector):
                 for tx_id in future_set:
                     cumulated += ratings[tx_id]
                 return cumulated
-            
+
             future_set_cache = {}
             for tx_id in self.tangle.transactions:
                 future_set = self.future_set(tx_id, self.approving_transactions, future_set_cache)
                 rating[tx_id] = cumulate_ratings(future_set, rating) + rating[tx_id]
-        
+
         client.model.set_params(original_params)
 
-        return rating
+        self.ratings = rating
 
     def ratings_to_weight(self, ratings):
         if self.settings[AccuracyTipSelectorSettings.RATINGS_TO_WEIGHT] == 'LINEAR':
             return ratings
         else:
             return super(AccuracyTipSelector, AccuracyTipSelector).ratings_to_weight(ratings,alpha=self.settings[AccuracyTipSelectorSettings.ALPHA])
-    
+
     def weighted_choice(self, approvers, weights):
-    
+
         if self.settings[AccuracyTipSelectorSettings.SELECT_FROM_WEIGHTS] == 'MAXIMUM':
             # Instead of a weigthed choice, always select the maximum.
             # If there is no unique maximum, choose the first one
             return approvers[weights.index(max(weights))]
-    
+
         if self.settings[AccuracyTipSelectorSettings.SELECT_FROM_WEIGHTS] == 'WEIGHTED_CHOICE':
             return super(AccuracyTipSelector, AccuracyTipSelector).weighted_choice(approvers, weights)

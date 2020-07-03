@@ -17,7 +17,7 @@ class TangleConfiguration:
                         default=1,
                         required=False)
 
-    def parse_args(self, args):
+    def parse(self, args):
         self.num_tips = args.num_tips
         self.sample_size = args.sample_size
         self.reference_avg_top = args.reference_avg_top

@@ -25,6 +25,9 @@ class Node:
         self.eval_data = eval_data
         self.config = NodeConfiguration()
 
+        # Initialize tip selector
+        tip_selector.compute_ratings(self)
+
 
     def train(self, num_epochs=1, batch_size=10):
         """Trains on self.model using the client's train_data.

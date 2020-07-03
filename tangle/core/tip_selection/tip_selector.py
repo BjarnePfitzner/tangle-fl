@@ -10,14 +10,6 @@ class TipSelector:
     def __init__(self, tangle):
         self.tangle = tangle
 
-        # Build a map of transactions that directly approve a given transaction
-        self.approving_transactions = {x: [] for x in self.tangle.transactions}
-        for x, tx in self.tangle.transactions.items():
-            for unique_parent in tx.parents:
-                self.approving_transactions[unique_parent].append(x)
-
-        self.ratings = self.compute_ratings(self.approving_transactions)
-
     def tip_selection(self, num_tips):
         # https://docs.iota.org/docs/node-software/0.1/iri/concepts/tip-selection
 
@@ -25,18 +17,24 @@ class TipSelector:
         entry_point = self.tangle.genesis
 
         tips = []
-        for i in range(num_tips):
+        for _ in range(num_tips):
              tips.append(self.walk(entry_point, self.ratings, self.approving_transactions))
 
         return tips
 
-    def compute_ratings(self, approving_transactions):
+    def compute_ratings(self, node):
+        # Build a map of transactions that directly approve a given transaction
+        self.approving_transactions = {x: [] for x in self.tangle.transactions}
+        for x, tx in self.tangle.transactions.items():
+            for unique_parent in tx.parents:
+                self.approving_transactions[unique_parent].append(x)
+
         rating = {}
         future_set_cache = {}
         for tx in self.tangle.transactions:
-            rating[tx] = len(self.future_set(tx, approving_transactions, future_set_cache)) + 1
+            rating[tx] = len(self.future_set(tx, self.approving_transactions, future_set_cache)) + 1
 
-        return rating
+        self.ratings = rating
 
     def future_set(self, tx, approving_transactions, future_set_cache):
         def recurse_future_set(t):
