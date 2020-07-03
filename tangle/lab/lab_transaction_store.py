@@ -7,9 +7,9 @@ import numpy as np
 from ..core import TransactionStore, Transaction, Tangle
 
 class LabTransactionStore:
-    def __init__(self, tangle_path, tx_path):
+    def __init__(self, tangle_path):
         self.tangle_path = tangle_path
-        self.tx_path = tx_path
+        self.tx_path = os.path.join(tangle_path, 'transactions')
 
     def load_transaction_weights(self, tx_id):
         return np.load(f'{self.tx_path}/{tx_id}.npy', allow_pickle=True)

@@ -3,8 +3,8 @@ import ray
 from ..lab import LabTransactionStore
 
 class RayTransactionStore(LabTransactionStore):
-    def __init__(self, tangle_path, tx_path):
-        super().__init__(tangle_path, tx_path)
+    def __init__(self, tangle_path):
+        super().__init__(tangle_path)
         self.tx_cache = {}
 
     def load_transaction_weights(self, tx_id):

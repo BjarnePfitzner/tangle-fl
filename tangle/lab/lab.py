@@ -16,7 +16,7 @@ class Lab:
     def __init__(self, config, model_config, tx_store=None):
         self.config = config
         self.model_config = model_config
-        self.tx_store = tx_store if tx_store is not None else LabTransactionStore(self.config.tangle_dir, self.config.tangle_tx_dir)
+        self.tx_store = tx_store if tx_store is not None else LabTransactionStore(self.config.tangle_dir)
 
         # Set the random seed if provided (affects client sampling, and batching)
         random.seed(1 + config.seed)
@@ -158,4 +158,4 @@ class Lab:
         return self.validate_nodes(tangle, validation_clients)
 
     def validate_nodes(self, tangle, clients):
-        return [self.test_single(tangle, tangle, round, client_id, cluster_id, self.train_data[client_id], self.test_data[client_id], random.randint(0, 4294967295), self.model_config, self.tx_store, 'test') for client_id, cluster_id in validation_clients]
+        return [self.test_single(tangle, round, client_id, cluster_id, self.train_data[client_id], self.test_data[client_id], random.randint(0, 4294967295), self.model_config, self.tx_store, 'test') for client_id, cluster_id in clients]

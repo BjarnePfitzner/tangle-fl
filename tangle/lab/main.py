@@ -3,28 +3,13 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 from .args import parse_args
 
-from . import ModelConfiguration, LabConfiguration, Lab
+from . import Lab
+from .config import ModelConfiguration, LabConfiguration, RunConfiguration
 
 def main():
-    args = parse_args()
+    run_config, lab_config, model_config = parse_args(RunConfiguration, LabConfiguration, ModelConfiguration)
 
-    config = LabConfiguration(
-        args.seed,
-        args.model_data_dir,
-        args.tangle_dir,
-        args.tangle_tx_dir
-    )
+    lab = Lab(lab_config, model_config)
 
-    model_config = ModelConfiguration(
-        args.dataset,
-        args.model,
-        args.lr,
-        args.use_val_set,
-        args.num_epochs,
-        args.batch_size
-    )
-
-    lab = Lab(config, model_config)
-
-    lab.train(args.clients_per_round, args.start_from_round, args.num_rounds)
-    lab.validate(args.num_rounds-1)
+    lab.train(run_config.clients_per_round, run_config.start_from_round, run_config.num_rounds)
+    lab.validate(run_config.num_rounds-1)

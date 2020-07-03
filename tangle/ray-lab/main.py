@@ -4,12 +4,14 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import random
 import ray
 
-from ..lab import Lab, LabConfiguration, ModelConfiguration, parse_args
+from ..lab import Lab, parse_args
+from ..lab.config import LabConfiguration, ModelConfiguration, RunConfiguration
+
 from .ray_transaction_store import RayTransactionStore
 
 class RayLab(Lab):
     def __init__(self, config, model_config):
-        super().__init__(config, model_config, tx_store=RayTransactionStore(config.tangle_dir, config.tangle_tx_dir))
+        super().__init__(config, model_config, tx_store=RayTransactionStore(config.tangle_dir))
 
         self.remote_train_data = {
             cid : ray.put(data) for (cid, data) in self.train_data.items()
@@ -52,27 +54,11 @@ class RayLab(Lab):
         return ray.get(futures)
 
 def main():
-    args = parse_args()
+    run_config, lab_config, model_config = parse_args(RunConfiguration, LabConfiguration, ModelConfiguration)
 
     ray.init(webui_host='0.0.0.0')
 
-    config = LabConfiguration(
-        args.seed,
-        args.model_data_dir,
-        args.tangle_dir,
-        args.tangle_tx_dir
-    )
+    lab = RayLab(lab_config, model_config)
 
-    model_config = ModelConfiguration(
-        args.dataset,
-        args.model,
-        args.lr,
-        args.use_val_set,
-        args.num_epochs,
-        args.batch_size
-    )
-
-    lab = RayLab(config, model_config)
-
-    lab.train(args.clients_per_round, args.start_from_round, args.num_rounds)
-    lab.validate(args.num_rounds-1)
+    lab.train(run_config.clients_per_round, run_config.start_from_round, run_config.num_rounds)
+    lab.validate(run_config.num_rounds-1)
