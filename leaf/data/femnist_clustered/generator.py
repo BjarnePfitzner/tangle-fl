@@ -42,10 +42,10 @@ def clean_and_split(data, test_split=0.1):
         userdata['x']= []
         userdata['y']= []
         for index, y in enumerate(data[username]['y']):
-            if y < 10 and y in [user_index%5 , user_index%5+5]:
+            if y < 10 and y in [user_index % 5 , user_index % 5 + 5]:
                 userdata['x'].append(data[username]['x'][index])
                 userdata['y'].append(0 if y<5 else 1)
-        if(len(userdata['y'])>0):
+        if (len(userdata['y']) > 0):
             train_size = math.floor(len(userdata['y']) * (1 - test_split))
             cleaned[username]= {'x': userdata['x'][:train_size],
                                 'y': userdata['y'][:train_size]}
@@ -53,18 +53,16 @@ def clean_and_split(data, test_split=0.1):
                                      'y': userdata['y'][train_size:]}
         else:
             print('Not enough data for client {}'.format(username))
-        cluster_ids[user_index] = user_index%5
+        cluster_ids[user_index] = user_index % 5
     return cleaned, cleaned_test, cluster_ids
 
-users, _, data,  = read_dir('femnist-data/large/train')
-_, _, data_test,  = read_dir('femnist-data/large/test')
+users, _, data,  = read_dir('../../../../data/femnist-data/large/train')
+_, _, data_test,  = read_dir('../../../../data/femnist-data/large/test')
 
 complete_data = data.copy()
 for username in users:
     complete_data[username]['x'].extend(data_test[username]['x'])
     complete_data[username]['y'].extend(data_test[username]['y'])
-
-cleaned, cleaned_test, cluster_ids = clean_and_split(complete_data)
 
 train_output = {}
 test_output = {}
