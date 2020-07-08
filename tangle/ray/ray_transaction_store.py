@@ -1,4 +1,5 @@
 import ray
+import numpy as np
 
 from ..lab import LabTransactionStore
 
@@ -11,8 +12,10 @@ class RayTransactionStore(LabTransactionStore):
         if tx_id in self.tx_cache:
             return ray.get(self.tx_cache[tx_id])
 
-        return super().load_transaction_weights(tx_id)
+        weights = super().load_transaction_weights(tx_id)
+        self.tx_cache[tx_id] = ray.put(weights)
+        return weights
 
     def save(self, tx, tx_weights):
         super().save(tx, tx_weights)
-        self.tx_cache[tx.id] = ray.put(tx_weights)
+        self.tx_cache[tx.id] = ray.put(np.asarray(tx_weights))

@@ -2,7 +2,6 @@ class ModelConfiguration:
     dataset: str
     model: str
     lr: float
-    use_val_set: bool
     num_epochs: int
     batch_size: int
 
@@ -10,7 +9,6 @@ class ModelConfiguration:
         self.dataset = None
         self.model = None
         self.lr = None
-        self.use_val_set = None
         self.num_epochs = None
         self.batch_size = None
 
@@ -31,9 +29,6 @@ class ModelConfiguration:
                         type=float,
                         default=-1,
                         required=False)
-        parser.add_argument('--use-val-set',
-                        help='use validation set;',
-                        action='store_true')
 
         # Minibatch doesn't support num_epochs, so make them mutually exclusive
         epoch_capability_group = parser.add_mutually_exclusive_group()
@@ -55,6 +50,5 @@ class ModelConfiguration:
         self.dataset = args.dataset
         self.model = args.model
         self.lr = args.lr
-        self.use_val_set = args.use_val_set
         self.num_epochs = args.num_epochs
         self.batch_size = args.batch_size

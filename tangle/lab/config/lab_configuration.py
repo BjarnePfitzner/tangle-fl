@@ -23,8 +23,12 @@ class LabConfiguration:
                     type=str,
                     default='tangle_data',
                     required=False)
+        parser.add_argument('--use-val-set',
+                        help='use validation set;',
+                        action='store_true')
 
     def parse(self, args):
         self.seed = args.seed
         self.model_data_dir = args.model_data_dir
         self.tangle_dir = args.tangle_dir
+        self.use_val_set = args.use_val_set

@@ -39,13 +39,18 @@ class AccuracyTipSelector(TipSelector):
         else:
             return super(AccuracyTipSelector, self).tip_selection(num_tips)
 
-    def compute_ratings(self, client):
+    def _compute_ratings(self, node):
         rating = {}
-        original_params = client.model.get_params()
 
         for tx_id, _ in self.tangle.transactions.items():
-            client.model.set_params(client.tx_store.load_transaction_weights(tx_id))
-            rating[tx_id] = client.test('train')[ACCURACY_KEY]
+            node.model.set_params(node.tx_store.load_transaction_weights(tx_id))
+            rating[tx_id] = node.test('train')[ACCURACY_KEY]
+
+        return rating
+
+    def compute_ratings(self, node):
+        rating = self._compute_ratings(node)
+        original_params = node.model.get_params()
 
         if self.settings[AccuracyTipSelectorSettings.CUMULATE_RATINGS]:
             def cumulate_ratings(future_set, ratings):
@@ -59,7 +64,7 @@ class AccuracyTipSelector(TipSelector):
                 future_set = self.future_set(tx_id, self.approving_transactions, future_set_cache)
                 rating[tx_id] = cumulate_ratings(future_set, rating) + rating[tx_id]
 
-        client.model.set_params(original_params)
+        node.model.set_params(original_params)
 
         self.ratings = rating
 
