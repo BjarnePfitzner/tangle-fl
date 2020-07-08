@@ -30,6 +30,8 @@ RUN apt-get update \
     && apt-get autoremove -y \
     && apt-get clean -y \
     && rm -rf /var/lib/apt/lists/*
-    
+
 RUN echo "source ${CONDA_INSTALL_DIR}/etc/profile.d/conda.sh" >> /home/${PWRAI_USER}/.bashrc
 RUN echo "conda activate wmlce" >> /home/${PWRAI_USER}/.bashrc
+
+RUN groupadd -g 5256 20201010 && usermod -aG 5256 pwrai
