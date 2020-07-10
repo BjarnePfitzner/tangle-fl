@@ -16,6 +16,9 @@ def _compute(node_id, tx_id, seed, model_config, data, tx_store):
 
     node_model = Lab.create_client_model(seed, model_config)
     node_model.set_params(tx_store.load_transaction_weights(tx_id))
+
+    data = { 'x': ray.get(data['x']), 'y': ray.get(data['y']) }
+
     return tx_id, node_model.test(data)[ACCURACY_KEY]
 
 class RayAccuracyTipSelector(AccuracyTipSelector):

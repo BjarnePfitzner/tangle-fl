@@ -4,6 +4,8 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import random
 import ray
 
+import numpy as np
+
 from ..lab import Dataset, Lab, TipSelectorFactory, parse_args
 from ..lab.config import LabConfiguration, ModelConfiguration, PoisoningConfiguration, RunConfiguration, TangleConfiguration, TipSelectorConfiguration
 from ..core.tip_selection.accuracy_tip_selector import AccuracyTipSelectorSettings
@@ -39,11 +41,14 @@ class RayDataset(Dataset):
         super().__init__(lab_config, model_config)
 
         self.remote_train_data = {
-            cid : ray.put(data) for (cid, data) in self.train_data.items()
+            cid : { 'x': ray.put(np.asarray(data['x'])), 'y': ray.put(np.asarray(data['y'])) } for (cid, data) in self.train_data.items()
         }
         self.remote_test_data = {
-            cid : ray.put(data) for (cid, data) in self.test_data.items()
+            cid : { 'x': ray.put(np.asarray(data['x'])), 'y': ray.put(np.asarray(data['y'])) } for (cid, data) in self.test_data.items()
         }
+
+        self.train_data = None
+        self.test_data = None
 
 class RayLab(Lab):
     def __init__(self, TipSelectorFactory, config, model_config, tip_selector_config):
@@ -68,6 +73,9 @@ class RayLab(Lab):
         # Suppress tf warnings
         tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
+        train_data = { 'x': ray.get(train_data['x']), 'y': ray.get(train_data['y']) }
+        eval_data = { 'x': ray.get(eval_data['x']), 'y': ray.get(eval_data['y']) }
+
         return super().create_node_transaction(tangle, round, client_id, cluster_id, train_data, eval_data, seed, self.model_config, self.tip_selector_config, self.tx_store)
 
     def create_node_transactions(self, tangle, round, clients, dataset):
@@ -89,6 +97,9 @@ class RayLab(Lab):
 
         # Suppress tf warnings
         tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
+
+        train_data = { 'x': ray.get(train_data['x']), 'y': ray.get(train_data['y']) }
+        eval_data = { 'x': ray.get(eval_data['x']), 'y': ray.get(eval_data['y']) }
 
         super().test_single(tangle, client_id, cluster_id, train_data, eval_data, seed, set_to_use)
 
