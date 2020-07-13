@@ -14,7 +14,7 @@
 		"python.linting.pylintPath": "/opt/anaconda/bin/pylint"
 	},
 
-	"runArgs": ["--shm-size", "200gb"],
+	"runArgs": ["--shm-size", "200gb", "--init"],
 
 	// Add the IDs of extensions you want installed when the container is created.
 	"extensions": [
