@@ -153,7 +153,7 @@ class Node:
         for i in range(num_sampling_rounds):
             tips = self.choose_tips()
             for tip in tips:
-                for tx in approved_transactions(tip.name()):
+                for tx in approved_transactions(tip.id):
                     transaction_confidence[tx] += 1
 
         return {tx: float(transaction_confidence[tx]) / (num_sampling_rounds * 2) for tx in self.tangle.transactions}
@@ -221,6 +221,9 @@ class Node:
 
         c_averaged_model_metrics = self.test('test')
         if c_averaged_model_metrics['loss'] < c_metrics['loss']:
-            return Transaction(set([tip.name() for tip in tips]), self.id, self.cluster_id), self.model.get_params()
+            t = Transaction(set([tip.id for tip in tips]))
+            t.add_metadata('issuer', self.id)
+            t.add_metadata('clusterId', self.cluster_id)
+            return t, self.model.get_params()
 
         return None, None

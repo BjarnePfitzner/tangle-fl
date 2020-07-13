@@ -46,12 +46,9 @@ class LabTransactionStore:
     def save_tangle(self, tangle, tangle_name):
         os.makedirs(self.tangle_path, exist_ok=True)
 
-        n = [{'name': t.name(),
-              'time': t.tag,
-              'malicious': t.malicious,
+        n = [{'id': t.id,
               'parents': list(t.parents),
-              'issuer': t.client_id,
-              'clusterId': t.cluster_id } for _, t in tangle.transactions.items()]
+              'metadata': t.metadata } for _, t in tangle.transactions.items()]
 
         with open(f'{self.tangle_path}/tangle_{tangle_name}.json', 'w') as outfile:
             json.dump({'nodes': n, 'genesis': tangle.genesis}, outfile)
@@ -62,14 +59,11 @@ class LabTransactionStore:
         with open(f'{self.tangle_path}/tangle_{tangle_name}.json', 'r') as tanglefile:
             t = json.load(tanglefile)
 
-        transactions = {n['name']: Transaction(
-                                        set(n['parents']),
-                                        n['issuer'],
-                                        n['clusterId'],
-                                        n['name'],
-                                        n['time'],
-                                        n['malicious'] if 'malicious' in n else False
-                                    ) for n in t['nodes']}
+        transactions = {n['id']: Transaction(
+                                    set(n['parents']),
+                                    n['id'],
+                                    n['metadata']
+                                 ) for n in t['nodes']}
         tangle = Tangle(transactions, t['genesis'])
         tangle.name = tangle_name
         return tangle

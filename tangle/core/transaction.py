@@ -1,19 +1,8 @@
-import numpy as np
-
 class Transaction:
-    def __init__(self, parents, client_id, cluster_id, id=None, tag=None, malicious=False):
+    def __init__(self, parents, id=None, metadata=None):
         self.parents = parents
-        self.client_id = client_id
-        self.cluster_id = cluster_id
-        self.tag = tag
         self.id = id
-        self.malicious = malicious
+        self.metadata = metadata if metadata is not None else {}
 
-    def height(self, tangle):
-      pass
-
-    def name(self):
-        return self.id
-
-    def add_tag(self, tag):
-        self.tag = tag
+    def add_metadata(self, key, value):
+        self.metadata[key] = value

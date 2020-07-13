@@ -10,7 +10,7 @@ class Tangle:
         self.genesis = genesis
 
     def add_transaction(self, tip):
-        self.transactions[tip.name()] = tip
+        self.transactions[tip.id] = tip
 
     def test_model(self, test_fn, clients_to_test, tip_selection_settings, set_to_use='test'):
         metrics = {}

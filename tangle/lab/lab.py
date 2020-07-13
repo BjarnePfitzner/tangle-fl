@@ -42,7 +42,8 @@ class Lab:
 
         client_model = self.create_client_model(self.config.seed, self.model_config)
 
-        genesis = Transaction([], "", None, tag=0)
+        genesis = Transaction([])
+        genesis.add_metadata('time', 0)
         self.tx_store.save(genesis, client_model.get_params())
 
         return genesis
@@ -67,6 +68,7 @@ class Lab:
 
         for tx, tx_weights in result:
             if tx is not None:
+                tx.add_metadata('time', round)
                 self.tx_store.save(tx, tx_weights)
 
         return [tx for tx, _ in result]
@@ -86,7 +88,7 @@ class Lab:
         for round in rounds_iter:
             if round == 0:
                 genesis = self.create_genesis()
-                tangle = Tangle({genesis.name(): genesis}, genesis.name())
+                tangle = Tangle({genesis.id: genesis}, genesis.id)
             else:
                 clients = dataset.select_clients(round, num_nodes)
 

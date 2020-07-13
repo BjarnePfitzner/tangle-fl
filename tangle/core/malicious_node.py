@@ -62,13 +62,13 @@ class MaliciousNode(Node):
             weights = self.client.model.get_params()
             malicious_weights = [np.random.RandomState().normal(size=w.shape) for w in weights]
             print('generated malicious weights')
-            return Transaction(malicious_weights, set([tip.name() for tip in tips]), self.client.id, self.client.cluster_id, malicious=True), None, None
+            return Transaction(malicious_weights, set([tip.id for tip in tips]), self.client.id, self.client.cluster_id, malicious=True), None, None
         elif self.poison_type == PoisonType.LABELFLIP:
             # Todo Choose tips or reference model?
             averaged_weights = self.average_model_params(*[tip.load_weights() for tip in tips])
             self.client.model.set_params(averaged_weights)
             self.client.train(num_epochs, batch_size)
             print('trained on label-flip data')
-            return Transaction(self.client.model.get_params(), set([tip.name() for tip in tips]), self.client.id, self.client.cluster_id, malicious=True), None, None
+            return Transaction(self.client.model.get_params(), set([tip.id for tip in tips]), self.client.id, self.client.cluster_id, malicious=True), None, None
 
         return None, None, None
