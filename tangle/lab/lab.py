@@ -50,15 +50,14 @@ class Lab:
 
     def create_node_transaction(self, tangle, round, client_id, cluster_id, train_data, eval_data, seed, model_config, tip_selector, tx_store):
 
-        # import tensorflow as tf
-
-        # random.seed(1 + seed)
-        # np.random.seed(12 + seed)
-        # tf.compat.v1.set_random_seed(123 + seed)
-
         client_model = Lab.create_client_model(seed, model_config)
         node = Node(tangle, tx_store, tip_selector, client_id, cluster_id, train_data, eval_data, client_model)
-        return node.create_transaction(model_config.num_epochs, model_config.batch_size)
+        tx, tx_weights = node.create_transaction(model_config.num_epochs, model_config.batch_size)
+
+        if tx is not None:
+            tx.add_metadata('time', round)
+
+        return tx, tx_weights
 
     def create_node_transactions(self, tangle, round, clients, dataset):
         tip_selector = self.tip_selector_factory.create(tangle)
@@ -68,7 +67,6 @@ class Lab:
 
         for tx, tx_weights in result:
             if tx is not None:
-                tx.add_metadata('time', round)
                 self.tx_store.save(tx, tx_weights)
 
         return [tx for tx, _ in result]
