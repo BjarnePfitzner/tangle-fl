@@ -2,13 +2,12 @@ from ..core.tip_selection import TipSelector, AccuracyTipSelector
 from ..core.tip_selection.accuracy_tip_selector import AccuracyTipSelectorSettings
 
 class TipSelectorFactory:
-    def __init__(self, config, tangle):
+    def __init__(self, config):
         self.config = config
-        self.tangle = tangle
 
-    def create(self):
+    def create(self, tangle):
         if self.config.tip_selector == 'default':
-            return TipSelector(self.tangle)
+            return TipSelector(tangle)
 
         elif self.config.tip_selector == 'accuracy':
 
@@ -19,4 +18,4 @@ class TipSelectorFactory:
             tip_selection_settings[AccuracyTipSelectorSettings.SELECT_FROM_WEIGHTS] = self.config.acc_select_from_weights
             tip_selection_settings[AccuracyTipSelectorSettings.ALPHA] = self.config.acc_alpha
 
-            return AccuracyTipSelector(self.tangle, tip_selection_settings)
+            return AccuracyTipSelector(tangle, tip_selection_settings)

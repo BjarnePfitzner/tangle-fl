@@ -10,9 +10,8 @@ def main():
     run_config, lab_config, model_config, poisoining_config, tangle_config, tip_selector_config = \
         parse_args(RunConfiguration, LabConfiguration, ModelConfiguration, PoisoningConfiguration, TangleConfiguration, TipSelectorConfiguration)
 
-    # Ürgh
-    MyLab = Lab.factory(TipSelectorFactory)
-    lab = MyLab(lab_config, model_config, tip_selector_config)
+    tip_selector_factory = TipSelectorFactory(tip_selector_config)
+    lab = Lab(tip_selector_factory, lab_config, model_config)
 
     dataset = Dataset(lab_config, model_config)
 

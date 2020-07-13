@@ -9,24 +9,15 @@ from .lab_transaction_store import LabTransactionStore
 
 
 class Lab:
-    def __init__(self, TipSelectorFactory, config, model_config, tip_selector_config, tx_store=None):
-        self.TipSelectorFactory = TipSelectorFactory
+    def __init__(self, tip_selector_factory, config, model_config, tx_store=None):
+        self.tip_selector_factory = tip_selector_factory
         self.config = config
         self.model_config = model_config
-        self.tip_selector_config = tip_selector_config
         self.tx_store = tx_store if tx_store is not None else LabTransactionStore(self.config.tangle_dir)
 
         # Set the random seed if provided (affects client sampling, and batching)
         random.seed(1 + config.seed)
         np.random.seed(12 + config.seed)
-
-    @classmethod
-    def factory(cls, TipSelectorFactory):
-        class _Lab(cls):
-            def __init__(self, config, model_config, tip_selector_config):
-                super().__init__(TipSelectorFactory, config, model_config, tip_selector_config)
-
-        return _Lab
 
     @staticmethod
     def create_client_model(seed, model_config):
@@ -56,7 +47,7 @@ class Lab:
 
         return genesis
 
-    def create_node_transaction(self, tangle, round, client_id, cluster_id, train_data, eval_data, seed, model_config, tip_selector_config, tx_store):
+    def create_node_transaction(self, tangle, round, client_id, cluster_id, train_data, eval_data, seed, model_config, tip_selector, tx_store):
 
         # import tensorflow as tf
 
@@ -65,12 +56,13 @@ class Lab:
         # tf.compat.v1.set_random_seed(123 + seed)
 
         client_model = Lab.create_client_model(seed, model_config)
-        tip_selector = self.TipSelectorFactory(tip_selector_config, tangle).create()
         node = Node(tangle, tx_store, tip_selector, client_id, cluster_id, train_data, eval_data, client_model)
         return node.create_transaction(model_config.num_epochs, model_config.batch_size)
 
     def create_node_transactions(self, tangle, round, clients, dataset):
-        result = [self.create_node_transaction(tangle, round, client_id, cluster_id, dataset.train_data[client_id], dataset.test_data[client_id], self.config.seed, self.model_config, self.tip_selector_config, self.tx_store)
+        tip_selector = self.tip_selector_factory.create(tangle)
+
+        result = [self.create_node_transaction(tangle, round, client_id, cluster_id, dataset.train_data[client_id], dataset.test_data[client_id], self.config.seed, self.model_config, tip_selector, self.tx_store)
                   for (client_id, cluster_id) in clients]
 
         for tx, tx_weights in result:
@@ -105,7 +97,7 @@ class Lab:
             self.tx_store.save_tangle(tangle, round)
 
 
-    def test_single(self, tangle, client_id, cluster_id, train_data, eval_data, seed, set_to_use):
+    def test_single(self, tangle, client_id, cluster_id, train_data, eval_data, seed, set_to_use, tip_selector):
         import tensorflow as tf
 
         random.seed(1 + seed)
@@ -113,7 +105,6 @@ class Lab:
         tf.compat.v1.set_random_seed(123 + seed)
 
         client_model = self.create_client_model(seed, self.model_config)
-        tip_selector = self.TipSelectorFactory(self.tip_selector_config, tangle).create()
         node = Node(tangle, self.tx_store, tip_selector, client_id, cluster_id, train_data, eval_data, client_model)
 
         reference_txs, reference = node.obtain_reference_params()
@@ -122,11 +113,12 @@ class Lab:
 
         return metrics
 
+    def validate_nodes(self, tangle, clients, dataset):
+        tip_selector = self.tip_selector_factory.create(tangle)
+        return [self.test_single(tangle, client_id, cluster_id, dataset.train_data[client_id], dataset.test_data[client_id], random.randint(0, 4294967295), 'test', tip_selector) for client_id, cluster_id in clients]
+
     def validate(self, round, dataset):
         tangle = self.tx_store.load_tangle(round)
         client_indices = np.random.choice(range(len(dataset.clients)), min(int(len(dataset.clients) * 0.1), len(dataset.clients)), replace=False)
         validation_clients = [dataset.clients[i] for i in client_indices]
         return self.validate_nodes(tangle, validation_clients, dataset)
-
-    def validate_nodes(self, tangle, clients, dataset):
-        return [self.test_single(tangle, client_id, cluster_id, dataset.train_data[client_id], dataset.test_data[client_id], random.randint(0, 4294967295), 'test') for client_id, cluster_id in clients]
