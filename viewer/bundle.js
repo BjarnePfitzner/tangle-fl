@@ -27923,7 +27923,7 @@ var TangleContainer = function (_React$Component) {
         _this2.force.force('no_collision', d3Force.forceCollide().radius(_this2.state.nodeRadius * 2).strength(0.01).iterations(15)).force('pin_y_to_center', d3Force.forceY().y(function (d) {
           return _this2.state.height / 2;
         }).strength(0.1)).force('pin_x_to_time', d3Force.forceX().x(function (d) {
-          return _this2.xFromTime(d.time);
+          return _this2.xFromTime(d.metadata.time);
         }).strength(1)).force('link', d3Force.forceLink().links(_this2.state.links).strength(0.5).distance(_this2.state.nodeRadius * 3)); // strength in [0,1]
 
         _this2.force.restart().alpha(1);
@@ -28015,7 +28015,7 @@ var TangleContainer = function (_React$Component) {
         for (var _iterator3 = this.state.nodes[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
           var node = _step3.value;
 
-          node.fx = this.xFromTime(node.time);
+          node.fx = this.xFromTime(node.metadata.time);
         }
       } catch (err) {
         _didIteratorError3 = true;
@@ -28041,7 +28041,7 @@ var TangleContainer = function (_React$Component) {
         return padding;
       }
 
-      var maxTime = this.state.nodes[this.state.nodes.length - 1].time;
+      var maxTime = this.state.nodes[this.state.nodes.length - 1].metadata.time;
 
       // Rescale nodes' x to cover [margin, width-margin]
       var scale = (0, _d3Scale.scaleLinear)().domain([0, maxTime]);
@@ -28052,10 +28052,10 @@ var TangleContainer = function (_React$Component) {
   }, {
     key: 'mouseEntersNodeHandler',
     value: function mouseEntersNodeHandler(e) {
-      var name = e.target.getAttribute('name');
+      var id = e.target.getAttribute('id');
       this.setState({
         hoveredNode: this.state.nodes.find(function (node) {
-          return node.name === name;
+          return node.id === id;
         })
       });
     }
@@ -28138,10 +28138,10 @@ var TangleContainer = function (_React$Component) {
   }, {
     key: 'getStyle',
     value: function getStyle(node) {
-      if (node.clusterId !== null) {
+      if (node.metadata.clusterId !== null) {
         return {
           strokeWidth: 3,
-          stroke: this.clusterColors[node.clusterId]
+          stroke: this.clusterColors[node.metadata.clusterId]
         };
       }
     }
@@ -39438,7 +39438,7 @@ Axis.propTypes = {
 
 var Node = function Node(_ref3) {
   var nodeRadius = _ref3.nodeRadius,
-      name = _ref3.name;
+      id = _ref3.id;
   return _react2.default.createElement('rect', { width: nodeRadius, height: nodeRadius,
     x: -nodeRadius / 2,
     y: -nodeRadius / 2,
@@ -39447,14 +39447,14 @@ var Node = function Node(_ref3) {
     stroke: 'black',
     strokeWidth: '1px',
     fill: 'white',
-    name: name });
+    id: id });
 };
 
 Node.propTypes = {
   nodeRadius: _propTypes2.default.number.isRequired,
   mouseEntersNodeHandler: _propTypes2.default.any,
   mouseLeavesNodeHandler: _propTypes2.default.any,
-  name: _propTypes2.default.string
+  id: _propTypes2.default.string
 };
 
 var LossGraph = function LossGraph(props) {
@@ -49221,7 +49221,7 @@ var Node = function Node(_ref3) {
   var nodeRadius = _ref3.nodeRadius,
       mouseEntersNodeHandler = _ref3.mouseEntersNodeHandler,
       mouseLeavesNodeHandler = _ref3.mouseLeavesNodeHandler,
-      name = _ref3.name,
+      id = _ref3.id,
       issuer = _ref3.issuer,
       style = _ref3.style;
   return _react2.default.createElement(
@@ -49234,7 +49234,7 @@ var Node = function Node(_ref3) {
       stroke: 'black',
       strokeWidth: '1px',
       fill: 'white',
-      name: name,
+      id: id,
       style: style,
       onMouseEnter: mouseEntersNodeHandler,
       onMouseLeave: mouseLeavesNodeHandler },
@@ -49251,7 +49251,7 @@ Node.propTypes = {
   nodeRadius: _propTypes2.default.number.isRequired,
   mouseEntersNodeHandler: _propTypes2.default.any,
   mouseLeavesNodeHandler: _propTypes2.default.any,
-  name: _propTypes2.default.string,
+  id: _propTypes2.default.string,
   issuer: _propTypes2.default.string,
   style: _propTypes2.default.object
 };
@@ -49294,7 +49294,7 @@ var Tangle = function Tangle(props) {
         null,
         props.links.map(function (link) {
           return _react2.default.createElement('path', { className: 'links' + (props.approvedLinks.has(link) ? ' approved' : props.approvingLinks.has(link) ? ' approving' : ''),
-            key: link.source.name + '->' + link.target.name,
+            key: link.source.id + '->' + link.target.id,
             d: generateLinkPath({ link: link, nodeRadius: props.nodeRadius }),
             markerEnd: props.approvedLinks.has(link) ? 'url(#arrowhead-approved)' : props.approvingLinks.has(link) ? 'url(#arrowhead-approving)' : 'url(#arrowhead)'
           });
@@ -49306,8 +49306,8 @@ var Tangle = function Tangle(props) {
         props.nodes.map(function (node) {
           return _react2.default.createElement(
             'g',
-            { transform: 'translate(' + node.x + ',' + node.y + ')', key: node.name,
-              className: (props.approvedNodes.has(node) ? 'approved' : props.approvingNodes.has(node) ? 'approving' : props.tips.has(node) ? 'tip' : '') + '\n              ' + (props.selectedClientId === node.issuer ? 'issuedByCurrentClient' : '') },
+            { transform: 'translate(' + node.x + ',' + node.y + ')', key: node.id,
+              className: (props.approvedNodes.has(node) ? 'approved' : props.approvingNodes.has(node) ? 'approving' : props.tips.has(node) ? 'tip' : '') + '\n              ' + (props.selectedClientId === node.metadata.issuer ? 'issuedByCurrentClient' : '') },
             props.hoveredNode === node && _react2.default.createElement(
               'g',
               { style: { opacity: 0.4 } },
@@ -49316,8 +49316,8 @@ var Tangle = function Tangle(props) {
             ),
             _react2.default.createElement(Node, {
               nodeRadius: props.nodeRadius,
-              name: node.name,
-              issuer: node.issuer,
+              id: node.id,
+              issuer: node.metadata.issuer,
               mouseEntersNodeHandler: props.mouseEntersNodeHandler,
               mouseLeavesNodeHandler: props.mouseLeavesNodeHandler,
               style: props.getStyle(node) }),
@@ -49328,7 +49328,7 @@ var Tangle = function Tangle(props) {
                 fill: '#666', fontFamily: 'Helvetica',
                 alignmentBaseline: 'middle', textAnchor: 'middle',
                 pointerEvents: 'none' },
-              node.name.slice(0, 8)
+              node.id.slice(0, 8)
             )
           );
         })
@@ -49343,7 +49343,7 @@ var Tangle = function Tangle(props) {
           ticks: 8,
           startVal: 0,
           endVal: props.nodes.length < 2 ? 1 : Math.max.apply(Math, _toConsumableArray(props.nodes.map(function (n) {
-            return n.time;
+            return n.metadata.time;
           })))
         })
       )
@@ -49644,7 +49644,7 @@ var getChildrenLists = function getChildrenLists(_ref8) {
 
   // Initialize an empty list for each node
   var childrenLists = nodes.reduce(function (lists, node) {
-    return Object.assign(lists, _defineProperty({}, node.name, []));
+    return Object.assign(lists, _defineProperty({}, node.id, []));
   }, {});
 
   var _iteratorNormalCompletion3 = true;
@@ -49655,7 +49655,7 @@ var getChildrenLists = function getChildrenLists(_ref8) {
     for (var _iterator3 = links[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
       var link = _step3.value;
 
-      childrenLists[link.source.name].push(link.target);
+      childrenLists[link.source.id].push(link.target);
     }
   } catch (err) {
     _didIteratorError3 = true;
@@ -49694,7 +49694,7 @@ var topologicalSort = exports.topologicalSort = function topologicalSort(_ref9) 
     var _iteratorError4 = undefined;
 
     try {
-      for (var _iterator4 = childrenLists[node.name][Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
+      for (var _iterator4 = childrenLists[node.id][Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
         var child = _step4.value;
 
         visit(child);
@@ -49736,7 +49736,7 @@ var calculateWeights = exports.calculateWeights = function calculateWeights(_ref
 
   // Initialize an empty set for each node
   var ancestorSets = nodes.reduce(function (lists, node) {
-    return Object.assign(lists, _defineProperty({}, node.name, new Set()));
+    return Object.assign(lists, _defineProperty({}, node.id, new Set()));
   }, {});
 
   var childrenLists = getChildrenLists({ nodes: nodes, links: links });
@@ -49752,10 +49752,10 @@ var calculateWeights = exports.calculateWeights = function calculateWeights(_ref
       var _iteratorError6 = undefined;
 
       try {
-        for (var _iterator6 = childrenLists[node.name][Symbol.iterator](), _step6; !(_iteratorNormalCompletion6 = (_step6 = _iterator6.next()).done); _iteratorNormalCompletion6 = true) {
+        for (var _iterator6 = childrenLists[node.id][Symbol.iterator](), _step6; !(_iteratorNormalCompletion6 = (_step6 = _iterator6.next()).done); _iteratorNormalCompletion6 = true) {
           var child = _step6.value;
 
-          ancestorSets[child.name] = new Set([].concat(_toConsumableArray(ancestorSets[child.name]), _toConsumableArray(ancestorSets[node.name]), [node]));
+          ancestorSets[child.id] = new Set([].concat(_toConsumableArray(ancestorSets[child.id]), _toConsumableArray(ancestorSets[node.id]), [node]));
         }
       } catch (err) {
         _didIteratorError6 = true;
@@ -49772,7 +49772,7 @@ var calculateWeights = exports.calculateWeights = function calculateWeights(_ref
         }
       }
 
-      node.cumWeight = ancestorSets[node.name].size + 1;
+      node.cumWeight = ancestorSets[node.id].size + 1;
     }
   } catch (err) {
     _didIteratorError5 = true;
@@ -49820,9 +49820,9 @@ var loadTangle = exports.loadTangle = async function loadTangle(_ref) {
   var links = data.nodes.flatMap(function (x) {
     return x.parents.map(function (p) {
       return { source: nodes.find(function (n) {
-          return n.name === x.name;
+          return n.id === x.id;
         }), target: nodes.find(function (n) {
-          return n.name === p;
+          return n.id === p;
         }) };
     });
   });
@@ -49842,8 +49842,10 @@ var generateTangle = exports.generateTangle = function generateTangle(_ref2) {
 
   jStat.exponential.sample(lambda);
   var genesis = {
-    name: '0',
-    time: 0
+    id: '0',
+    metadata: {
+      time: 0
+    }
   };
 
   var nodes = [genesis];
@@ -49852,8 +49854,10 @@ var generateTangle = exports.generateTangle = function generateTangle(_ref2) {
     var delay = jStat.exponential.sample(lambda);
     time += delay;
     nodes.push({
-      name: '' + nodes.length,
-      time: time,
+      id: '' + nodes.length,
+      metadata: {
+        time: time
+      },
       x: 300,
       y: 200
     });
@@ -49869,11 +49873,11 @@ var generateTangle = exports.generateTangle = function generateTangle(_ref2) {
       var node = _step.value;
 
       var candidates = nodes.filter(function (candidate) {
-        return candidate.time < node.time - h;
+        return candidate.metadata.time < node.metadata.time - h;
       });
 
       var candidateLinks = links.filter(function (link) {
-        return link.source.time < node.time - h;
+        return link.source.metadata.time < node.metadata.time - h;
       });
 
       var tips = tipSelectionAlgorithm({
@@ -49884,7 +49888,7 @@ var generateTangle = exports.generateTangle = function generateTangle(_ref2) {
 
       if (tips.length > 0) {
         links.push({ source: node, target: tips[0] });
-        if (tips.length > 1 && tips[0].name !== tips[1].name) {
+        if (tips.length > 1 && tips[0].id !== tips[1].id) {
           links.push({ source: node, target: tips[1] });
         }
       }
