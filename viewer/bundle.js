@@ -27940,8 +27940,7 @@ var TangleContainer = function (_React$Component) {
         tangle = await (0, _generateData.loadTangle)({
           iteration: this.state.iteration,
           expName: this.state.selectedExpName,
-          expConfig: this.state.selectedExpConfig,
-          numClients: this.state.selectedExpNumClients
+          expConfig: this.state.selectedExpConfig
         });
       } catch (error) {
         this.setState({
@@ -28074,8 +28073,7 @@ var TangleContainer = function (_React$Component) {
 
       this.setState({
         selectedExpName: document.getElementById("expNameInput").value,
-        selectedExpConfig: document.getElementById("expConfigInput").value,
-        selectedExpNumClients: document.getElementById("expNumClientsInput").value
+        selectedExpConfig: document.getElementById("expConfigInput").value
       }, function () {
         _this4.startNewTangle();
       });
@@ -28212,12 +28210,6 @@ var TangleContainer = function (_React$Component) {
                 null,
                 'Config: ',
                 _react2.default.createElement('input', { id: 'expConfigInput', type: 'number', defaultValue: '0', min: '0' })
-              ),
-              _react2.default.createElement(
-                'label',
-                null,
-                'NumClients: ',
-                _react2.default.createElement('input', { id: 'expNumClientsInput', type: 'number', min: '1', defaultValue: '1' })
               ),
               _react2.default.createElement(
                 'button',
@@ -49816,11 +49808,10 @@ var jStat = __webpack_require__(392).jStat;
 var loadTangle = exports.loadTangle = async function loadTangle(_ref) {
   var iteration = _ref.iteration,
       expName = _ref.expName,
-      expConfig = _ref.expConfig,
-      numClients = _ref.numClients;
+      expConfig = _ref.expConfig;
 
   var res = void 0;
-  if (expConfig == "") res = await fetch('/tangle_data/tangle_' + numClients + '_clients_' + iteration + '.json');else res = await fetch('/experiments/' + expName + '/config_' + expConfig + '/tangle_data/tangle_' + numClients + '_clients_' + iteration + '.json');
+  res = await fetch('/experiments/' + expName + '/config_' + expConfig + '/tangle_data/tangle_' + iteration + '.json');
   var data = await res.json();
 
   var nodes = data.nodes.map(function (x) {
