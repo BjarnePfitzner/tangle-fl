@@ -23,6 +23,7 @@ params = {
     'tip_selector': ['accuracy'],
     'num_tips': [2],
     'sample_size': [2],
+    'batch_size': [10],
     'reference_avg_top': [1],
     'target_accuracy': [1],
     'learning_rate':  [0.005],
@@ -143,6 +144,7 @@ def run_and_document_experiments(args, experiments_dir, setup_filename, console_
             '--target-accuracy %s ' \
             '--num-tips %s ' \
             '--sample-size %s ' \
+            '--batch-size %s ' \
             '-lr %s ' \
             '--reference-avg-top %s ' \
             '--tip-selector %s ' \
@@ -165,6 +167,7 @@ def run_and_document_experiments(args, experiments_dir, setup_filename, console_
             p['target_accuracy'],
             p['num_tips'],
             p['sample_size'],
+            p['batch_size'],
             p['learning_rate'],
             p['reference_avg_top'],
             p['tip_selector'],

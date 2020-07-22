@@ -7,9 +7,9 @@ import tensorflow as tf
 
 from tensorflow.contrib import rnn
 
-from model import Model
+from ..model import Model
 
-VOCABULARY_PATH = '../data/reddit/vocab/reddit_vocab.pck'
+VOCABULARY_PATH = '../learning-tangle/leaf/data/reddit/vocab/reddit_vocab.pck'
 
 
 # Code adapted from https://github.com/tensorflow/models/blob/master/tutorials/rnn/ptb/ptb_word_lm.py
@@ -96,7 +96,7 @@ class ClientModel(Model):
 
             eval_metric_ops = tf.count_nonzero(correct_pred) - tf.count_nonzero(correct_unk) - tf.count_nonzero(correct_pad)
 
-        return features, labels, train_op, eval_metric_ops, self.cost
+        return features, labels, train_op, eval_metric_ops, None, self.cost
 
     def _build_rnn_graph(self, inputs):
         def make_cell():

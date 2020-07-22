@@ -5,8 +5,8 @@ import tensorflow as tf
 
 from tensorflow.contrib import rnn
 
-from model import Model
-from utils.language_utils import letter_to_vec, word_to_indices
+from ..model import Model
+from ..utils.language_utils import letter_to_vec, word_to_indices
 
 class ClientModel(Model):
     def __init__(self, seed, lr, seq_len, num_classes, n_hidden):
