@@ -1,6 +1,12 @@
 # Federated Learning Tangle Experiment
 
-Use pipenv to set up your environment.
+(Use pipenv to set up your environment.) 
+VS Code users can set the docker.host setting to ssh://user@dl560-2 and 'Reopen in Container' to open our FSOC workspace
+(https://code.visualstudio.com/docs/remote/containers).
+
+There are two variants of 'labs': A default, single-threaded one, and an extended version using the 'ray' parallelism library.
+
+Basic usage: `python -m tangle.lab --help` (or `python -m tangle.ray --help`).
 
 To execute experiments, change parameters in `experiments.py`. Then run `python experiments.py`.
 Find available options by executing `python experiments.py --help`.
