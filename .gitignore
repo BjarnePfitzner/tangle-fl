@@ -2,5 +2,5 @@
 .vscode/
 viewer/tangle_*.json
 experiments/
-data/
+/data/
 __pycache__
