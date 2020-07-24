@@ -57,7 +57,7 @@ class RayLab(Lab):
         train_data = { 'x': ray.get(train_data['x']), 'y': ray.get(train_data['y']) }
         eval_data = { 'x': ray.get(eval_data['x']), 'y': ray.get(eval_data['y']) }
 
-        super().test_single(tangle, client_id, cluster_id, train_data, eval_data, seed, set_to_use, tip_selector)
+        return super().test_single(tangle, client_id, cluster_id, train_data, eval_data, seed, set_to_use, tip_selector)
 
     def validate_nodes(self, tangle, clients, dataset):
         tip_selectors = [self.tip_selector_factory.create(tangle, dataset, client_id, self.tx_store) for (client_id, _) in clients]
