@@ -74,7 +74,7 @@ class Lab:
     def create_malicious_transaction(self):
         pass
 
-    def train(self, num_nodes, start_from_round, num_rounds, dataset):
+    def train(self, num_nodes, start_from_round, num_rounds, eval_every, dataset):
         if num_rounds == -1:
             rounds_iter = itertools.count(start_from_round)
         else:
@@ -84,6 +84,8 @@ class Lab:
             tangle = self.tx_store.load_tangle(0)
 
         for round in rounds_iter:
+            print("Started training for round %s" % round)
+
             if round == 0:
                 genesis = self.create_genesis()
                 tangle = Tangle({genesis.id: genesis}, genesis.id)
@@ -95,6 +97,9 @@ class Lab:
                         tangle.add_transaction(tx)
 
             self.tx_store.save_tangle(tangle, round)
+
+            if round % eval_every == 0:
+                print(self.validate(round, dataset))
 
 
     def test_single(self, tangle, client_id, cluster_id, train_data, eval_data, seed, set_to_use, tip_selector):
@@ -118,6 +123,7 @@ class Lab:
         return [self.test_single(tangle, client_id, cluster_id, dataset.train_data[client_id], dataset.test_data[client_id], random.randint(0, 4294967295), 'test', tip_selector) for client_id, cluster_id in clients]
 
     def validate(self, round, dataset):
+        print("Validate for round %s" % round)
         tangle = self.tx_store.load_tangle(round)
         client_indices = np.random.choice(range(len(dataset.clients)), min(int(len(dataset.clients) * 0.1), len(dataset.clients)), replace=False)
         validation_clients = [dataset.clients[i] for i in client_indices]
