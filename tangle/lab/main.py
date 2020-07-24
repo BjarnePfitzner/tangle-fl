@@ -16,4 +16,4 @@ def main():
     dataset = Dataset(lab_config, model_config)
 
     lab.train(run_config.clients_per_round, run_config.start_from_round, run_config.num_rounds, run_config.eval_every, dataset)
-    print(lab.validate(run_config.num_rounds-1, dataset))
+    lab.print_validation_results(lab.validate(run_config.num_rounds-1, dataset), mode='all')
