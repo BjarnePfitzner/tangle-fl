@@ -9,6 +9,7 @@ NUM_ROUNDS = 100
 NODES_PER_ROUND = 10
 
 DIST_STD_DEV = 100
+DATA_DIMENSIONS = 1
 
 current_id = 0
 def next_tx_id():
@@ -39,15 +40,16 @@ class TheoreticalNode(Node):
         self.data = data
 
     def test(self, model_params, set_to_use='test'):
-        return { 'loss': abs(model_params - self.data )}
+        return { 'loss': np.linalg.norm(np.array(model_params) - np.array(self.data)) }
 
-    def train(self, averaged_weights):
+
+    def train(self, averaged_weights, maxlen):
         diff = np.array(self.data) - np.array(averaged_weights)
 
-        # Limit the 'learning rate' to 1
+        # Limit the 'learning rate' to maxlen
         length = np.linalg.norm(diff)
-        if length > 1:
-            step = diff / (length / 1)
+        if length > maxlen:
+            step = diff / (length / maxlen)
         else:
             step = diff
 
@@ -57,17 +59,17 @@ def main():
     tx_store = TempTransactionStore()
 
     genesis = Transaction([])
-    tx_store.save(genesis, random.uniform(-DIST_STD_DEV, DIST_STD_DEV))
+    tx_store.save(genesis, np.array([random.uniform(-DIST_STD_DEV, DIST_STD_DEV) for _ in range(DATA_DIMENSIONS)]))
 
     tangle = Tangle({genesis.id: genesis}, genesis.id)
 
     mu, sigma = 0, DIST_STD_DEV # mean and standard deviation
-    node_data = np.random.normal(mu, sigma, NUM_NODES)
+    node_data = [np.array(x) for x in zip(*[np.random.normal(mu, sigma, NUM_NODES) for _ in range(DATA_DIMENSIONS)])]
 
     for r in range(NUM_ROUNDS):
         txs = []
 
-        for n in range(NODES_PER_ROUND):
+        for _ in range(NODES_PER_ROUND):
             node_id = np.random.randint(NUM_NODES)
             tip_selector = TipSelector(tangle)
             node = TheoreticalNode(tangle, tx_store, tip_selector, node_id, None, node_data[node_id])
@@ -82,6 +84,6 @@ def main():
 
         tip_selector = TipSelector(tangle)
         validation_node = TheoreticalNode(tangle, tx_store, tip_selector, 0, None, node_data[0])
-        reference_txs, reference = node.obtain_reference_params()
+        reference_txs, reference = validation_node.obtain_reference_params()
 
-        print('Round', r, 'consensus is', reference)
+        print('Round', r, '#tx', len(txs), 'dist', np.linalg.norm(reference), 'consensus is', reference)
