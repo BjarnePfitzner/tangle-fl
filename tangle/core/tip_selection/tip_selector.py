@@ -50,7 +50,7 @@ class TipSelector:
         step = tx
         prev_step = None
 
-        while step:
+        while step is not None:
             approvers = approving_transactions[step]
             prev_step = step
             step = self.next_step(ratings, approvers)

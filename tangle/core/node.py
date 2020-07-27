@@ -29,7 +29,7 @@ class Node:
         tip_selector.compute_ratings(self)
 
 
-    def train(self, num_epochs=1, batch_size=10):
+    def train(self, averaged_weights):
         """Trains on self.model using the client's train_data.
 
         Args:
@@ -41,12 +41,15 @@ class Node:
             update: set of weights
             update_size: number of bytes in update
         """
-        data = self.train_data
-        update = self.model.train(data, num_epochs, batch_size)
-        num_train_samples = len(data['y'])
-        return num_train_samples, update
+        self.model.set_params(averaged_weights)
 
-    def test(self, set_to_use='test'):
+        data = self.train_data
+        update = self.model.train(data)
+        num_train_samples = len(data['y'])
+        # return num_train_samples, update
+        return self.model.get_params()
+
+    def test(self, model_params, set_to_use='test'):
         """Tests self.model on self.test_data.
 
         Args:
@@ -54,6 +57,8 @@ class Node:
         Return:
             dict of metrics returned by the model.
         """
+        self.model.set_params(model_params)
+
         assert set_to_use in ['train', 'test', 'val']
         if set_to_use == 'train':
             data = self.train_data
@@ -129,8 +134,7 @@ class Node:
                 if tip.id in loss_cache.keys():
                     tip_losses.append((tip, loss_cache[tip.id]))
                 else:
-                    self.model.set_params(self.tx_store.load_transaction_weights(tip.id))
-                    loss = self.test('test')['loss']
+                    loss = self.test(self.tx_store.load_transaction_weights(tip.id), 'test')['loss']
                     tip_losses.append((tip, loss))
                     loss_cache[tip.id] = loss
             best_tips = sorted(tip_losses, key=lambda tup: tup[1], reverse=False)[:num_tips]
@@ -194,11 +198,10 @@ class Node:
     def average_model_params(self, *params):
         return sum(params) / len(params)
 
-    def create_transaction(self, num_epochs, batch_size):
+    def create_transaction(self):
         # Compute reference metrics
         reference_txs, reference = self.obtain_reference_params(avg_top=self.config.reference_avg_top)
-        self.model.set_params(reference)
-        c_metrics = self.test('test')
+        c_metrics = self.test(reference, 'test')
 
         # Obtain number of tips from the tangle
         tips = self.choose_tips(num_tips=self.config.num_tips, sample_size=self.config.sample_size)
@@ -216,14 +219,13 @@ class Node:
 
         # Here: simple unweighted average
         averaged_weights = self.average_model_params(*[self.tx_store.load_transaction_weights(tip.id) for tip in tips])
-        self.model.set_params(averaged_weights)
-        num_samples, update = self.train(num_epochs, batch_size)
+        trained_params = self.train(averaged_weights)
 
-        c_averaged_model_metrics = self.test('test')
+        c_averaged_model_metrics = self.test(trained_params, 'test')
         if c_averaged_model_metrics['loss'] < c_metrics['loss']:
             t = Transaction(set([tip.id for tip in tips]))
             t.add_metadata('issuer', self.id)
             t.add_metadata('clusterId', self.cluster_id)
-            return t, self.model.get_params()
+            return t, trained_params
 
         return None, None

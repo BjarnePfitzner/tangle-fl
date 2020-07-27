@@ -32,7 +32,10 @@ class Lab:
             model_params_list[0] = model_config.lr
             model_params = tuple(model_params_list)
 
-        return ClientModel(seed, *model_params)
+        model = ClientModel(seed, *model_params)
+        model.num_epochs = model_config.num_epochs
+        model.batch_size = model_config.batch_size
+        return model
 
     def create_genesis(self):
         import tensorflow as tf
@@ -52,7 +55,7 @@ class Lab:
 
         client_model = Lab.create_client_model(seed, model_config)
         node = Node(tangle, tx_store, tip_selector, client_id, cluster_id, train_data, eval_data, client_model)
-        tx, tx_weights = node.create_transaction(model_config.num_epochs, model_config.batch_size)
+        tx, tx_weights = node.create_transaction()
 
         if tx is not None:
             tx.add_metadata('time', round)

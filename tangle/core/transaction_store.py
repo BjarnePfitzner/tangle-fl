@@ -10,5 +10,5 @@ class TransactionStore(ABC):
         pass
 
     @abstractmethod
-    def save(self, tx):
+    def save(self, tx, tx_weights):
         pass

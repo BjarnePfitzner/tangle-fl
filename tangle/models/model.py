@@ -20,6 +20,9 @@ class Model(ABC):
         self.seed = seed
         self._optimizer = optimizer
 
+        self.num_epochs = 1
+        self.batch_size = 10
+
         self.graph = tf.Graph()
         with self.graph.as_default():
             tf.set_random_seed(123 + self.seed)
@@ -72,7 +75,7 @@ class Model(ABC):
         """
         return None, None, None, None, None, None
 
-    def train(self, data, num_epochs=1, batch_size=10):
+    def train(self, data):
         """
         Trains the client model.
 
