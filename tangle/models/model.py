@@ -87,8 +87,8 @@ class Model(ABC):
             update: List of np.ndarray weights, with each weight array
                 corresponding to a variable in the resulting graph
         """
-        for _ in range(num_epochs):
-            self.run_epoch(data, batch_size)
+        for _ in range(self.num_epochs):
+            self.run_epoch(data, self.batch_size)
 
         update = self.get_params()
         return update
