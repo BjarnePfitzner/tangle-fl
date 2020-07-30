@@ -1,6 +1,4 @@
-import numpy as np
 import sys
-import itertools
 
 from .transaction import Transaction
 
@@ -221,13 +219,8 @@ class Node:
         # Here: simple unweighted average
         tx_weights = [self.tx_store.load_transaction_weights(tip.id) for tip in tips]
 
-        # Adaptive 'learning rate'
-        max_tx_distance = max([np.linalg.norm(tx1 - tx2) for tx1, tx2 in itertools.combinations(tx_weights, 2)])
-        if max_tx_distance == 0:  # Means: only one parent
-            max_tx_distance = np.linalg.norm(tx_weights[0])
-
         averaged_weights = self.average_model_params(*tx_weights)
-        trained_params = self.train(averaged_weights, max_tx_distance / 2)
+        trained_params = self.train(averaged_weights)
 
         c_averaged_model_metrics = self.test(trained_params, 'test')
         if c_averaged_model_metrics['loss'] < c_metrics['loss']:

@@ -43,13 +43,14 @@ class TheoreticalNode(Node):
         return { 'loss': np.linalg.norm(np.array(model_params) - np.array(self.data)) }
 
 
-    def train(self, averaged_weights, maxlen):
+    def train(self, averaged_weights):
         diff = np.array(self.data) - np.array(averaged_weights)
 
-        # Limit the 'learning rate' to maxlen
+        # Limit the 'learning rate'
+        max_step_length = 1
         length = np.linalg.norm(diff)
-        if length > maxlen:
-            step = diff / (length / maxlen)
+        if length > max_step_length:
+            step = diff / (length / max_step_length)
         else:
             step = diff
 
@@ -86,4 +87,4 @@ def main():
         validation_node = TheoreticalNode(tangle, tx_store, tip_selector, 0, None, node_data[0])
         reference_txs, reference = validation_node.obtain_reference_params()
 
-        print('Round', r, '#tx', len(txs), 'dist', np.linalg.norm(reference), 'consensus is', reference)
+        print('Round', r, '\t#tx', len(txs), '\tdist', np.linalg.norm(reference), 'consensus is', reference)
