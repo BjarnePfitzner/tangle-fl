@@ -116,8 +116,7 @@ class Lab:
         node = Node(tangle, self.tx_store, tip_selector, client_id, cluster_id, train_data, eval_data, client_model)
 
         reference_txs, reference = node.obtain_reference_params()
-        node.model.set_params(reference)
-        metrics = node.test(set_to_use)
+        metrics = node.test(reference, set_to_use)
 
         return metrics
 
@@ -131,7 +130,7 @@ class Lab:
         client_indices = np.random.choice(range(len(dataset.clients)), min(int(len(dataset.clients) * 0.1), len(dataset.clients)), replace=False)
         validation_clients = [dataset.clients[i] for i in client_indices]
         return self.validate_nodes(tangle, validation_clients, dataset)
-    
+
     def print_validation_results(self, results, mode='avg'):
         avg_acc = np.average([r[ACCURACY_KEY] for r in results])
         avg_loss = np.average([r['loss'] for r in results])
