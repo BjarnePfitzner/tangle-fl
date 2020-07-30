@@ -2,11 +2,13 @@ class LabConfiguration:
     seed: int
     model_data_dir: str
     tangle_dir: str
+    tangle_dir: bool
 
     def __init__(self):
         self.seed = None
         self.model_data_dir = None
         self.tangle_dir = None
+        self.use_val_set = None
 
     def define_args(self, parser):
         parser.add_argument('--seed',
@@ -24,8 +26,8 @@ class LabConfiguration:
                     default='tangle_data',
                     required=False)
         parser.add_argument('--use-val-set',
-                        help='use validation set;',
-                        action='store_true')
+                    help='use validation set',
+                    action='store_true')
 
     def parse(self, args):
         self.seed = args.seed

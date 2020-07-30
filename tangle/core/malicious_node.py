@@ -1,13 +1,13 @@
 import numpy as np
 import sys
 
-from .tip_selection import TipSelector
+from . import Node
 from .tip_selection import MaliciousTipSelector
 from .transaction import Transaction
-from .poisoning.poison_type import PoisonType
+from .poison_type import PoisonType
 
 class MaliciousNode(Node):
-    def __init__(self, tangle, client_id, cluster_id, group=None, train_data={'x' : [],'y' : []}, eval_data={'x' : [],'y' : []}, model=None, poison_type):
+    def __init__(self, tangle, client_id, cluster_id, group=None, train_data={'x' : [],'y' : []}, eval_data={'x' : [],'y' : []}, model=None, poison_type=PoisonType.NONE):
         self.poison_type = poison_type
         super().__init__(tangle, MaliciousTipSelector, client_id, cluster_id, group, train_data, eval_data, model)
 

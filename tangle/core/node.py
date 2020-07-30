@@ -1,5 +1,3 @@
-import sys
-
 from .transaction import Transaction
 
 class NodeConfiguration:
@@ -26,7 +24,6 @@ class Node:
 
         # Initialize tip selector
         tip_selector.compute_ratings(self)
-
 
     def train(self, averaged_weights):
         """Trains on self.model using the client's train_data.

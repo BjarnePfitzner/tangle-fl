@@ -104,7 +104,6 @@ class Lab:
             if round % eval_every == 0:
                 self.print_validation_results(self.validate(round, dataset), mode='avg')
 
-
     def test_single(self, tangle, client_id, cluster_id, train_data, eval_data, seed, set_to_use, tip_selector):
         import tensorflow as tf
 

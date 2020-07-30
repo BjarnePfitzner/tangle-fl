@@ -6,7 +6,7 @@ import numpy as np
 
 from ..core import TransactionStore, Transaction, Tangle
 
-class LabTransactionStore:
+class LabTransactionStore(TransactionStore):
     def __init__(self, tangle_path):
         self.tangle_path = tangle_path
         self.tx_path = os.path.join(tangle_path, 'transactions')
