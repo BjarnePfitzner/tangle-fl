@@ -1,71 +1,27 @@
 import random
 import numpy as np
 
-from ..core import Tangle, Transaction, Node, TransactionStore
+from ..core import Tangle, Transaction
 from ..core.tip_selection import TipSelector
+from . import TempTransactionStore, TheoreticalNode
 
 NUM_NODES = 1000
 NUM_ROUNDS = 100
 NODES_PER_ROUND = 10
 
 DIST_STD_DEV = 100
-DATA_DIMENSIONS = 1
-
-current_id = 0
-def next_tx_id():
-    global current_id
-    id = current_id
-    current_id = current_id + 1
-    return id
-
-
-class TempTransactionStore(TransactionStore):
-    def __init__(self):
-        self.weights = {}
-
-    def load_transaction_weights(self, tx_id):
-        return self.weights[tx_id]
-
-    def compute_transaction_id(self, tx):
-        return next_tx_id()
-
-    def save(self, tx, tx_weights):
-        tx.id = self.compute_transaction_id(tx_weights)
-        self.weights[tx.id] = tx_weights
-
-
-class TheoreticalNode(Node):
-    def __init__(self, tangle, tx_store, tip_selector, client_id, cluster_id, data):
-        super().__init__(tangle, tx_store, tip_selector, client_id, cluster_id)
-        self.data = data
-
-    def test(self, model_params, set_to_use='test'):
-        return { 'loss': np.linalg.norm(np.array(model_params) - np.array(self.data)) }
-
-
-    def train(self, averaged_weights):
-        diff = np.array(self.data) - np.array(averaged_weights)
-
-        # Limit the 'learning rate'
-        max_step_length = 1
-        length = np.linalg.norm(diff)
-        if length > max_step_length:
-            step = diff / (length / max_step_length)
-        else:
-            step = diff
-
-        return averaged_weights + step
 
 def main():
     tx_store = TempTransactionStore()
 
     genesis = Transaction([])
-    tx_store.save(genesis, np.array([random.uniform(-DIST_STD_DEV, DIST_STD_DEV) for _ in range(DATA_DIMENSIONS)]))
+    # Initialize the genesis transaction with a number within the std dev interval
+    tx_store.save(genesis, np.array(random.uniform(-DIST_STD_DEV, DIST_STD_DEV)))
 
     tangle = Tangle({genesis.id: genesis}, genesis.id)
 
     mu, sigma = 0, DIST_STD_DEV # mean and standard deviation
-    node_data = [np.array(x) for x in zip(*[np.random.normal(mu, sigma, NUM_NODES) for _ in range(DATA_DIMENSIONS)])]
+    node_data = [np.array(x) for x in np.random.normal(mu, sigma, NUM_NODES)]
 
     for r in range(NUM_ROUNDS):
         txs = []
