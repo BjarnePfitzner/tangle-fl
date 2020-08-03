@@ -9,6 +9,13 @@ ALPHA = 0.001
 class TipSelector:
     def __init__(self, tangle):
         self.tangle = tangle
+        self.ratings = None
+
+        # Build a map of transactions that directly approve a given transaction
+        self.approving_transactions = {x: [] for x in self.tangle.transactions}
+        for x, tx in self.tangle.transactions.items():
+            for unique_parent in tx.parents:
+                self.approving_transactions[unique_parent].append(x)
 
     def tip_selection(self, num_tips):
         # https://docs.iota.org/docs/node-software/0.1/iri/concepts/tip-selection
@@ -23,28 +30,12 @@ class TipSelector:
         return tips
 
     def compute_ratings(self, node):
-        # Build a map of transactions that directly approve a given transaction
-        self.approving_transactions = {x: [] for x in self.tangle.transactions}
-        for x, tx in self.tangle.transactions.items():
-            for unique_parent in tx.parents:
-                self.approving_transactions[unique_parent].append(x)
-
         rating = {}
         future_set_cache = {}
         for tx in self.tangle.transactions:
-            rating[tx] = len(self.future_set(tx, self.approving_transactions, future_set_cache)) + 1
+            rating[tx] = len(TipSelector.future_set(tx, self.approving_transactions, future_set_cache)) + 1
 
         self.ratings = rating
-
-    def future_set(self, tx, approving_transactions, future_set_cache):
-        def recurse_future_set(t):
-            if t not in future_set_cache:
-                direct_approvals = set(approving_transactions[t])
-                future_set_cache[t] = direct_approvals.union(*[recurse_future_set(x) for x in direct_approvals])
-
-            return future_set_cache[t]
-
-        return recurse_future_set(tx)
 
     def walk(self, tx, ratings, approving_transactions):
         step = tx
@@ -87,8 +78,12 @@ class TipSelector:
         #
         # return None
 
-    @staticmethod
-    def weighted_choice(approvers, weights):
+    def ratings_to_weight(self, ratings, alpha=ALPHA):
+        highest_rating = max(ratings)
+        normalized_ratings = [r - highest_rating for r in ratings]
+        return [np.exp(r * alpha) for r in normalized_ratings]
+
+    def weighted_choice(self, approvers, weights):
         # Instead of a random choice, one could also think about a more 'intelligent'
         # variant for this use case. E.g. choose a transaction that was published by a
         # node with 'similar' characteristics
@@ -101,10 +96,15 @@ class TipSelector:
         return approvers[-1]
 
     @staticmethod
-    def ratings_to_weight(ratings, alpha=ALPHA):
-        highest_rating = max(ratings)
-        normalized_ratings = [r - highest_rating for r in ratings]
-        return [np.exp(r * alpha) for r in normalized_ratings]
+    def future_set(tx, approving_transactions, future_set_cache):
+        def recurse_future_set(t):
+            if t not in future_set_cache:
+                direct_approvals = set(approving_transactions[t])
+                future_set_cache[t] = direct_approvals.union(*[recurse_future_set(x) for x in direct_approvals])
+
+            return future_set_cache[t]
+
+        return recurse_future_set(tx)
 
     @staticmethod
     def ratings_to_probability(ratings):
