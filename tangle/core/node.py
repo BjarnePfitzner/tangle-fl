@@ -25,6 +25,10 @@ class Node:
         # Initialize tip selector
         tip_selector.compute_ratings(self)
 
+    @staticmethod
+    def average_model_params(*params):
+        return sum(params) / len(params)
+
     def train(self, averaged_weights):
         """Trains on self.model using the client's train_data.
 
@@ -188,11 +192,8 @@ class Node:
             key=lambda kv: kv[1], reverse=True
         )[:avg_top]
         reference_txs = [elem[0] for elem in best]
-        reference_params = self.average_model_params(*[self.tx_store.load_transaction_weights(elem) for elem in reference_txs])
+        reference_params = Node.average_model_params(*[self.tx_store.load_transaction_weights(elem) for elem in reference_txs])
         return reference_txs, reference_params
-
-    def average_model_params(self, *params):
-        return sum(params) / len(params)
 
     def create_transaction(self):
         # Compute reference metrics
@@ -216,7 +217,7 @@ class Node:
         # Here: simple unweighted average
         tx_weights = [self.tx_store.load_transaction_weights(tip.id) for tip in tips]
 
-        averaged_weights = self.average_model_params(*tx_weights)
+        averaged_weights = Node.average_model_params(*tx_weights)
         trained_params = self.train(averaged_weights)
 
         c_averaged_model_metrics = self.test(trained_params, 'test')

@@ -48,7 +48,7 @@ class MaliciousNode(Node):
             key=lambda kv: kv[1], reverse=True
         )[:avg_top]
         reference_txs = [elem[0] for elem in best]
-        reference_params = self.average_model_params(*[self.tangle.transactions[elem].load_weights() for elem in reference_txs])
+        reference_params = Node.average_model_params(*[self.tangle.transactions[elem].load_weights() for elem in reference_txs])
         reference_poison_score = np.mean([poison_percentages[elem] for elem in reference_txs])
         return reference_txs, reference_params, reference_poison_score
 
@@ -65,7 +65,7 @@ class MaliciousNode(Node):
             return Transaction(malicious_weights, set([tip.id for tip in tips]), self.client.id, self.client.cluster_id, malicious=True), None, None
         elif self.poison_type == PoisonType.LABELFLIP:
             # Todo Choose tips or reference model?
-            averaged_weights = self.average_model_params(*[tip.load_weights() for tip in tips])
+            averaged_weights = Node.average_model_params(*[tip.load_weights() for tip in tips])
             self.client.model.set_params(averaged_weights)
             self.client.train(num_epochs, batch_size)
             print('trained on label-flip data')

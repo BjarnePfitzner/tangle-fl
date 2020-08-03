@@ -123,10 +123,12 @@ class Lab:
         tip_selector = self.tip_selector_factory.create(tangle)
         return [self.test_single(tangle, client_id, cluster_id, dataset.train_data[client_id], dataset.test_data[client_id], random.randint(0, 4294967295), 'test', tip_selector) for client_id, cluster_id in clients]
 
-    def validate(self, round, dataset):
+    def validate(self, round, dataset, client_fraction=0.1):
         print('Validate for round %s' % round)
         tangle = self.tx_store.load_tangle(round)
-        client_indices = np.random.choice(range(len(dataset.clients)), min(int(len(dataset.clients) * 0.1), len(dataset.clients)), replace=False)
+        client_indices = np.random.choice(range(len(dataset.clients)),
+                                          min(int(len(dataset.clients) * client_fraction), len(dataset.clients)),
+                                          replace=False)
         validation_clients = [dataset.clients[i] for i in client_indices]
         return self.validate_nodes(tangle, validation_clients, dataset)
 
