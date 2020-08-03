@@ -7,32 +7,43 @@ import numpy as np
 ALPHA = 0.001
 
 class TipSelector:
-    def __init__(self, tangle):
+    def __init__(self, tangle, trunk=None, branch=None, rated_transactions=None):
         self.tangle = tangle
         self.ratings = None
 
+        # 'Particles' are starting points for the tip selection walk.
+        # The 'trunk' is supposed to reside 'in the center' of the tangle,
+        # whereas the 'branch' may lie on the outside.
+        self.trunk = trunk if trunk is not None else self.tangle.genesis
+        self.branch = branch if branch is not None else self.tangle.genesis
+        self.rated_transactions = rated_transactions if rated_transactions is not None else set(self.tangle.transactions.keys())
+
         # Build a map of transactions that directly approve a given transaction
-        self.approving_transactions = {x: [] for x in self.tangle.transactions}
-        for x, tx in self.tangle.transactions.items():
-            for unique_parent in tx.parents:
+        self.approving_transactions = {x: [] for x in self.rated_transactions}
+        for x in self.rated_transactions:
+            for unique_parent in self.tangle.transactions[x].parents:
+                if unique_parent not in self.rated_transactions:
+                    continue
                 self.approving_transactions[unique_parent].append(x)
 
     def tip_selection(self, num_tips):
         # https://docs.iota.org/docs/node-software/0.1/iri/concepts/tip-selection
-
-        # The docs say entry_point = latestSolidMilestone - depth. Ignoring these concepts for now.
-        entry_point = self.tangle.genesis
-
+        # The docs say entry_point = latestSolidMilestone - depth.
         tips = []
-        for _ in range(num_tips):
-             tips.append(self.walk(entry_point, self.ratings, self.approving_transactions))
+
+        # Start from the 'branch' once
+        tips.append(self.walk(self.branch, self.ratings, self.approving_transactions))
+
+        for _ in range(num_tips-1):
+            # Start walking from the 'trunk' for all remaining tips
+            tips.append(self.walk(self.trunk, self.ratings, self.approving_transactions))
 
         return tips
 
     def compute_ratings(self, node):
         rating = {}
         future_set_cache = {}
-        for tx in self.tangle.transactions:
+        for tx in self.rated_transactions:
             rating[tx] = len(TipSelector.future_set(tx, self.approving_transactions, future_set_cache)) + 1
 
         self.ratings = rating
