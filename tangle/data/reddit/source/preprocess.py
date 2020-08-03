@@ -133,12 +133,12 @@ def process_file(file_name):
 
 
 def main():
-	data_files = [f for f in os.listdir(DATA_DIR) if f.endswith('.json')]
+    data_files = [f for f in os.listdir(DATA_DIR) if f.endswith('.json')]
     data_files.sort()
     
-	for f in data_files:
-	    print(f)
-	    process_file(f)
+    for f in data_files:
+        print(f)
+        process_file(f)
 
 
 if __name__ == '__main__':

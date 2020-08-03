@@ -1,13 +1,10 @@
-import json
-import sys
+import argparse
 import networkx as nx
 import matplotlib.pyplot as plt
 import numpy as np
 from skimage.future.graph import cut_normalized
 
-sys.path.insert(1, './leaf/models')
-
-from tangle.tangle import Tangle
+from tangle.lab.lab_transaction_store import LabTransactionStore
 
 
 # ------------------- Helper functions --------------------
@@ -21,7 +18,9 @@ def get_cluster_id(tx_name, tangle):
     Returns:
         int: The cluster ID.
     """
-    return tangle.transactions[tx_name].cluster_id
+    if 'clusterId' not in tangle.transactions[tx_name].metadata:
+        return None
+    return tangle.transactions[tx_name].metadata['clusterId']
 
 
 def future_set(tx, approving_transactions, future_set_cache={}):
@@ -57,7 +56,7 @@ def create_networkx_from_tangle(tangle):
     G = nx.DiGraph()
     for x, tx in tangle.transactions.items():
         # add node and attribute
-        G.add_node(x, cluster=tx.cluster_id)
+        G.add_node(x, cluster=get_cluster_id(x, tangle))
         G.add_edges_from(list(zip([x]*len(tx.parents), tx.parents)))
     print('created graph with {:d} nodes and {:d} edges'.format(G.number_of_nodes(), G.size()))
     return G
@@ -94,7 +93,7 @@ def compute_within_cluster_approval_fraction(tangle, num_cluster=4):
         cluster_absolutes[i] = (0, 0)  # within_cluster_direct_approvals, total_cluster_approvals,
 
     for tx, future in future_sets.items():
-        cluster_id = tangle.transactions[tx].cluster_id
+        cluster_id = get_cluster_id(tx, tangle)
         for transaction in future:
             tx_cluster_id = get_cluster_id(transaction, tangle)
             if tx_cluster_id == cluster_id:
@@ -129,9 +128,9 @@ def compute_within_cluster_direct_approval_fraction(tangle, num_cluster=4):
     for i in range(num_cluster):
         cluster_absolutes[i] = (0, 0)     # within_cluster_direct_approvals, total_cluster_approvals,
     for x, tx in tangle.transactions.items():
-        cluster_id = tx.cluster_id
-        if cluster_id is None:
+        if 'clusterId' not in tx.metadata:
             continue
+        cluster_id = tx.metadata['clusterId']
         within_cluster_direct_approvals = 0
         for unique_parent in tx.parents:
             parent_cluster_id = get_cluster_id(unique_parent, tangle)
@@ -165,13 +164,12 @@ def get_within_cluster_subgraphs(tangle, num_cluster=4):
 
     for x, tx in tangle.transactions.items():
         # add node and attribute
-        cluster_id = tx.cluster_id
-        if cluster_id is None:
-            # Genesis tx
+        if 'clusterId' not in tx.metadata:
             continue
+        cluster_id = tx.metadata['clusterId']
         graphs[cluster_id].add_node(x)
         for unique_parent in tx.parents:
-            if tx.cluster_id == get_cluster_id(unique_parent, tangle):
+            if tx.metadata['clusterId'] == get_cluster_id(unique_parent, tangle):
                 graphs[cluster_id].add_edge(x, unique_parent)
 
     for i in range(num_cluster):
@@ -208,19 +206,39 @@ def normalized_cut(graph):
     print(labels)
 
 
-tangle = Tangle.fromfile('10_clients_140', 'viewer/experiments/femnist-clustered/config_0')
+def parse_args():
+    parser = argparse.ArgumentParser(description='Graph analysis of tangle results')
+    parser.add_argument('--name',
+                        help='The name of the experiment. Folder name in ../experiments/<name>. Default: <dataset>-<model>-<exp_number>')
+    parser.add_argument('--config',
+                        default='0',
+                        help='The config ID of the experiment.')
+    parser.add_argument('--epoch',
+                        help='The tangle epoch to analyse.')
+    return parser.parse_args()
 
-cluster_approvals, cluster_rating = compute_within_cluster_approval_fraction(tangle, num_cluster=3)
-print(cluster_approvals)
-for cluster, rating in cluster_rating.items():
-    print('Cluster {:d}: {:.1f}%'.format(cluster, 100 * rating))
 
-cluster_approvals, cluster_rating = compute_within_cluster_direct_approval_fraction(tangle, num_cluster=3)
-print(cluster_approvals)
-for cluster, rating in cluster_rating.items():
-    print('Cluster {:d}: {:.1f}%'.format(cluster, 100 * rating))
+def main():
+    args = parse_args()
 
-graph = create_networkx_from_tangle(tangle)
-# normalized_cut(graph)
-draw_greedy_modularity_communities(graph)
-get_within_cluster_subgraphs(tangle, num_cluster=3)
+    tx_store = LabTransactionStore(f'../experiments/{args.name}/config_{args.config}/tangle_data')
+    tangle = tx_store.load_tangle(args.epoch)
+
+    cluster_approvals, cluster_rating = compute_within_cluster_approval_fraction(tangle, num_cluster=3)
+    print(cluster_approvals)
+    for cluster, rating in cluster_rating.items():
+        print('Cluster {:d}: {:.1f}%'.format(cluster, 100 * rating))
+
+    cluster_approvals, cluster_rating = compute_within_cluster_direct_approval_fraction(tangle, num_cluster=3)
+    print(cluster_approvals)
+    for cluster, rating in cluster_rating.items():
+        print('Cluster {:d}: {:.1f}%'.format(cluster, 100 * rating))
+
+    graph = create_networkx_from_tangle(tangle)
+    # normalized_cut(graph)
+    draw_greedy_modularity_communities(graph)
+    get_within_cluster_subgraphs(tangle, num_cluster=3)
+
+
+if __name__ == "__main__":
+    main()
