@@ -14,12 +14,12 @@ from sklearn.model_selection import ParameterGrid
 #############################################################################
 
 params = {
-    'dataset': ['femnist'],   # is expected to be one value to construct default experiment name
+    'dataset': ['femnistclustered'],   # is expected to be one value to construct default experiment name
     'model': ['cnn'],       # is expected to be one value to construct default experiment name
-    'num_rounds': [10],
+    'num_rounds': [200],
     'eval_every': [-1],
     'clients_per_round': [10],
-    'model_data_dir': ['../data/femnist-data/small'],
+    'model_data_dir': ['../data/femnist-data-clustered-alt'],
     'tip_selector': ['accuracy'],
     'num_tips': [2],
     'sample_size': [2],
