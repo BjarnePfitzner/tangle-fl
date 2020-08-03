@@ -6,7 +6,7 @@ import tensorflow as tf
 
 from .baseline_constants import ACCURACY_KEY
 
-from lab.dataset import batch_data
+from ..lab.dataset import batch_data
 from .utils.tf_utils import graph_size
 
 
