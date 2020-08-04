@@ -71,15 +71,15 @@ def read_dir(data_dir):
         with open(file_path, 'r') as inf:
             cdata = json.load(inf)
         clients.extend(cdata['users'])
-        # for idx, u in enumerate(cdata['users']):
-        #     cluster_ids[u] = cdata['cluster_ids'][idx]
+        for idx, u in enumerate(cdata['users']):
+            cluster_ids[u] = cdata['cluster_ids'][idx]
         if 'hierarchies' in cdata:
             groups.extend(cdata['hierarchies'])
         data.update(cdata['user_data'])
 
     clients = list(sorted(data.keys()))
-    # cluster_ids = [cluster_ids[c] for c in clients]
-    return clients, groups, data
+    cluster_ids = [cluster_ids[c] for c in clients]
+    return clients, cluster_ids, groups, data
 
 def read_data(train_data_dir, test_data_dir):
     '''parses data in given train and test data directories
@@ -95,10 +95,12 @@ def read_data(train_data_dir, test_data_dir):
         train_data: dictionary of train data
         test_data: dictionary of test data
     '''
-    train_clients, train_groups, train_data = read_dir(train_data_dir)
-    test_clients, test_groups, test_data = read_dir(test_data_dir)
+    train_clients, train_cluster_ids, train_groups, train_data = read_dir(train_data_dir)
+    test_clients, test_cluster_ids, test_groups, test_data = read_dir(test_data_dir)
 
     assert train_clients == test_clients
     assert train_groups == test_groups
+    assert train_cluster_ids == test_cluster_ids
 
-    return train_clients, train_groups, train_data, test_data
+    # Todo return groups if required
+    return train_clients, train_cluster_ids, train_data, test_data
