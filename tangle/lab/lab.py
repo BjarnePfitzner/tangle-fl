@@ -77,7 +77,7 @@ class Lab:
     def create_malicious_transaction(self):
         pass
 
-    def train(self, num_nodes, start_from_round, num_rounds, eval_every, dataset):
+    def train(self, num_nodes, start_from_round, num_rounds, eval_every, eval_on_fraction, dataset):
         if num_rounds == -1:
             rounds_iter = itertools.count(start_from_round)
         else:
@@ -102,7 +102,7 @@ class Lab:
             self.tx_store.save_tangle(tangle, round)
 
             if round % eval_every == 0:
-                self.print_validation_results(self.validate(round, dataset), mode='avg')
+                self.print_validation_results(self.validate(round, dataset, eval_on_fraction), mode='avg')
 
     def test_single(self, tangle, client_id, cluster_id, train_data, eval_data, seed, set_to_use, tip_selector):
         import tensorflow as tf

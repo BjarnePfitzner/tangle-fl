@@ -18,6 +18,7 @@ params = {
     'model': ['cnn'],       # is expected to be one value to construct default experiment name
     'num_rounds': [200],
     'eval_every': [-1],
+    'eval_on_fraction': [0.1],
     'clients_per_round': [10],
     'model_data_dir': ['../data/femnist-data-clustered-alt'],
     'tip_selector': ['accuracy'],
@@ -138,6 +139,7 @@ def run_and_document_experiments(args, experiments_dir, setup_filename, console_
             '-model %s ' \
             '--num-rounds %s ' \
             '--eval-every %s ' \
+            '--eval_on_fraction %s' \
             '--clients-per-round %s ' \
             '--tangle-dir %s ' \
             '--model-data-dir %s ' \
@@ -161,6 +163,7 @@ def run_and_document_experiments(args, experiments_dir, setup_filename, console_
             p['model'],
             p['num_rounds'],
             p['eval_every'],
+            p['eval_on_fraction'],
             p['clients_per_round'],
             experiment_folder + '/tangle_data',
             p['model_data_dir'],

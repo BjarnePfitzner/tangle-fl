@@ -11,6 +11,10 @@ class RunConfiguration:
                         help='evaluate every ____ rounds;',
                         type=int,
                         default=-1)
+        parser.add_argument('--eval-on-fraction',
+                        help='evaluate on fraction of clients;',
+                        type=float,
+                        default=0.1)
         parser.add_argument('--clients-per-round',
                         help='number of clients trained per round;',
                         type=int,
@@ -33,6 +37,7 @@ class RunConfiguration:
     def parse(self, args):
         self.num_rounds = args.num_rounds
         self.eval_every = args.eval_every
+        self.eval_on_fraction = args.eval_on_fraction
         self.clients_per_round = args.clients_per_round
         self.start_from_round = args.start_from_round
         self.t = args.t
