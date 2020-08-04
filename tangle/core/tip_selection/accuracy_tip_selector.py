@@ -38,8 +38,7 @@ class AccuracyTipSelector(TipSelector):
         else:
             txs = self.tangle.transactions.keys()
         for tx_id in txs:
-            node.model.set_params(node.tx_store.load_transaction_weights(tx_id))
-            rating[tx_id] = node.test('train')[ACCURACY_KEY]
+            rating[tx_id] = node.test(node.tx_store.load_transaction_weights(tx_id), 'train')[ACCURACY_KEY]
 
         return rating
 
