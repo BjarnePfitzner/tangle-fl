@@ -17,8 +17,8 @@ params = {
     'dataset': ['femnistclustered'],   # is expected to be one value to construct default experiment name
     'model': ['cnn'],       # is expected to be one value to construct default experiment name
     'num_rounds': [200],
-    'eval_every': [-1],
-    'eval_on_fraction': [0.1],
+    'eval_every': [25],
+    'eval_on_fraction': [0.05],
     'clients_per_round': [10],
     'model_data_dir': ['../data/femnist-data-clustered-alt'],
     'tip_selector': ['accuracy'],
@@ -31,8 +31,8 @@ params = {
     'poison_type': ['none'],
     'poison_fraction': [0],
     'poison_from': [1],
-    'acc_tip_selection_strategy': ['WALK'],
-    'acc_cumulate_ratings': ['False', 'True'],
+    'acc_tip_selection_strategy': ['GLOBAL'],
+    'acc_cumulate_ratings': ['False'],
     'acc_ratings_to_weights': ['LINEAR'],
     'acc_select_from_weights': ['WEIGHTED_CHOICE'],
     'acc_alpha': [0.001],
@@ -134,12 +134,12 @@ def run_and_document_experiments(args, experiments_dir, setup_filename, console_
         os.makedirs(experiment_folder, exist_ok=True)
 
         # Prepare execution command
-        command = 'python -m tangle.ray ' \
+        command = 'python -m tangle.lab ' \
             '-dataset %s ' \
             '-model %s ' \
             '--num-rounds %s ' \
             '--eval-every %s ' \
-            '--eval_on_fraction %s' \
+            '--eval-on-fraction %s ' \
             '--clients-per-round %s ' \
             '--tangle-dir %s ' \
             '--model-data-dir %s ' \

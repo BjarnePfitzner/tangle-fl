@@ -1,5 +1,5 @@
-docker run -d --name tangle-tensorflow-with-viewer \
-   --user root --restart always -p 10001:8888 -p 10002:8000 \
+docker run -d --name tangle-tensorflow-with-viewer --init \
+   --user root --restart always -p 10001:8888 -p 10002:8000 -p 10003:8265 \
    -v /var/tangle-learning:/tf/work \
    -e JUPYTER_TOKEN=tangle-learning \
    -e NB_GID="5256" \
