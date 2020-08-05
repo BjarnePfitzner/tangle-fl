@@ -134,7 +134,7 @@ def run_and_document_experiments(args, experiments_dir, setup_filename, console_
         os.makedirs(experiment_folder, exist_ok=True)
 
         # Prepare execution command
-        command = 'python -m tangle.lab ' \
+        command = 'python -m tangle.ray ' \
             '-dataset %s ' \
             '-model %s ' \
             '--num-rounds %s ' \

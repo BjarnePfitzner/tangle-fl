@@ -17,9 +17,16 @@ class RayTipSelectorFactory(TipSelectorFactory):
             tip_selection_settings[AccuracyTipSelectorSettings.SELECT_FROM_WEIGHTS] = self.config.acc_select_from_weights
             tip_selection_settings[AccuracyTipSelectorSettings.ALPHA] = self.config.acc_alpha
 
-            futures = [self.compute_accuracy_ratings.remote(self, client_id, tx_id, random.randint(0, 4294967295), dataset.model_config, dataset.remote_train_data[client_id], tx_store) for tx_id, _ in tangle.transactions.items()]
+            rayAccuracyTipSelector = RayAccuracyTipSelector(tangle, tip_selection_settings)
 
-            return RayAccuracyTipSelector(tangle, tip_selection_settings, {tx_id: r for tx_id, r in ray.get(futures)})
+            if self.config.acc_tip_selection_strategy == 'GLOBAL' and not self.config.acc_cumulate_ratings:
+                txs_to_eval = rayAccuracyTipSelector.tips
+            else:
+                txs_to_eval = tangle.transactions.keys()
+            futures = [self.compute_accuracy_ratings.remote(self, client_id, tx_id, random.randint(0, 4294967295), dataset.model_config, dataset.remote_train_data[client_id], tx_store) for tx_id, _ in tangle.transactions.items()]
+            rayAccuracyTipSelector.add_precomputed_ratings({tx_id: r for tx_id, r in ray.get(futures)})
+
+            return rayAccuracyTipSelector
 
         return super().create(tangle)
 

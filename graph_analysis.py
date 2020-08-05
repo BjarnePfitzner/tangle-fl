@@ -77,6 +77,7 @@ def compute_within_cluster_approval_fraction(tangle, num_cluster=4):
                           absolute number of direct and indirect cluster approvals).
         dict: cluster -> fraction of direct and indirect within-cluster approvals.
     """
+    print('Computing within-cluster approval fraction (direct and indirect)...')
     approving_transactions = {x: [] for x in tangle.transactions}
     for x, tx in tangle.transactions.items():
         for unique_parent in tx.parents:
@@ -106,6 +107,7 @@ def compute_within_cluster_approval_fraction(tangle, num_cluster=4):
 
     for i in range(num_cluster):
         cluster_ratings[i] = cluster_absolutes[i][0] / cluster_absolutes[i][1]
+        print('Cluster {:d}: {:.1f}%'.format(i, 100 * cluster_ratings[i]))
 
     return cluster_absolutes, cluster_ratings
 
@@ -123,6 +125,7 @@ def compute_within_cluster_direct_approval_fraction(tangle, num_cluster=4):
                           absolute number of direct cluster approvals).
         dict: cluster -> fraction of direct within-cluster approvals.
     """
+    print('Computing within-cluster approval fraction (direct only)...')
     cluster_absolutes = {}  # Absolute number of within-cluster approvals
     cluster_ratings = {}  # Relative number of within-cluster approvals
     for i in range(num_cluster):
@@ -142,6 +145,7 @@ def compute_within_cluster_direct_approval_fraction(tangle, num_cluster=4):
 
     for i in range(num_cluster):
         cluster_ratings[i] = cluster_absolutes[i][0] / cluster_absolutes[i][1]
+        print('Cluster {:d}: {:.1f}%'.format(i, 100 * cluster_ratings[i]))
 
     return cluster_absolutes, cluster_ratings
 
@@ -225,14 +229,8 @@ def main():
     tangle = tx_store.load_tangle(args.epoch)
 
     cluster_approvals, cluster_rating = compute_within_cluster_approval_fraction(tangle, num_cluster=3)
-    print(cluster_approvals)
-    for cluster, rating in cluster_rating.items():
-        print('Cluster {:d}: {:.1f}%'.format(cluster, 100 * rating))
 
     cluster_approvals, cluster_rating = compute_within_cluster_direct_approval_fraction(tangle, num_cluster=3)
-    print(cluster_approvals)
-    for cluster, rating in cluster_rating.items():
-        print('Cluster {:d}: {:.1f}%'.format(cluster, 100 * rating))
 
     graph = create_networkx_from_tangle(tangle)
     # normalized_cut(graph)
