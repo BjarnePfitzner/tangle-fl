@@ -27,7 +27,7 @@ def transform_to_next_character_prediction(args):
                         user_data[user]['x'] = data_x
                         user_data[user]['y'] = data_y
                         processed_users.add(user)
-                    num_samples.append(user_data[user]['y'])
+                    num_samples.append(len(user_data[user]['y']))
                 
                 save_data(users, num_samples, user_data, transformed_filepath)
 
