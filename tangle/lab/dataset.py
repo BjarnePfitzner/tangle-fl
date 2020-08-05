@@ -71,14 +71,19 @@ def read_dir(data_dir):
         with open(file_path, 'r') as inf:
             cdata = json.load(inf)
         clients.extend(cdata['users'])
-        for idx, u in enumerate(cdata['users']):
-            cluster_ids[u] = cdata['cluster_ids'][idx]
+        if 'cluster_ids' in cdata:
+            for idx, u in enumerate(cdata['users']):
+                cluster_ids[u] = cdata['cluster_ids'][idx]
         if 'hierarchies' in cdata:
             groups.extend(cdata['hierarchies'])
         data.update(cdata['user_data'])
 
     clients = list(sorted(data.keys()))
-    cluster_ids = [cluster_ids[c] for c in clients]
+    # If there are no cluser_ids in the data, assign 0 for each user
+    if 'cluster_ids' in cdata:
+        cluster_ids = [cluster_ids[c] for c in clients]
+    else:
+        cluster_ids = [0 for c in clients]
     return clients, cluster_ids, groups, data
 
 def read_data(train_data_dir, test_data_dir):
