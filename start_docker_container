@@ -1,8 +1,0 @@
-docker run -d --name tangle-tensorflow-with-viewer --init \
-   --user root --restart always -p 10001:8888 -p 10002:8000 -p 10003:8265 \
-   -v /var/tangle-learning:/tf/work \
-   -e JUPYTER_TOKEN=tangle-learning \
-   -e NB_GID="5256" \
-   -e NB_GROUP="20192006" \
-   -e NB_UMASK="002" \
-   tensorflow/tensorflow:1.13.2-py3-jupyter
