@@ -44,7 +44,6 @@ class AccuracyTipSelector(TipSelector):
 
     def compute_ratings(self, node):
         rating = self._compute_ratings(node)
-        original_params = node.model.get_params()
 
         if self.settings[AccuracyTipSelectorSettings.CUMULATE_RATINGS]:
             def cumulate_ratings(future_set, ratings):
@@ -57,8 +56,6 @@ class AccuracyTipSelector(TipSelector):
             for tx_id in self.tangle.transactions:
                 future_set = super().future_set(tx_id, self.approving_transactions, future_set_cache)
                 rating[tx_id] = cumulate_ratings(future_set, rating) + rating[tx_id]
-
-        node.model.set_params(original_params)
 
         self.ratings = rating
 

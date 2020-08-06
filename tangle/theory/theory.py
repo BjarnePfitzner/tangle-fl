@@ -26,19 +26,20 @@ class TempTransactionStore(TransactionStore):
 
 class TheoreticalNode(Node):
     def __init__(self, tangle, tx_store, tip_selector, client_id, cluster_id, data):
-        super().__init__(tangle, tx_store, tip_selector, client_id, cluster_id)
         self.data = data
+        super().__init__(tangle, tx_store, tip_selector, client_id, cluster_id)
 
     def test(self, model_params, set_to_use='test'):
-        return { 'loss': np.linalg.norm(np.array(model_params) - np.array(self.data)) }
+        error = np.linalg.norm(np.array(model_params) - np.array(self.data))
+        return { 'loss': error, 'accuracy': -error }
 
 
     def train(self, averaged_weights):
-        diff = np.array(self.data) - np.array(averaged_weights)
+        diff = self.data - averaged_weights
 
         # Limit the 'learning rate'
-        max_step_length = 1
-        length = np.linalg.norm(diff)
+        max_step_length = 5
+        length = abs(diff)
         if length > max_step_length:
             step = diff / (length / max_step_length)
         else:
