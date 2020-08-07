@@ -44,8 +44,9 @@ class Node:
         self.model.set_params(averaged_weights)
 
         data = self.train_data
-        update = self.model.train(data)
-        num_train_samples = len(data['y'])
+        self.model.train(data)
+        # update = self.model.train(data)
+        # num_train_samples = len(data['y'])
         # return num_train_samples, update
         return self.model.get_params()
 
