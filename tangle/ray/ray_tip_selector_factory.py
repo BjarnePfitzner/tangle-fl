@@ -8,6 +8,10 @@ from ..models.baseline_constants import ACCURACY_KEY
 from .ray_accuracy_tip_selector import RayAccuracyTipSelector
 
 class RayTipSelectorFactory(TipSelectorFactory):
+    def __init__(self, config):
+        super().__init__(config)
+        self.accuracy_cache = {}
+
     def create(self, tangle, dataset, client_id, tx_store):
         if self.config.tip_selector == 'accuracy':
             tip_selection_settings = {}
@@ -23,8 +27,14 @@ class RayTipSelectorFactory(TipSelectorFactory):
                 txs_to_eval = rayAccuracyTipSelector.tips
             else:
                 txs_to_eval = tangle.transactions.keys()
-            futures = [self.compute_accuracy_ratings.remote(self, client_id, tx_id, random.randint(0, 4294967295), dataset.model_config, dataset.remote_train_data[client_id], tx_store) for tx_id, _ in tangle.transactions.items()]
-            rayAccuracyTipSelector.add_precomputed_ratings({tx_id: r for tx_id, r in ray.get(futures)})
+            futures = [self.compute_accuracy_ratings.remote(self, client_id, tx_id, random.randint(0, 4294967295), dataset.model_config, dataset.remote_train_data[client_id], tx_store) for tx_id in txs_to_eval]
+            currents = ray.get(futures)
+            rayAccuracyTipSelector.add_precomputed_ratings({tx_id: r for tx_id, r, _ in currents})
+
+            for _, _, entry in currents:
+                if entry is not None:
+                    node_id, cache_entry = entry
+                    self.accuracy_cache[node_id] = cache_entry
 
             return rayAccuracyTipSelector
 
@@ -32,6 +42,14 @@ class RayTipSelectorFactory(TipSelectorFactory):
 
     @ray.remote
     def compute_accuracy_ratings(self, node_id, tx_id, seed, model_config, data, tx_store):
+        if node_id in self.accuracy_cache:
+            if tx_id in self.accuracy_cache[node_id]:
+                return tx_id, self.accuracy_cache[node_id][tx_id], None
+            else:
+                cache_entry = self.accuracy_cache[node_id]
+        else:
+            cache_entry = {}
+
         import tensorflow as tf
 
         # Suppress tf warnings
@@ -41,5 +59,9 @@ class RayTipSelectorFactory(TipSelectorFactory):
         node_model.set_params(tx_store.load_transaction_weights(tx_id))
 
         data = { 'x': ray.get(data['x']), 'y': ray.get(data['y']) }
+        accuracy = node_model.test(data)[ACCURACY_KEY]
 
-        return tx_id, node_model.test(data)[ACCURACY_KEY]
+        cache_entry[tx_id] = accuracy
+
+        return tx_id, accuracy, (node_id, cache_entry)
+
