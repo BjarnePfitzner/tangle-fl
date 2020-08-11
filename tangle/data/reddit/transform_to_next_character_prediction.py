@@ -18,6 +18,7 @@ def transform_to_next_character_prediction(args):
                 users, user_data = load_data(filepath)
 
                 num_samples = []
+                cluster_ids = []
                 processed_users = set()
 
                 for user in users:
@@ -28,8 +29,9 @@ def transform_to_next_character_prediction(args):
                         user_data[user]['y'] = data_y
                         processed_users.add(user)
                     num_samples.append(len(user_data[user]['y']))
+                    cluster_ids.append(args.cluster_id)
                 
-                save_data(users, num_samples, user_data, transformed_filepath)
+                save_data(users, num_samples, cluster_ids, user_data, transformed_filepath)
 
 
 def to_next_character_prediction(user_data, seq_length=80):
@@ -73,10 +75,11 @@ def load_data(filepath):
 
     return users, user_data
 
-def save_data(users, num_samples, user_data, filepath):
+def save_data(users, num_samples, cluster_ids, user_data, filepath):
     all_data = {}
     all_data['users'] = users
     all_data['num_samples'] = num_samples
+    all_data['cluster_ids'] = cluster_ids
     all_data['user_data'] = user_data
 
     with open(filepath, 'w') as outfile:
@@ -90,6 +93,13 @@ def parse_args():
         help='Specify where to search for reddit data. Default: "data"',
         default='data',
         type=str,
+        required=False)
+
+    parser.add_argument(
+        '--cluster-id',
+        help='Specify the clusterId, all data will be assigned to. Default: 1',
+        default=1,
+        type=int,
         required=False)
     
     return parser.parse_args()

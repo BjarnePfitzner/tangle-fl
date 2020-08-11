@@ -43,6 +43,42 @@ def word_to_indices(word):
 
 
 # ------------------------
+# utils for combined shakespeare and reddit dataset (next-character)
+
+# The first 80 letters may appear both in Reddit and Shakespeare dataset
+# The last letter represents all additional characters/letters (which may appear in Reddit only)
+ALL_LETTERS_NC = "\n !\"&'(),-.0123456789:;>?ABCDEFGHIJKLMNOPQRSTUVWXYZ[]abcdefghijklmnopqrstuvwxyz}*"
+NUM_LETTERS_NC = len(ALL_LETTERS)
+
+def letter_to_vec_nc(letter):
+    '''returns one-hot representation of given letter
+       All unknown characters will be mapped to the last item
+    '''
+    index = ALL_LETTERS_NC.find(letter)
+    if (index == -1):
+        index = NUM_LETTERS_NC - 1
+    return _one_hot(index, NUM_LETTERS_NC)
+
+
+def word_to_indices_nc(word):
+    '''returns a list of character indices
+    All unknown characters will be mapped to the last item
+
+    Args:
+        word: string
+    
+    Return:
+        indices: int list with length len(word)
+    '''
+    indices = []
+    for c in word:
+        index = ALL_LETTERS_NC.find(c)
+        if (index == -1):
+            index = NUM_LETTERS_NC - 1
+        indices.append(index)
+    return indices
+
+# ------------------------
 # utils for sent140 dataset
 
 
