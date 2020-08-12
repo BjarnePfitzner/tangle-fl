@@ -80,10 +80,7 @@ def read_dir(data_dir):
 
     clients = list(sorted(data.keys()))
     # If there are no cluser_ids in the data, assign 0 for each user
-    if 'cluster_ids' in cdata:
-        cluster_ids = [cluster_ids[c] for c in clients]
-    else:
-        cluster_ids = [0 for c in clients]
+    cluster_ids = [cluster_ids[c] if c in cluster_ids else 0 for c in clients]
     return clients, cluster_ids, groups, data
 
 def read_data(train_data_dir, test_data_dir):
