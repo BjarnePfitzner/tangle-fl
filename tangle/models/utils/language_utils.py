@@ -48,7 +48,7 @@ def word_to_indices(word):
 # The first 80 letters may appear both in Reddit and Shakespeare dataset
 # The last letter represents all additional characters/letters (which may appear in Reddit only)
 ALL_LETTERS_NC = "\n !\"&'(),-.0123456789:;>?ABCDEFGHIJKLMNOPQRSTUVWXYZ[]abcdefghijklmnopqrstuvwxyz}*"
-NUM_LETTERS_NC = len(ALL_LETTERS)
+NUM_LETTERS_NC = len(ALL_LETTERS_NC)
 
 def letter_to_vec_nc(letter):
     '''returns one-hot representation of given letter
