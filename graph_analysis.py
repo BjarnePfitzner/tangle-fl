@@ -219,6 +219,10 @@ def parse_args():
                         help='The config ID of the experiment.')
     parser.add_argument('--epoch',
                         help='The tangle epoch to analyse.')
+    parser.add_argument('--num-cluster',
+                        default=3,
+                        type=int,
+                        help='The number of clusters in the data.')
     return parser.parse_args()
 
 
@@ -228,14 +232,14 @@ def main():
     tx_store = LabTransactionStore(f'../experiments/{args.name}/config_{args.config}/tangle_data')
     tangle = tx_store.load_tangle(args.epoch)
 
-    cluster_approvals, cluster_rating = compute_within_cluster_approval_fraction(tangle, num_cluster=3)
+    cluster_approvals, cluster_rating = compute_within_cluster_approval_fraction(tangle, num_cluster=args.num_cluster)
 
-    cluster_approvals, cluster_rating = compute_within_cluster_direct_approval_fraction(tangle, num_cluster=3)
+    cluster_approvals, cluster_rating = compute_within_cluster_direct_approval_fraction(tangle, num_cluster=args.num_cluster)
 
-    graph = create_networkx_from_tangle(tangle)
+    # graph = create_networkx_from_tangle(tangle)
     # normalized_cut(graph)
-    draw_greedy_modularity_communities(graph)
-    get_within_cluster_subgraphs(tangle, num_cluster=3)
+    # draw_greedy_modularity_communities(graph)
+    get_within_cluster_subgraphs(tangle, num_cluster=args.num_cluster)
 
 
 if __name__ == "__main__":
