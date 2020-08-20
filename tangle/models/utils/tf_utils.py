@@ -7,7 +7,7 @@ def __num_elems(shape):
     Args:
         shape: TensorShape
     
-    Return:
+    Returns:
         tot_elems: int
     '''
     tot_elems = 1
@@ -25,7 +25,7 @@ def graph_size(graph):
 
     Args:
         graph: TF graph
-    Return:
+    Returns:
         integer representing size of graph (in bytes)
     '''
     tot_size = 0

@@ -43,7 +43,7 @@ class ClientModel(Model):
 
     def process_x(self, raw_x_batch):
         """
-        Return:
+        Returns:
             len(vocab) by len(raw_x_batch) np array
         """
         x_batch = [e[4] for e in raw_x_batch] # list of lines/phrases

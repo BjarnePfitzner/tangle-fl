@@ -33,7 +33,7 @@ def word_to_indices(word):
     Args:
         word: string
     
-    Return:
+    Returns:
         indices: int list with length len(word)
     '''
     indices = []
@@ -67,7 +67,7 @@ def word_to_indices_nc(word):
     Args:
         word: string
     
-    Return:
+    Returns:
         indices: int list with length len(word)
     '''
     indices = []
@@ -88,7 +88,7 @@ def split_line(line):
     Args:
         line: string representing phrase to be split
     
-    Return:
+    Returns:
         list of strings, with each string representing a word
     '''
     return re.findall(r"[\w']+|[.,!?;]", line)
@@ -123,7 +123,7 @@ def line_to_indices(line, word2id, max_words=25):
         word2id: dictionary with string words as keys and int indices as values
         max_words: maximum number of word indices in returned list
 
-    Return:
+    Returns:
         indl: list of word indices, one index for each word in phrase
     '''
     unk_id = len(word2id)
@@ -140,7 +140,7 @@ def bag_of_words(line, vocab):
         line: string representing phrase to be parsed
         vocab: dictionary with words as keys and indices as values
 
-    Return:
+    Returns:
         integer list
     '''
     bag = [0]*len(vocab)

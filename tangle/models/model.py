@@ -80,7 +80,7 @@ class Model(ABC):
             data: Dict of the form {'x': [list], 'y': [list]}.
             num_epochs: Number of epochs to train.
             batch_size: Size of training batches.
-        Return:
+        Returns:
             update: List of np.ndarray weights, with each weight array
                 corresponding to a variable in the resulting graph
         """
@@ -110,7 +110,7 @@ class Model(ABC):
 
         Args:
             data: dict of the form {'x': [list], 'y': [list]}
-        Return:
+        Returns:
             dict of metrics that will be recorded by the simulation.
         """
         x_vecs = self.process_x(data['x'])

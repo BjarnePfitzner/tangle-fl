@@ -28,7 +28,7 @@ class Dataset:
         Args:
             possible_clients: Clients from which the server can select.
             num_clients: Number of clients to select; default 20
-        Return:
+        Returns:
             list of (client_id, cluster_id)
         """
         num_clients = min(num_clients, len(self.clients))
@@ -91,7 +91,7 @@ def read_data(train_data_dir, test_data_dir):
         keys 'users', 'user_data' and 'cluster_ids'
     - the set of train set users is the same as the set of test set users
 
-    Return:
+    Returns:
         clients: list of client ids
         groups: list of group ids; empty list if none found
         train_data: dictionary of train data

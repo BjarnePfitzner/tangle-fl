@@ -35,7 +35,7 @@ class Node:
         Args:
             model_params: params that are used as basis for the training
 
-        Return:
+        Returns:
             model params of the new model after training
         """
         self.model.set_params(model_params)
@@ -53,7 +53,7 @@ class Node:
         Args:
             set_to_use: Set to test on. Should be in ['train', 'test'].
 
-        Return:
+        Returns:
             dict of metrics returned by the model.
         """
         self.model.set_params(model_params)
@@ -69,7 +69,7 @@ class Node:
     def num_test_samples(self):
         """Number of test samples for this client.
 
-        Return:
+        Returns:
             int: Number of test samples for this client
         """
         if self.eval_data is None:
@@ -80,7 +80,7 @@ class Node:
     def num_train_samples(self):
         """Number of train samples for this client.
 
-        Return:
+        Returns:
             int: Number of train samples for this client
         """
         if self.train_data is None:
@@ -91,7 +91,7 @@ class Node:
     def num_samples(self):
         """Number samples for this client.
 
-        Return:
+        Returns:
             int: Number of samples for this client
         """
         train_size = 0
