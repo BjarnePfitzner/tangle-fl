@@ -1,12 +1,12 @@
 import subprocess
 
 params = {
-    'dataset': 'femnistclustered',   # is expected to be one value to construct default experiment name
-    'model': 'cnn',       # is expected to be one value to construct default experiment name
-    'num_rounds': 15,
+    'dataset': 'nextcharacter',   # is expected to be one value to construct default experiment name
+    'model': 'stacked_lstm',       # is expected to be one value to construct default experiment name
+    'num_rounds': 100,
     'eval_on_fraction': 0.05,
     'clients_per_round': 10,
-    'model_data_dir': '../data/femnist-data-clustered-alt',
+    'model_data_dir': './tangle/data/nextcharacter/data',
     'batch_size': 10,
     'learning_rate': 0.005,
 }
@@ -20,7 +20,7 @@ def main():
                 '--clients-per-round %s ' \
                 '--model-data-dir %s ' \
                 '--batch-size %s ' \
-                '-lr %s '
+                '-lr %s'
     parameters = (
         params['dataset'],
         params['model'],
