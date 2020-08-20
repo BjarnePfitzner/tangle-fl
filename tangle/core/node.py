@@ -29,19 +29,16 @@ class Node:
     def average_model_params(*params):
         return sum(params) / len(params)
 
-    def train(self, averaged_weights):
+    def train(self, model_params):
         """Trains on self.model using the client's train_data.
 
         Args:
-            num_epochs: Number of epochs to train. Unsupported if minibatch is provided (minibatch has only 1 epoch)
-            batch_size: Size of training batches.
+            model_params: params that are used as basis for the training
 
         Return:
-            num_samples: number of samples used in training
-            update: set of weights
-            update_size: number of bytes in update
+            model params of the new model after training
         """
-        self.model.set_params(averaged_weights)
+        self.model.set_params(model_params)
 
         data = self.train_data
         self.model.train(data)
@@ -54,7 +51,8 @@ class Node:
         """Tests self.model on self.test_data.
 
         Args:
-            set_to_use. Set to test on. Should be in ['train', 'test'].
+            set_to_use: Set to test on. Should be in ['train', 'test'].
+
         Return:
             dict of metrics returned by the model.
         """
@@ -198,8 +196,8 @@ class Node:
 
     def create_transaction(self):
         # Compute reference metrics
-        reference_txs, reference = self.obtain_reference_params(avg_top=self.config.reference_avg_top)
-        c_metrics = self.test(reference, 'test')
+        reference_txs, reference_params = self.obtain_reference_params(avg_top=self.config.reference_avg_top)
+        reference_metrics = self.test(reference_params, 'test')
 
         # Obtain number of tips from the tangle
         tips = self.choose_tips(num_tips=self.config.num_tips, sample_size=self.config.sample_size)
@@ -218,14 +216,21 @@ class Node:
         # Here: simple unweighted average
         tx_weights = [self.tx_store.load_transaction_weights(tip.id) for tip in tips]
 
-        averaged_weights = Node.average_model_params(*tx_weights)
-        trained_params = self.train(averaged_weights)
+        averaged_params = Node.average_model_params(*tx_weights)
+        averaged_model_metrics = self.test(averaged_params, 'test')
+        trained_params = self.train(averaged_params)
 
-        c_averaged_model_metrics = self.test(trained_params, 'test')
-        if c_averaged_model_metrics['loss'] < c_metrics['loss']:
-            t = Transaction(set([tip.id for tip in tips]))
+        trained_model_metrics = self.test(trained_params, 'test')
+        if trained_model_metrics['loss'] < reference_metrics['loss']:
+            t = Transaction(parents=set([tip.id for tip in tips]))
             t.add_metadata('issuer', self.id)
             t.add_metadata('clusterId', self.cluster_id)
+            t.add_metadata('loss', float(trained_model_metrics['loss']))
+            t.add_metadata('reference_tx', reference_txs[0])
+            t.add_metadata('reference_tx_loss', float(reference_metrics['loss']))
+            t.add_metadata('averaged_accuracy', averaged_model_metrics['accuracy'])
+            t.add_metadata('accuracy', trained_model_metrics['accuracy'])
+
             return t, trained_params
 
         return None, None

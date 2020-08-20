@@ -14,24 +14,25 @@ from sklearn.model_selection import ParameterGrid
 #############################################################################
 
 params = {
-    'dataset': ['nextcharacter'],   # is expected to be one value to construct default experiment name
-    'model': ['stacked_lstm'],      # is expected to be one value to construct default experiment name
-    'num_rounds': [100],
+    'dataset': ['femnistclustered'],   # is expected to be one value to construct default experiment name
+    'model': ['cnn'],      # is expected to be one value to construct default experiment name
+    'num_rounds': [200],
     'eval_every': [-1],
     'eval_on_fraction': [0.05],
     'clients_per_round': [10],
-    'model_data_dir': ['./tangle/data/nextcharacter/data'],
+    'model_data_dir': ['../data/femnist-data-clustered-alt'],
     'tip_selector': ['accuracy'],
     'num_tips': [2],
     'sample_size': [2],
     'batch_size': [10],
     'reference_avg_top': [1],
     'target_accuracy': [1],
-    'learning_rate':  [0.005],
+    'learning_rate':  [0.05, 0.005],
+    'num_epochs': [10],
     'poison_type': ['none'],
     'poison_fraction': [0],
     'poison_from': [1],
-    'acc_tip_selection_strategy': ['GLOBAL'],
+    'acc_tip_selection_strategy': ['WALK'],
     'acc_cumulate_ratings': ['False'],
     'acc_ratings_to_weights': ['LINEAR'],
     'acc_select_from_weights': ['WEIGHTED_CHOICE'],
@@ -94,7 +95,7 @@ def prepare_exp_folder(args):
         if len(default_exps) == 0:
             next_default_exp_id = 0
         else:
-            default_exp_ids = [int(exp.split("-")[2]) for exp in default_exps]
+            default_exp_ids = [int(exp.split("-")[-1]) for exp in default_exps]
             default_exp_ids.sort()
             next_default_exp_id = default_exp_ids[-1] + 1
         
@@ -148,6 +149,7 @@ def run_and_document_experiments(args, experiments_dir, setup_filename, console_
             '--sample-size %s ' \
             '--batch-size %s ' \
             '-lr %s ' \
+            '--num-epochs %s ' \
             '--reference-avg-top %s ' \
             '--tip-selector %s ' \
             '--acc-tip-selection-strategy %s ' \
@@ -172,6 +174,7 @@ def run_and_document_experiments(args, experiments_dir, setup_filename, console_
             p['sample_size'],
             p['batch_size'],
             p['learning_rate'],
+            p['num_epochs'],
             p['reference_avg_top'],
             p['tip_selector'],
             p['acc_tip_selection_strategy'],

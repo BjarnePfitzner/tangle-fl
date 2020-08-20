@@ -34,8 +34,8 @@ class TheoreticalNode(Node):
         return { 'loss': error, 'accuracy': -error }
 
 
-    def train(self, averaged_weights):
-        diff = self.data - averaged_weights
+    def train(self, model_params):
+        diff = self.data - model_params
 
         # Limit the 'learning rate'
         max_step_length = 5
@@ -45,4 +45,4 @@ class TheoreticalNode(Node):
         else:
             step = diff
 
-        return averaged_weights + step
+        return model_params + step
