@@ -31,10 +31,11 @@ class RayTipSelectorFactory(TipSelectorFactory):
             currents = ray.get(futures)
             rayAccuracyTipSelector.add_precomputed_ratings({tx_id: r for tx_id, r, _ in currents})
 
-            for _, _, entry in currents:
-                if entry is not None:
-                    node_id, cache_entry = entry
-                    self.accuracy_cache[node_id] = cache_entry
+            for tx_id, accuracy, node_id in currents:
+                if node_id is not None:
+                    if node_id not in self.accuracy_cache:
+                        self.accuracy_cache[node_id] = {}
+                    self.accuracy_cache[node_id][tx_id] = accuracy
 
             return rayAccuracyTipSelector
 
@@ -45,10 +46,6 @@ class RayTipSelectorFactory(TipSelectorFactory):
         if node_id in self.accuracy_cache:
             if tx_id in self.accuracy_cache[node_id]:
                 return tx_id, self.accuracy_cache[node_id][tx_id], None
-            else:
-                cache_entry = self.accuracy_cache[node_id]
-        else:
-            cache_entry = {}
 
         import tensorflow as tf
 
@@ -61,7 +58,5 @@ class RayTipSelectorFactory(TipSelectorFactory):
         data = { 'x': ray.get(data['x']), 'y': ray.get(data['y']) }
         accuracy = node_model.test(data)[ACCURACY_KEY]
 
-        cache_entry[tx_id] = accuracy
-
-        return tx_id, accuracy, (node_id, cache_entry)
+        return tx_id, accuracy, node_id
 
