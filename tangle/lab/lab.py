@@ -84,7 +84,9 @@ class Lab:
             rounds_iter = range(start_from_round, num_rounds)
 
         if start_from_round > 0:
-            tangle = self.tx_store.load_tangle(0)
+            tangle_name = int(start_from_round)-1
+            print('Loading previous tangle from round %s' % tangle_name)
+            tangle = self.tx_store.load_tangle(tangle_name)
 
         for round in rounds_iter:
             print('Started training for round %s' % round)
