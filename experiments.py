@@ -17,10 +17,10 @@ params = {
     'dataset': ['femnistclustered'],   # is expected to be one value to construct default experiment name
     'model': ['cnn'],      # is expected to be one value to construct default experiment name
     'num_rounds': [200],
-    'eval_every': [-1],
+    'eval_every': [199],
     'eval_on_fraction': [0.05],
     'clients_per_round': [10],
-    'model_data_dir': ['../data/femnist-data-clustered-alt'],
+    'model_data_dir': ['../data/femnist-data-clustered-alt-small'],
     'tip_selector': ['accuracy'],
     'num_tips': [2],
     'sample_size': [2],
@@ -201,8 +201,22 @@ def run_and_document_experiments(args, experiments_dir, setup_filename, console_
         # Execute training
         print('Training started...')
         with open(experiment_folder + '/' + console_output_filename, 'w+') as file:
-            training = subprocess.Popen(command.split(" "), stdout=file, stderr=file)
-            training.wait()
+
+            command = command.split(" ")
+            command.append("--start-from")
+            command.append("0")
+
+            step = 5
+            start = 0
+            for i in range(0, p['num_rounds'],step):
+                end = min(i+step, p['num_rounds'])
+
+                command[-1] = str(start)
+                command[8] = str(end)
+                training = subprocess.Popen(command, stdout=file, stderr=file)
+                training.wait()
+
+                start = end
 
         # Document end of training
         print('Training finished. Documenting results...')
