@@ -12,7 +12,7 @@ def main():
     run_config, lab_config, model_config, poisoning_config, tangle_config, tip_selector_config = \
         parse_args(RunConfiguration, LabConfiguration, ModelConfiguration, PoisoningConfiguration, TangleConfiguration, TipSelectorConfiguration)
 
-    ray.init(webui_host='0.0.0.0', object_store_memory=512*1024*1024*1024)
+    ray.init(webui_host='0.0.0.0')
 
     dataset = RayDataset(lab_config, model_config)
 
