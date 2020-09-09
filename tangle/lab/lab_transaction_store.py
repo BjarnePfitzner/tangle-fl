@@ -51,7 +51,7 @@ class LabTransactionStore(TransactionStore):
               'metadata': t.metadata } for _, t in tangle.transactions.items()]
 
         with open(f'{self.tangle_path}/tangle_{tangle_name}.json', 'w') as outfile:
-            json.dump({'nodes': n, 'genesis': tangle.genesis}, outfile)
+            json.dump({'nodes': n, 'genesis': tangle.genesis}, outfile, indent=4)
 
         tangle.name = tangle_name
 
