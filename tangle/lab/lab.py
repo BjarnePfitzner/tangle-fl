@@ -104,7 +104,7 @@ class Lab:
             self.tx_store.save_tangle(tangle, round)
 
             if eval_every != -1 and round % eval_every == 0:
-                self.print_validation_results(self.validate(round, dataset, eval_on_fraction), mode='all')
+                self.print_validation_results(self.validate(round, dataset, eval_on_fraction), mode='avg')
 
     def test_single(self, tangle, client_id, cluster_id, train_data, eval_data, seed, set_to_use, tip_selector):
         import tensorflow as tf
