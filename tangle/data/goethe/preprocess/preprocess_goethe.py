@@ -4,8 +4,39 @@ import os
 import random
 import re
 import sys
+
+"""
+Assumed text structure
+
+Title
+
+Additional information
+
+Chapter
+  Character.
+    Here is the text of the character.
+    And some more.
+  (stage direction)
+    Some more text after the stage direction.
+
+  Different character [doing stuff].
+    This is some more text.
+  [stage directions can both be in normal bracktes as well as in square brackets].
+
+  Third character (stage directions can both be in normal bracktes as well as in square brackets).
+    Saying cool stuff.
+
+  Last character (only following stage directions).
+
+(Some more stage directions,
+which are too long to fit in one line.)
+
+Next Chapter
+
+...
+"""
 # Regular expression to capture an actors name
-CHARACTER_RE = re.compile(r'^  (?![\s\(])([a-zA-Z][a-zA-Z ]*)(?:\.| \([^\)]+\)\.)')
+CHARACTER_RE = re.compile(r'^  (?![\s\(\[])([a-zA-Z][a-zA-Z ]*)(?:\.| [\(\[][^\)\]]+[\)\]]\.)')
 # Regular expression to capture content of an actor
 CONT_RE = re.compile(r'^    (.*)')
 # Regular expression to find the end of the ebook
