@@ -1,14 +1,15 @@
 import subprocess
 
 params = {
-    'dataset': 'nextcharacter',   # is expected to be one value to construct default experiment name
-    'model': 'stacked_lstm',       # is expected to be one value to construct default experiment name
+    'dataset': 'femnist',   # is expected to be one value to construct default experiment name
+    'model': 'cnn',       # is expected to be one value to construct default experiment name
     'num_rounds': 100,
+    'eval_every': 5,
     'eval_on_fraction': 0.05,
     'clients_per_round': 10,
-    'model_data_dir': './tangle/data/nextcharacter/data',
+    'model_data_dir': '../data/femnist-data-small',
     'batch_size': 10,
-    'learning_rate': 0.005,
+    'learning_rate': 0.05,
 }
 
 def main():
@@ -16,6 +17,7 @@ def main():
                 '-dataset %s ' \
                 '-model %s ' \
                 '--num-rounds %s ' \
+                '--eval-every %s ' \
                 '--eval-on-fraction %s ' \
                 '--clients-per-round %s ' \
                 '--model-data-dir %s ' \
@@ -25,6 +27,7 @@ def main():
         params['dataset'],
         params['model'],
         params['num_rounds'],
+        params['eval_every'],
         params['eval_on_fraction'],
         params['clients_per_round'],
         params['model_data_dir'],
@@ -32,8 +35,11 @@ def main():
         params['learning_rate'])
     command = command % parameters
 
-    training = subprocess.Popen(command.split(" "))
-    training.wait()
+    print('Training started...')
+    with open('fed_avg_output.txt', 'w+') as out_file:
+        training = subprocess.Popen(command.split(" "), stdout=out_file)
+        training.wait()
+    print('Training finished...')
 
 
 if __name__ == '__main__':

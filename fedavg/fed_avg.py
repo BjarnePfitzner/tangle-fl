@@ -1,6 +1,7 @@
 import time
 import ray
 import numpy as np
+import tensorflow as tf
 
 from tangle.lab import Lab
 from tangle.core import Node
@@ -11,9 +12,12 @@ class DummyTipSelector():
 
 @ray.remote
 def train_single(client_id, data, model_config, global_params, seed):
+    # Suppress tf warnings
+    tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
+
     model = Lab.create_client_model(seed, model_config)
 
-    data = { 'x': ray.get(data['x']), 'y': ray.get(data['y']) }
+    data = {'x': ray.get(data['x']), 'y': ray.get(data['y'])}
 
     node = Node(None, None, DummyTipSelector(), client_id, None, data, None, model)
     new_params = node.train(global_params)
@@ -21,7 +25,7 @@ def train_single(client_id, data, model_config, global_params, seed):
     global_params = np.array(global_params)
     new_params = np.array(new_params)
 
-    return global_params - new_params, len(data)
+    return global_params - new_params, len(data['y'])
 
 
 def train(dataset, run_config, model_config, seed, lr=1.):
@@ -37,24 +41,30 @@ def train(dataset, run_config, model_config, seed, lr=1.):
         param_update = 0
         total_weight = 0
         for param_diff, weight in ray.get(futures):
-            param_update += param_diff + weight
+            param_update += param_diff * weight
             total_weight += weight
 
         param_update /= total_weight
 
-        global_params += lr * param_update
+        global_params -= lr * param_update
 
-        print('Time for epoch {} is {} sec'.format(epoch + 1, time.time() - start))
+        print('Time for epoch {} is {} sec'.format(epoch, time.time() - start))
+
+        if run_config.eval_every != -1 and epoch % run_config.eval_every == 0:
+            mean_accuracy = test(global_params, dataset, model_config, run_config.eval_on_fraction, seed)
+            print(f'Test Accuracy on {int(run_config.eval_on_fraction * len(dataset.clients))} clients: {mean_accuracy}')
 
     # compute average test error
-    mean_accuracy = test(global_params, dataset, model_config, seed)
-    print(mean_accuracy)
+    mean_accuracy = test(global_params, dataset, model_config, 1, seed)
+    print(f'Test Accuracy on all Clients: {mean_accuracy}')
 
 
 @ray.remote
 def test_single(client_id, global_params, test_data, model_config, seed):
+    # Suppress tf warnings
+    tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
     model = Lab.create_client_model(seed, model_config)
-    test_data = { 'x': ray.get(test_data['x']), 'y': ray.get(test_data['y']) }
+    test_data = {'x': ray.get(test_data['x']), 'y': ray.get(test_data['y'])}
     node = Node(None, None, DummyTipSelector(), client_id, None, None, test_data, model)
 
     results = node.test(global_params, 'test')
@@ -62,9 +72,9 @@ def test_single(client_id, global_params, test_data, model_config, seed):
     return results['accuracy']
 
 
-def test(global_params, dataset, model_config, seed, client_fraction=0.05):
+def test(global_params, dataset, model_config, eval_on_fraction, seed):
     client_indices = np.random.choice(range(len(dataset.clients)),
-                                      min(int(len(dataset.clients) * client_fraction), len(dataset.clients)),
+                                      min(int(len(dataset.clients) * eval_on_fraction), len(dataset.clients)),
                                       replace=False)
     validation_clients = [dataset.clients[i] for i in client_indices]
     futures = [test_single.remote(client_id, global_params, dataset.remote_train_data[client_id], model_config, seed)
