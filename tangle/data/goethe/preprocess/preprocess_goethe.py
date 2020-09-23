@@ -70,7 +70,7 @@ def _extract_character_data(content, title):
             character = match.group(1)
             character = character.upper()
             character = play_and_character(title, character)
-            current_character = character
+            current_character = _sanitized_umlaute(character)
             if current_character not in character_data:
                 character_data[current_character] = []
             users_in_play[current_character] = title
@@ -92,12 +92,19 @@ def _remove_nonalphanumerics(filename):
 def play_and_character(play, character):
     return _remove_nonalphanumerics((play + '_' + character).replace(' ', '_'))
 
+def _sanitized_umlaute(text):
+        sanitized_ae = re.sub('\\Ä+', 'AE', text)
+        sanitized_oe = re.sub('\\Ö+', 'OE', sanitized_ae)
+        sanitized_ue = re.sub('\\Ü+', 'UE', sanitized_oe)
+        return sanitized_ue
+
 def _write_data_by_character(examples, output_directory):
     """Writes a collection of data files by play & character."""
     if not os.path.exists(output_directory):
         os.makedirs(output_directory)
     for character_name, sound_bites in examples.items():
         filename = os.path.join(output_directory, character_name + '.txt')
+        filename = _sanitized_umlaute(filename)
         with open(filename, 'w') as output:
             for sound_bite in sound_bites:
                 output.write(sound_bite + '\n')
