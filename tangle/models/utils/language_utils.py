@@ -79,6 +79,41 @@ def word_to_indices_nc(word):
     return indices
 
 # ------------------------
+# utils for combined shakespeare and goethe dataset (poets)
+
+# The last letter represents all additional characters/letters
+ALL_LETTERS_POETS = "\n !\"&'(),-.0123456789:;>?ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÜẞ[]abcdefghijklmnopqrstuvwxyzäöüß}*"
+NUM_LETTERS_POETS = len(ALL_LETTERS_POETS)
+
+def letter_to_vec_poets(letter):
+    '''returns one-hot representation of given letter
+       All unknown characters will be mapped to the last item
+    '''
+    index = ALL_LETTERS_POETS.find(letter)
+    if (index == -1):
+        index = NUM_LETTERS_POETS - 1
+    return _one_hot(index, NUM_LETTERS_POETS)
+
+
+def word_to_indices_poets(word):
+    '''returns a list of character indices
+    All unknown characters will be mapped to the last item
+
+    Args:
+        word: string
+    
+    Returns:
+        indices: int list with length len(word)
+    '''
+    indices = []
+    for c in word:
+        index = ALL_LETTERS_POETS.find(c)
+        if (index == -1):
+            index = NUM_LETTERS_POETS - 1
+        indices.append(index)
+    return indices
+
+# ------------------------
 # utils for sent140 dataset
 
 
