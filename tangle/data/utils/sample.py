@@ -124,10 +124,18 @@ for f in files:
         ctot_num_samples = 0
 
         users = data['users']
-        users_and_hiers = None
-        if 'hierarchies' in data:
-            users_and_hiers = list(zip(users, data['hierarchies']))
-            rng.shuffle(users_and_hiers)
+        users_hiers_cids = None
+        users_hiers = None
+        users_cids = None
+        if 'hierarchies' in data and 'cluster_ids' in data:
+            users_hiers_cids = list(zip(users, data['hierarchies'], data['cluster_ids']))
+            rng.shuffle(users_hiers_cids)
+        elif 'hierarchies' in data:
+            users_hiers = list(zip(users, data['hierarchies']))
+            rng.shuffle(users_hiers)
+        elif 'cluster_ids' in data:
+            users_cids = list(zip(users, data['cluster_ids']))
+            rng.shuffle(users_cids)
         else:
             rng.shuffle(users)
         user_i = 0
@@ -142,8 +150,12 @@ for f in files:
 
         while(ctot_num_samples < num_new_samples):
             hierarchy = None
-            if users_and_hiers is not None:
-                user, hier = users_and_hiers[user_i]
+            if users_hiers_cids is not None:
+                user, hier, cid = users_hiers_cids[user_i]
+            elif users_hiers is not None:
+                user, hier = users_hiers[user_i]
+            elif users_cids is not None:
+                user, cid = users_cids[user_i]
             else:
                 user = users[user_i]
 
@@ -166,7 +178,7 @@ for f in files:
                 hierarchies.append(hier)
 
             if 'cluster_ids' in data:
-                cluster_ids.append(data['cluster_ids'][int(user)])
+                cluster_ids.append(cid)
 
             num_samples.append(cnum_samples)
             user_data[user] = cdata
@@ -174,8 +186,12 @@ for f in files:
             ctot_num_samples += cnum_samples
             user_i += 1
 
-        if 'hierarchies' in data:
-            users = [u for u, h in users_and_hiers][:user_i]
+        if 'hierarchies' in data and 'cluster_ids' in data:
+            users = [u for u, h, cid in users_hiers_cids][:user_i]
+        elif 'hierarchies' in data:
+            users = [u for u, h in users_hiers][:user_i]
+        elif 'cluster_ids' in data:
+            users = [u for u, h in users_cids][:user_i]
         else:
             users = users[:user_i]
 
