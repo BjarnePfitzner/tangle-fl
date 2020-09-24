@@ -61,6 +61,7 @@ def parse_data_in(data_dir, users_and_plays_path, raw=False):
     all_data = {}
     all_data['users'] = users
     all_data['hierarchies'] = hierarchies
+    all_data['cluster_ids'] = [1 for u in users]
     all_data['num_samples'] = num_samples
     all_data['user_data'] = user_data
     return all_data
