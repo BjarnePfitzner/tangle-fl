@@ -1,4 +1,6 @@
 import random
+import sys
+
 import numpy as np
 import importlib
 import itertools
@@ -90,6 +92,7 @@ class Lab:
 
         for round in rounds_iter:
             print('Started training for round %s' % round)
+            sys.stdout.flush()
 
             if round == 0:
                 genesis = self.create_genesis()
