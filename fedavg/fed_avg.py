@@ -1,3 +1,4 @@
+import sys
 import time
 import ray
 import numpy as np
@@ -53,6 +54,7 @@ def train(dataset, run_config, model_config, seed, lr=1.):
         if run_config.eval_every != -1 and epoch % run_config.eval_every == 0:
             mean_accuracy = test(global_params, dataset, model_config, run_config.eval_on_fraction, seed)
             print(f'Test Accuracy on {int(run_config.eval_on_fraction * len(dataset.clients))} clients: {mean_accuracy}')
+        sys.stdout.flush()
 
     # compute average test error
     mean_accuracy = test(global_params, dataset, model_config, 1, seed)
