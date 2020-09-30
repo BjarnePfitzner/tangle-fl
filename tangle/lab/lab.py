@@ -128,9 +128,22 @@ class Lab:
     def validate(self, round, dataset, client_fraction=0.1):
         print('Validate for round %s' % round)
         tangle = self.tx_store.load_tangle(round)
-        client_indices = np.random.choice(range(len(dataset.clients)),
-                                          min(int(len(dataset.clients) * client_fraction), len(dataset.clients)),
-                                          replace=False)
+        if dataset.clients[0][1] is None:
+            # No clusters used
+            client_indices = np.random.choice(range(len(dataset.clients)),
+                                              min(int(len(dataset.clients) * client_fraction), len(dataset.clients)),
+                                              replace=False)
+        else:
+            # validate fairly across all clusters
+            client_indices = []
+            clusters = np.array(list(map(lambda x: x[1], dataset.clients)))
+            unique_clusters = set(clusters)
+            num = min(int(len(dataset.clients) * client_fraction), len(dataset.clients))
+            div = len(unique_clusters)
+            clients_per_cluster = [num // div + (1 if x < num % div else 0)  for x in range(div)]
+            for cluster_id in unique_clusters:
+                cluster_client_ids = np.where(clusters == cluster_id)[0]
+                client_indices.extend(np.random.choice(cluster_client_ids, clients_per_cluster[cluster_id], replace=False))
         validation_clients = [dataset.clients[i] for i in client_indices]
         return self.validate_nodes(tangle, validation_clients, dataset)
 
@@ -142,6 +155,11 @@ class Lab:
 
         if mode == 'avg':
             print(avg_message)
+            import csv
+            import os
+            with open(os.path.join(os.path.dirname(self.config.tangle_dir), 'acc_and_loss.csv'), 'a', newline='') as f:
+                csvwriter = csv.writer(f)
+                csvwriter.writerow([avg_acc, avg_loss])
         if mode == 'all':
             print(avg_message)
             print(results)

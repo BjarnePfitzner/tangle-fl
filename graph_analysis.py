@@ -2,6 +2,7 @@ import argparse
 import networkx as nx
 import matplotlib.pyplot as plt
 import numpy as np
+from collections import Counter
 from skimage.future.graph import cut_normalized
 
 from tangle.lab.lab_transaction_store import LabTransactionStore
@@ -200,6 +201,14 @@ def draw_greedy_modularity_communities(graph):
     plt.show()
 
 
+def get_avg_txs_per_round(tangle):
+    tangle = tangle.transactions
+    tx_times = list(map(lambda elem: elem.metadata['time'], tangle))
+    c = Counter(tx_times)
+    avg = np.mean(list(c.values()))
+    print(f'Average number of TXs per round: {avg}')
+
+
 def normalized_cut(graph):
     """ WORK-IN-PROGRESS - computes normalized cut of tangle graph.
 
@@ -240,6 +249,8 @@ def main():
     # normalized_cut(graph)
     # draw_greedy_modularity_communities(graph)
     get_within_cluster_subgraphs(tangle, num_cluster=args.num_cluster)
+
+    get_avg_txs_per_round(tangle)
 
 
 if __name__ == "__main__":
