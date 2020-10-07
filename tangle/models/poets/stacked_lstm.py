@@ -36,7 +36,8 @@ class ClientModel(Model):
         eval_metric_ops = tf.count_nonzero(correct_pred)
         conf_matrix = tf.math.confusion_matrix(tf.argmax(labels, 1), tf.argmax(pred, 1), num_classes=self.num_classes)
 
-        return features, labels, train_op, eval_metric_ops, conf_matrix, loss
+        # Also return predicted next character and expected next character
+        return features, labels, train_op, eval_metric_ops, conf_matrix, loss, tf.argmax(pred, 1), tf.argmax(labels, 1)
 
     def process_x(self, raw_x_batch):
         x_batch = [word_to_indices_poets(word) for word in raw_x_batch]

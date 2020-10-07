@@ -23,7 +23,7 @@ class Model(ABC):
         self.graph = tf.Graph()
         with self.graph.as_default():
             tf.set_random_seed(123 + self.seed)
-            self.features, self.labels, self.train_op, self.eval_metric_ops, self.conf_matrix, self.loss = self.create_model()
+            self.features, self.labels, self.train_op, self.eval_metric_ops, self.conf_matrix, self.loss, *self.additional_params = self.create_model()
             self.saver = tf.train.Saver()
         self.sess = tf.Session(graph=self.graph,config=tf.ConfigProto(inter_op_parallelism_threads=1,
                                         intra_op_parallelism_threads=1,
@@ -118,12 +118,12 @@ class Model(ABC):
         x_vecs = self.process_x(data['x'])
         labels = self.process_y(data['y'])
         with self.graph.as_default():
-            tot_acc, conf_matrix, loss = self.sess.run(
-                [self.eval_metric_ops, self.conf_matrix, self.loss],
+            tot_acc, conf_matrix, loss, *adds = self.sess.run(
+                [self.eval_metric_ops, self.conf_matrix, self.loss, *self.additional_params],
                 feed_dict={self.features: x_vecs, self.labels: labels}
             )
         acc = float(tot_acc) / x_vecs.shape[0]
-        return {ACCURACY_KEY: acc, 'conf_matrix': conf_matrix, 'loss': loss}
+        return {ACCURACY_KEY: acc, 'conf_matrix': conf_matrix, 'loss': loss, 'additional_metrics': adds}
 
     def close(self):
         self.sess.close()
