@@ -121,7 +121,7 @@ def parse_args():
 
     parser.add_argument(
         '--outputdir',
-        help='Specify where to search for reddit data. Default: "data"',
+        help='Specify where to search for reddit data. Default: "data-transformed"',
         default='data-transformed',
         type=str,
         required=False)
