@@ -20,7 +20,8 @@ params = {
     'eval_every': [199],
     'eval_on_fraction': [0.05],
     'clients_per_round': [10],
-    'model_data_dir': ['../data/femnist-data-clustered-alt-small'],
+    'src_tangle_dir': [''],         # Set to '' to not use --src-tangle-dir parameter
+    'start_round': [0],             # Is expected to be of length 1
     'tip_selector': ['accuracy'],
     'num_tips': [2],
     'sample_size': [2],
@@ -187,6 +188,9 @@ def run_and_document_experiments(args, experiments_dir, setup_filename, console_
             p['poison_from'])
         command = command % parameters
 
+        if len(p['src_tangle_dir']) > 0:
+            command = '%s --src-tangle-dir %s' % (command, p['src_tangle_dir'])
+
         start_time = datetime.datetime.now()
 
         # Print Parameters and command
@@ -204,7 +208,7 @@ def run_and_document_experiments(args, experiments_dir, setup_filename, console_
 
             command = command.split(" ")
             command.append("--start-from")
-            command.append("0")
+            command.append(str(p['start_round']))
 
             step = 10
             start = 0
