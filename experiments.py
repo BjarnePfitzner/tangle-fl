@@ -14,21 +14,22 @@ from sklearn.model_selection import ParameterGrid
 #############################################################################
 
 params = {
-    'dataset': ['femnistclustered'],   # is expected to be one value to construct default experiment name
-    'model': ['cnn'],      # is expected to be one value to construct default experiment name
-    'num_rounds': [200],
-    'eval_every': [199],
+    'dataset': ['nextcharacter'],   # is expected to be one value to construct default experiment name
+    'model': ['stacked_lstm'],      # is expected to be one value to construct default experiment name
+    'num_rounds': [5],
+    'eval_every': [4],
     'eval_on_fraction': [0.05],
     'clients_per_round': [10],
-    'src_tangle_dir': [''],         # Set to '' to not use --src-tangle-dir parameter
-    'start_round': [0],             # Is expected to be of length 1
-    'tip_selector': ['accuracy'],
+    'model_data_dir': ['./tangle/data/nextcharacter/data'],
+    'src_tangle_dir': ['../experiments/nextcharacter-stacked_lstm-22/config_0/tangle_data'],         # Set to '' to not use --src-tangle-dir parameter
+    'start_round': [2],
+    'tip_selector': ['default'],
     'num_tips': [2],
     'sample_size': [2],
     'batch_size': [10],
     'reference_avg_top': [1],
     'target_accuracy': [1],
-    'learning_rate':  [0.05, 0.005],
+    'learning_rate':  [0.08],
     'num_epochs': [10],
     'poison_type': ['none'],
     'poison_fraction': [0],
@@ -207,16 +208,17 @@ def run_and_document_experiments(args, experiments_dir, setup_filename, console_
         with open(experiment_folder + '/' + console_output_filename, 'w+') as file:
 
             command = command.split(" ")
-            command.append("--start-from")
+            command.append("--start-from-round")
             command.append(str(p['start_round']))
 
             step = 10
-            start = 0
-            for i in range(0, p['num_rounds'],step):
+            start = p['start_round'] 
+            for i in range(start, p['num_rounds'],step):
                 end = min(i+step, p['num_rounds'])
 
                 command[-1] = str(start)
                 command[8] = str(end)
+
                 training = subprocess.Popen(command, stdout=file, stderr=file)
                 training.wait()
 

@@ -4,8 +4,8 @@ import numpy as np
 from ..lab import LabTransactionStore
 
 class RayTransactionStore(LabTransactionStore):
-    def __init__(self, tangle_path):
-        super().__init__(tangle_path)
+    def __init__(self, tangle_path, src_tangle_path = None):
+        super().__init__(tangle_path, src_tangle_path)
         self.tx_cache = {}
 
     def load_transaction_weights(self, tx_id):
