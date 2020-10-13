@@ -37,7 +37,6 @@ class LabTransactionStore(TransactionStore):
             return np.load(f'{self.src_tx_path}/{tx_id}.npy', allow_pickle=True)
         else:
             return np.load(f'{self.dest_tx_path}/{tx_id}.npy', allow_pickle=True)
-        foo = LabTransactionStore()
 
     def compute_transaction_id(self, tx_weights):
         tmpfile = io.BytesIO()
