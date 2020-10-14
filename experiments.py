@@ -29,8 +29,8 @@ params = {
     'batch_size': [10],
     'reference_avg_top': [1],
     'target_accuracy': [1],
-    'learning_rate':  [0.08],
-    'num_epochs': [10],
+    'learning_rate': [0.8],
+    'num_epochs': [1],
     'poison_type': ['none'],
     'poison_fraction': [0],
     'poison_from': [1],
@@ -209,10 +209,10 @@ def run_and_document_experiments(args, experiments_dir, setup_filename, console_
 
             command = command.split(" ")
             command.append("--start-from-round")
-            command.append(str(p['start_round']))
+            command.append("") # Placeholder to be set to the round below
 
             step = 10
-            start = p['start_round'] 
+            start = p['start_round']
             for i in range(start, p['num_rounds'],step):
                 end = min(i+step, p['num_rounds'])
 
