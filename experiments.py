@@ -7,6 +7,8 @@ import shutil
 import subprocess
 import sys
 
+from tangle.analysis import TangleAnalysator
+
 from sklearn.model_selection import ParameterGrid
 
 #############################################################################
@@ -14,14 +16,14 @@ from sklearn.model_selection import ParameterGrid
 #############################################################################
 
 params = {
-    'dataset': ['nextcharacter'],   # is expected to be one value to construct default experiment name
+    'dataset': ['poets'],   # is expected to be one value to construct default experiment name
     'model': ['stacked_lstm'],      # is expected to be one value to construct default experiment name
-    'num_rounds': [5],
-    'eval_every': [4],
+    'num_rounds': [100],
+    'eval_every': [99],
     'eval_on_fraction': [0.05],
     'clients_per_round': [10],
     'model_data_dir': ['./tangle/data/nextcharacter/data'],
-    'src_tangle_dir': ['../experiments/nextcharacter-stacked_lstm-22/config_0/tangle_data'],         # Set to '' to not use --src-tangle-dir parameter
+    'src_tangle_dir': [''],         # Set to '' to not use --src-tangle-dir parameter
     'start_round': [2],
     'tip_selector': ['default'],
     'num_tips': [2],
@@ -230,6 +232,11 @@ def run_and_document_experiments(args, experiments_dir, setup_filename, console_
             end_time = datetime.datetime.now()
             print('EndTime: %s' % end_time, file=file)
             print('Duration Training: %s' % (end_time - start_time), file=file)
+
+        print('Analysing tangle...')
+        os.makedirs(experiment_folder + '/tangle_analysis', exist_ok=True)
+        analysator = TangleAnalysator(experiment_folder + '/tangle_data', p['num_rounds'] - 1, experiment_folder + '/tangle_analysis')
+        analysator.save_statistics()
 
 if __name__ == "__main__":
     main()
