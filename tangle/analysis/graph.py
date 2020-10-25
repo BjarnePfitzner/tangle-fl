@@ -78,6 +78,8 @@ class Graph:
         else:
             plt.show()
         
+        plt.clf()
+        
     def plot_information_gain_ref_tx(self, smooth_line=False):      
         labels, data_arrays = self._get_information_gain_ref_tx()
         
