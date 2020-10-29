@@ -31,14 +31,22 @@ class AccuracyTipSelector(TipSelector):
             return super(AccuracyTipSelector, self).tip_selection(num_tips)
 
     def _compute_ratings(self, node):
-        rating = {}
+        accuracies = {}
 
         if self.settings[AccuracyTipSelectorSettings.SELECTION_STRATEGY] == "GLOBAL" and not self.settings[AccuracyTipSelectorSettings.CUMULATE_RATINGS]:
             txs = self.tips
         else:
             txs = self.tangle.transactions.keys()
         for tx_id in txs:
-            rating[tx_id] = node.test(node.tx_store.load_transaction_weights(tx_id), 'train')[ACCURACY_KEY]
+            accuracies[tx_id] = node.test(node.tx_store.load_transaction_weights(tx_id), 'train')[ACCURACY_KEY]
+
+        rating = {}
+        future_set_cache = {}
+        for tx in txs:
+            rating[tx] = len(TipSelector.future_set(tx, self.approving_transactions, future_set_cache)) + 1
+
+        for tx in txs:
+            rating[tx] = rating[tx] * accuracies[tx]
 
         return rating
 
