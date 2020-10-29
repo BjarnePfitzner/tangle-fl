@@ -42,8 +42,11 @@ def batch_data(data, batch_size, seed):
     data is a dict := {'x': [numpy array], 'y': [numpy array]} (on one client)
     returns x, y, which are both numpy array of length: batch_size
     '''
-    data_x = data['x']
-    data_y = data['y']
+
+    num_batches = 10
+
+    data_x = np.repeat(data['x'], max(np.ceil((batch_size / len(data['x'])) * num_batches), 1))
+    data_y = np.repeat(data['y'], max(np.ceil((batch_size / len(data['y'])) * num_batches), 1))
 
     # randomly shuffle data
     np.random.seed(seed)
@@ -54,6 +57,8 @@ def batch_data(data, batch_size, seed):
 
     # loop through mini-batches
     for i in range(0, len(data_x), batch_size):
+        if i >= num_batches * batch_size:
+            break
         batched_x = data_x[i:i+batch_size]
         batched_y = data_y[i:i+batch_size]
         yield (batched_x, batched_y)
