@@ -28,6 +28,8 @@ class TheoreticalNode(Node):
     def __init__(self, tangle, tx_store, tip_selector, client_id, cluster_id, data):
         self.data = data
         super().__init__(tangle, tx_store, tip_selector, client_id, cluster_id)
+        self.config.sample_size = 5
+
 
     def test(self, model_params, set_to_use='test'):
         error = np.linalg.norm(np.array(model_params) - np.array(self.data))
