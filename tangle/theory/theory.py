@@ -6,7 +6,7 @@ def next_tx_id():
     global current_id
     id = current_id
     current_id = current_id + 1
-    return id
+    return str(id)
 
 
 class TempTransactionStore(TransactionStore):
