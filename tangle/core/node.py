@@ -116,7 +116,7 @@ class Node:
         if len(self.tangle.transactions) < num_tips:
             return [self.tangle.transactions[self.tangle.genesis] for i in range(2)]
 
-        tips = self.tip_selector.tip_selection(sample_size)
+        tips = self.tip_selector.tip_selection(sample_size, self)
 
         no_dups = set(tips)
         if len(no_dups) >= num_tips:

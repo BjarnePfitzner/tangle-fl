@@ -26,17 +26,20 @@ class TipSelector:
                     continue
                 self.approving_transactions[unique_parent].append(x)
 
-    def tip_selection(self, num_tips):
+    def tip_rating(self, tx, node):
+        return self.ratings[tx]
+
+    def tip_selection(self, num_tips, node):
         # https://docs.iota.org/docs/node-software/0.1/iri/concepts/tip-selection
         # The docs say entry_point = latestSolidMilestone - depth.
         tips = []
 
         # Start from the 'branch' once
-        tips.append(self.walk(self.branch, self.ratings, self.approving_transactions))
+        tips.append(self.walk(self.branch, node, self.approving_transactions))
 
         for _ in range(num_tips-1):
             # Start walking from the 'trunk' for all remaining tips
-            tips.append(self.walk(self.trunk, self.ratings, self.approving_transactions))
+            tips.append(self.walk(self.trunk, node, self.approving_transactions))
 
         return tips
 
@@ -48,26 +51,26 @@ class TipSelector:
 
         self.ratings = rating
 
-    def walk(self, tx, ratings, approving_transactions):
+    def walk(self, tx, node, approving_transactions):
         step = tx
         prev_step = None
 
         while step is not None:
             approvers = approving_transactions[step]
             prev_step = step
-            step = self.next_step(ratings, approvers)
+            step = self.next_step(approvers, node)
 
         # When there are no more steps, this transaction is a tip
         return prev_step
 
-    def next_step(self, ratings, approvers):
+    def next_step(self, approvers, node):
         approvers_with_rating = approvers  # There is a rating for every possible approver
 
         # There is no valid approver, this transaction is a tip
         if len(approvers_with_rating) == 0:
             return None
 
-        approvers_ratings = [ratings[a] for a in approvers_with_rating]
+        approvers_ratings = [self.tx_rating(a, node) for a in approvers_with_rating]
         weights = self.ratings_to_weight(approvers_ratings)
         approver = self.weighted_choice(approvers_with_rating, weights)
 
