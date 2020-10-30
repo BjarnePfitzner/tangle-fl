@@ -23,12 +23,12 @@ class AccuracyTipSelector(TipSelector):
             if len(self.approving_transactions[x]) == 0:
                 self.tips.append(x)
 
-    def tip_selection(self, num_tips):
+    def tip_selection(self, num_tips, node):
         if self.settings[AccuracyTipSelectorSettings.SELECTION_STRATEGY] == "GLOBAL":
             self.tips.sort(key=lambda x: self.ratings[x], reverse=True)
             return self.tips[0:num_tips]
         else:
-            return super(AccuracyTipSelector, self).tip_selection(num_tips)
+            return super(AccuracyTipSelector, self).tip_selection(num_tips, node)
 
     def _compute_ratings(self, node):
         accuracies = {}
