@@ -26,7 +26,7 @@ class TipSelector:
                     continue
                 self.approving_transactions[unique_parent].append(x)
 
-    def tip_rating(self, tx, node):
+    def tx_rating(self, tx, node):
         return self.ratings[tx]
 
     def tip_selection(self, num_tips, node):
