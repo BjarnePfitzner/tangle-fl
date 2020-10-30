@@ -15,7 +15,7 @@ class Lab:
         self.tip_selector_factory = tip_selector_factory
         self.config = config
         self.model_config = model_config
-        self.tx_store = tx_store if tx_store is not None else LabTransactionStore(self.config.tangle_dir)
+        self.tx_store = tx_store if tx_store is not None else LabTransactionStore(self.config.tangle_dir, self.config.src_tangle_dir)
 
         # Set the random seed if provided (affects client sampling, and batching)
         random.seed(1 + config.seed)

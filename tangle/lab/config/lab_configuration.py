@@ -2,7 +2,7 @@ class LabConfiguration:
     seed: int
     model_data_dir: str
     tangle_dir: str
-    tangle_dir: bool
+    src_tangle_dir: str
 
     def __init__(self):
         self.seed = None
@@ -25,6 +25,11 @@ class LabConfiguration:
                     type=str,
                     default='tangle_data',
                     required=False)
+        parser.add_argument('--src-tangle-dir',
+                    help='dir to load initial tangle data from (DAG JSON)',
+                    type=str,
+                    default=None,
+                    required=False)
         parser.add_argument('--use-val-set',
                     help='use validation set',
                     action='store_true')
@@ -33,4 +38,5 @@ class LabConfiguration:
         self.seed = args.seed
         self.model_data_dir = args.model_data_dir
         self.tangle_dir = args.tangle_dir
+        self.src_tangle_dir = args.src_tangle_dir
         self.use_val_set = args.use_val_set

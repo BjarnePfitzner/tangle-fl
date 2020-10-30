@@ -228,6 +228,7 @@ class Node:
             t.add_metadata('loss', float(trained_model_metrics['loss']))
             t.add_metadata('reference_tx', reference_txs[0])
             t.add_metadata('reference_tx_loss', float(reference_metrics['loss']))
+            t.add_metadata('reference_tx_accuracy', reference_metrics['accuracy'])
             t.add_metadata('averaged_accuracy', averaged_model_metrics['accuracy'])
             t.add_metadata('accuracy', trained_model_metrics['accuracy'])
 

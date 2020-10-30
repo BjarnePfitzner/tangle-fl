@@ -7,6 +7,8 @@ import shutil
 import subprocess
 import sys
 
+from tangle.analysis import TangleAnalysator
+
 from sklearn.model_selection import ParameterGrid
 
 #############################################################################
@@ -14,21 +16,23 @@ from sklearn.model_selection import ParameterGrid
 #############################################################################
 
 params = {
-    'dataset': ['femnistclustered'],   # is expected to be one value to construct default experiment name
-    'model': ['cnn'],      # is expected to be one value to construct default experiment name
-    'num_rounds': [200],
-    'eval_every': [199],
+    'dataset': ['poets'],   # is expected to be one value to construct default experiment name
+    'model': ['stacked_lstm'],      # is expected to be one value to construct default experiment name
+    'num_rounds': [100],
+    'eval_every': [99],
     'eval_on_fraction': [0.05],
     'clients_per_round': [10],
-    'model_data_dir': ['../data/femnist-data-clustered-alt-small'],
-    'tip_selector': ['accuracy'],
+    'model_data_dir': ['./tangle/data/nextcharacter/data'],
+    'src_tangle_dir': [''],         # Set to '' to not use --src-tangle-dir parameter
+    'start_round': [2],
+    'tip_selector': ['default'],
     'num_tips': [2],
     'sample_size': [2],
     'batch_size': [10],
     'reference_avg_top': [1],
     'target_accuracy': [1],
-    'learning_rate':  [0.05, 0.005],
-    'num_epochs': [10],
+    'learning_rate': [0.8],
+    'num_epochs': [1],
     'poison_type': ['none'],
     'poison_fraction': [0],
     'poison_from': [1],
@@ -187,6 +191,9 @@ def run_and_document_experiments(args, experiments_dir, setup_filename, console_
             p['poison_from'])
         command = command % parameters
 
+        if len(p['src_tangle_dir']) > 0:
+            command = '%s --src-tangle-dir %s' % (command, p['src_tangle_dir'])
+
         start_time = datetime.datetime.now()
 
         # Print Parameters and command
@@ -203,16 +210,17 @@ def run_and_document_experiments(args, experiments_dir, setup_filename, console_
         with open(experiment_folder + '/' + console_output_filename, 'w+') as file:
 
             command = command.split(" ")
-            command.append("--start-from")
-            command.append("0")
+            command.append("--start-from-round")
+            command.append("") # Placeholder to be set to the round below
 
             step = 10
-            start = 0
-            for i in range(0, p['num_rounds'],step):
+            start = p['start_round']
+            for i in range(start, p['num_rounds'],step):
                 end = min(i+step, p['num_rounds'])
 
                 command[-1] = str(start)
                 command[8] = str(end)
+
                 training = subprocess.Popen(command, stdout=file, stderr=file)
                 training.wait()
 
@@ -224,6 +232,11 @@ def run_and_document_experiments(args, experiments_dir, setup_filename, console_
             end_time = datetime.datetime.now()
             print('EndTime: %s' % end_time, file=file)
             print('Duration Training: %s' % (end_time - start_time), file=file)
+
+        print('Analysing tangle...')
+        os.makedirs(experiment_folder + '/tangle_analysis', exist_ok=True)
+        analysator = TangleAnalysator(experiment_folder + '/tangle_data', p['num_rounds'] - 1, experiment_folder + '/tangle_analysis')
+        analysator.save_statistics()
 
 if __name__ == "__main__":
     main()
