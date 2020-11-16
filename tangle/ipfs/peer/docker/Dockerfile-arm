@@ -1,6 +1,4 @@
-FROM rs22/tensorflow-aarch64-v1
-
-USER root
+FROM python:3.7
 
 WORKDIR /
 RUN mkdir data
@@ -10,8 +8,6 @@ COPY ./data /data
 RUN apt-get update \
     && apt-get install -y dnsutils
 
-RUN apt install -y iproute2
-
 RUN mkdir /tmp/go-ipfs \
     && curl -sL https://ipfs.io/ipns/dist.ipfs.io/go-ipfs/v0.6.0/go-ipfs_v0.6.0_linux-arm.tar.gz | tar xz -C /tmp/go-ipfs --strip 1 \
     && cd /tmp/go-ipfs && ./install.sh \
@@ -20,18 +16,16 @@ RUN mkdir /tmp/go-ipfs \
 RUN echo "[global]\nextra-index-url=https://www.piwheels.org/simple" >> /etc/pip.conf
 
 WORKDIR /app
-RUN pip3 uninstall -y enum34
-COPY requirements.arm64.txt ./requirements.txt
+COPY requirements.arm.txt ./requirements.txt
 RUN pip3 install -r requirements.txt
 
 RUN apt update && apt install -y libatlas-base-dev
 
 COPY ipfs_entrypoint /usr/bin/ipfs_entrypoint
-COPY . /home/ubuntu/python3-venv/lib/python3.7/site-packages/learner
+COPY . /usr/local/lib/python3.7/site-packages/learner/
 COPY ./entrypoint.sh .
 COPY ./manual_garbage_collection.sh .
-COPY ./prepare_data.sh /usr/bin/prepare_data.sh
-
+COPY docker/prepare_data.sh /usr/bin/prepare_data.sh
 RUN /usr/bin/prepare_data.sh
 
 EXPOSE 4001
@@ -40,5 +34,4 @@ EXPOSE 8000
 ENV PYTHONUNBUFFERED=TRUE
 RUN chmod +x ./entrypoint.sh
 RUN chmod +x ./manual_garbage_collection.sh
-
 ENTRYPOINT ["./entrypoint.sh"]

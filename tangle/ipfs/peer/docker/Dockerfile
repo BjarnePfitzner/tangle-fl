@@ -21,7 +21,7 @@ COPY ipfs_entrypoint /usr/bin/ipfs_entrypoint
 COPY . /usr/local/lib/python3.7/site-packages/learner/
 COPY ./entrypoint.sh .
 COPY ./manual_garbage_collection.sh .
-COPY ./prepare_data.sh /usr/bin/prepare_data.sh
+COPY docker/prepare_data.sh /usr/bin/prepare_data.sh
 RUN /usr/bin/prepare_data.sh
 
 
