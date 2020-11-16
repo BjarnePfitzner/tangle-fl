@@ -4,21 +4,20 @@ services:
 
   bootstrap:
     build: bootstrap
-    image: hpimpss2020/learning-tangle:bootstrap-x86
     ports:
       - 4001:4001
 
   iota_visualization:
     build: iota_visualization
-    image: hpimpss2020/learning-tangle:iota_visualization-x86
     depends_on:
       - bootstrap
     ports:
       - 9000:9000
 
   peer:
-    build: peer
-    image: hpimpss2020/learning-tangle:peer-x86
+    build:
+      context: ../..
+      dockerfile: tangle/ipfs/peer/docker/Dockerfile
     init: true
     cap_add:
       - SYS_PTRACE
@@ -27,10 +26,10 @@ services:
     environment:
       - STORAGE=ipfs
       - MESSAGE_BROKER=ipfs
-      - MODEL=no_tf
+      - MODEL=femnist
       - TIMEOUT=None
       - TRAINING_INTERVAL=20
-      - NUM_OF_TIPPS=2
+      - NUM_OF_TIPS=2
       - NUM_SAMPLING_ROUND=25
       - ACTIVE_QUOTA=0.2
       - CONNECTION_PRUNING_LOW=70

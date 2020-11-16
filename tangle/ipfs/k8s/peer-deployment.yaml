@@ -47,7 +47,7 @@ spec:
               value: ipfs
             - name: MODEL
               value: femnist
-            - name: NUM_OF_TIPPS
+            - name: NUM_OF_TIPS
               value: "2"
             - name: NUM_SAMPLING_ROUND
               value: "25"

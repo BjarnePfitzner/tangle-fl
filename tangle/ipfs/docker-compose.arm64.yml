@@ -3,5 +3,5 @@ services:
   peer:
     build:
       context: peer
-      dockerfile: Dockerfile-arm64
+      dockerfile: docker/Dockerfile-arm64
     image: hpimpss2020/learning-tangle:peer-arm64

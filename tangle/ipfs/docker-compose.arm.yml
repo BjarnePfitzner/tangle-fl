@@ -14,5 +14,5 @@ services:
   peer:
     build:
       context: peer
-      dockerfile: Dockerfile-arm
+      dockerfile: docker/Dockerfile-arm
     image: hpimpss2020/learning-tangle:peer-arm

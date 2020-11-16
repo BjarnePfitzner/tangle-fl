@@ -113,7 +113,7 @@ services:
       - MODEL=femnist
       - TIMEOUT=None
       - TRAINING_INTERVAL=20
-      - NUM_OF_TIPPS=2
+      - NUM_OF_TIPS=2
       - NUM_SAMPLING_ROUND=25
       - LOGGER=print
       - LOGGING_LEVEL=print

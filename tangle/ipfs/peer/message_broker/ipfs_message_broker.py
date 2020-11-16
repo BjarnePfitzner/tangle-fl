@@ -19,18 +19,19 @@ class IPFSMessageBroker(MessageBroker):
     def __init__(self, ipfs_client):
         super().__init__()
         self._ipfsclient = ipfs_client
+        self._tangle_id = None  # TODO
 
-    async def subscribe(self, tangle_id: str, on_ready=None):
+    async def subscribe(self, on_ready=None):
         retry_counter = 10
         while retry_counter > 0:
             try:
                 async with aiohttp.ClientSession() as session:
                     timeout = aiohttp.ClientTimeout(total=None, connect=1, sock_connect=1, sock_read=None)
                     # Abstraction 1 -> PubSub
-                    async with session.post(f'http://127.0.0.1:5001/api/v0/pubsub/sub?arg={tangle_id}&arg=True',
+                    async with session.post(f'http://127.0.0.1:5001/api/v0/pubsub/sub?arg={self._tangle_id}&arg=True',
                                             timeout=timeout) as resp:
                         increment_counter_subscriber()
-                        logger.info('Subscribed to tangle' + tangle_id)
+                        logger.info(f'Subscribed to tangle {self._tangle_id}')
                         if on_ready:
                             on_ready()
                         async for line in resp.content:
@@ -44,9 +45,14 @@ class IPFSMessageBroker(MessageBroker):
                 if retry_counter == 0:
                     increment_counter_subscriber_exit()
 
-    def publish(self, tangle_id: str, value: dict):
+    def publish(self, tx):
         try:
-            self._ipfsclient.pubsub.publish(tangle_id, json.dumps(value).encode())
+            envelope = {
+                'parents': sorted(tx.parents),
+                'weights': tx.metadata['weights_ref'],
+                'peer': tx.metadata['peer']
+            }
+            self._ipfsclient.pubsub.publish(self._tangle_id, json.dumps(envelope).encode())
             return True
         except:
             return False

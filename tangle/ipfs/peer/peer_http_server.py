@@ -32,13 +32,15 @@ class PeerHttpServer(object):
                               view_func=self.metrics)
 
     def generate_transactions_json(self):
-        n = [{'name': t.id, 'time': t.time, 'timeCreated': t.time_created,
-              'peer': t.peer_information, 'parents': list(t.parents)} for _, t in
-             self.tangle.transactions.items()]
+        n = [{
+                'name': t.id,
+                'time': t.metadata['time'],
+                'timeCreated': t.metadata['timeCreated'] if 'timeCreated' in t.metadata else None,
+                'peer': t.metadata['peer'],
+                'parents': list(t.parents)
+            } for _, t in self.tangle.transactions.items()]
 
-        dic = {'nodes': n,
-               'genesis': str(self.tangle.genesis.id)
-               }
+        dic = {'nodes': n, 'genesis': str(self.tangle.genesis)}
 
         return jsonify(dic)
 

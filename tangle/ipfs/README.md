@@ -75,7 +75,7 @@ From the [deploy file](https://gitlab.hpi.de/osm/mpss2020/ipfs-learning-tangle/-
 | MODEL | Machine learning (or fake ML) module used for training | no_tf  or femnist
 | TIMEOUT | Timeout for connections to the IPFS daemon | none or positive integer
 | TRAINING_INTERVAL | Training interval period | positive integer
-| NUM_OF_TIPPS | Number of preceding tips approved by a Tangle transaction | positive integer
+| NUM_OF_TIPS | Number of preceding tips approved by a Tangle transaction | positive integer
 | NUM_OF_SAMPLING_ROUND | Number of samplings performed each learning round | opsitive integer
 | ACTIVE_QUOTA | Probability of one peer becoming active in a training period | Floating point number between 0 and 1
 | CONNECTION_PRUNING_LOW | Minimum number of open IPFS peer connections (see [IPFS](https://github.com/ipfs/go-ipfs/blob/master/docs/config.md#swarmconnmgrlowwater)) | positive integer

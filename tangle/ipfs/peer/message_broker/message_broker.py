@@ -5,9 +5,9 @@ class MessageBroker(ABC):
     pass
 
     @abstractmethod
-    async def subscribe(self, tangle_id: str):
+    async def subscribe(self):
         pass
 
     @abstractmethod
-    def publish(self, tangle_id: str, value: dict):
+    def publish(self, tx):
         pass

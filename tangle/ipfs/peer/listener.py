@@ -52,7 +52,7 @@ class Listener:
         done = asyncio.Future()
 
         received_transactions = from_aiter(
-            self._message_broker.subscribe(self._tangle_builder.tangle.id, self.on_ready), self._loop)
+            self._message_broker.subscribe(self.on_ready), self._loop)
         scheduled_trainings = self.training_interval()
 
         final = rx.merge(received_transactions, scheduled_trainings)
@@ -65,7 +65,6 @@ class Listener:
     def dispatch(self, event):
         if event.type == 'train' and self._ready:
             dice = round(random.uniform(0, 1), 2)
-            logger.info('Dice rolled, result is ' + str(dice))
             if dice <= Config['ACTIVE_QUOTA']:
                 logger.info('Dice roll successful, this peer is active')
                 self._tangle_builder.train_and_publish(self._train_data, self._test_data)

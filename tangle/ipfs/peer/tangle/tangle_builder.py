@@ -1,48 +1,52 @@
 import io
 import os
 import time
+import datetime
 
 import numpy as np
 
-from .tangle import Tangle
-from .tip_selector import TipSelector
-from .transaction import Transaction
+from ....core import Tangle, Transaction
+from ....core.tip_selection import TipSelector
 from .. import logger
 from ..config import Config
 from ..message_broker.message_broker import MessageBroker
 from ..metrics.counter_metrics import *
 from ..metrics.histogram_metrics import *
-from ..storage.storage import Storage
 
-NUM_OF_TIPPS = Config["NUM_OF_TIPPS"]
-NUM_SAMPLING_ROUND_CONFIDENCE = Config["NUM_SAMPLING_ROUND_CONFIDENCE"]
-
+NUM_OF_TIPS = Config['NUM_OF_TIPS']
+NUM_SAMPLING_ROUND_CONFIDENCE = Config['NUM_SAMPLING_ROUND_CONFIDENCE']
 
 class TangleBuilder:
-    def __init__(self, genesis_path, message_broker: MessageBroker, storage: Storage, model_type, peer_information):
+    def __init__(self, genesis_path, message_broker: MessageBroker, tx_store, model_type, peer_information):
         self.peer_information = peer_information
         self._message_broker = message_broker
-        self._storage = storage
+        self._tx_store = tx_store
         self._model_type = model_type
         genesis = self._add_genesis(genesis_path)
-        self.tangle = Tangle(genesis)
+        self.tangle = Tangle({genesis.id: genesis}, genesis.id)
         os.makedirs(f'iota_visualization/tangle_data', exist_ok=True)
         self.last_training = None
+        # Hackedy-hack
+        self._message_broker._tangle_id = genesis.id
 
     def _add_genesis(self, genesis_path):
-        with open(genesis_path, 'rb') as genesis_file:
-            file_hash = self._storage.add_file(genesis_file)
-            return Transaction(file_hash, file_hash, [], self._storage)
+        genesis_weights = np.load(genesis_path, allow_pickle=True)
+        genesis = Transaction([])
+        genesis.add_metadata('peer', {"client_id": "fffff_ff"})
+        genesis.add_metadata('time', 0)
+        self._tx_store.save(genesis, genesis_weights)
+        return genesis
 
     def _choose_tips(self, selector=None):
-        num_tips = NUM_OF_TIPPS
-        sample_size = NUM_OF_TIPPS
+        num_tips = NUM_OF_TIPS
+        sample_size = NUM_OF_TIPS
 
         if selector is None:
             selector = TipSelector(self.tangle)
+            selector.compute_ratings(None)
 
         if len(self.tangle.transactions) < num_tips:
-            return [self.tangle.transactions[self.tangle.genesis.id] for _ in range(2)]
+            return [self.tangle.transactions[self.tangle.genesis] for _ in range(2)]
 
         tips = selector.tip_selection(sample_size)
 
@@ -86,6 +90,7 @@ class TangleBuilder:
         # Use a cached tip selector
         if selector is None:
             selector = TipSelector(self.tangle)
+            selector.compute_ratings(None)
 
         for i in range(num_sampling_rounds):
             tips = self._choose_tips(selector=selector)
@@ -135,15 +140,15 @@ class TangleBuilder:
 
         filtered_reference_txs = self._filter_weights_loaded(reference_txs)
         if len(filtered_reference_txs) == 0:
-            logger.info("References wrong")
+            logger.info('References wrong')
             return None, None
         reference_params = self._average_model_params(
-            [self.tangle.transactions[elem].load_weights(self._storage) for elem in filtered_reference_txs])
+            [self._tx_store.load_transaction_weights(elem) for elem in filtered_reference_txs])
         return reference_txs, reference_params
 
     @staticmethod
     def _train(model, data, num_epochs=1, batch_size=10):
-        """Trains on self.model using the client's train_data.
+        '''Trains on self.model using the client's train_data.
 
         Args:
             num_epochs: Number of epochs to train. Unsupported if minibatch is provided (minibatch has only 1 epoch)
@@ -153,7 +158,7 @@ class TangleBuilder:
             num_samples: number of samples used in training
             update: set of weights
             update_size: number of bytes in update
-        """
+        '''
         logger.info('Training...')
         update = model.train(data, num_epochs, batch_size)
 
@@ -161,7 +166,7 @@ class TangleBuilder:
         return num_train_samples, update
 
     def _filter_weights_loaded(self, tips):
-        return [elem for elem in tips if self.tangle.transactions[elem].load_weights(self._storage) is not None]
+        return [elem for elem in tips if self._tx_store.load_transaction_weights(elem) is not None]
 
     def train_and_publish(self, train_data, eval_data):
         start = time.time()
@@ -176,13 +181,14 @@ class TangleBuilder:
         logger.info('Training duration in ms: ' + str(train_duration))
 
     def _train_and_publish(self, train_data, eval_data):
-        logger.info("Start Training")
+        logger.info('Start Training')
 
         increment_count_training()
 
         model = self._model_type(0)
 
         selector = TipSelector(self.tangle)
+        selector.compute_ratings(None)
 
         # Compute reference metrics
         reference_txs, reference = self._obtain_reference_params(selector=selector)
@@ -209,7 +215,8 @@ class TangleBuilder:
 
         # Here: simple unweighted average
 
-        selected_tips = [tip.load_weights(self._storage) for tip in tips if tip.load_weights(self._storage) is not None]
+        selected_tips = [self._tx_store.load_transaction_weights(tip.id) for tip in tips
+                          if self._tx_store.load_transaction_weights(tip.id) is not None]
         if len(selected_tips) == 0:
             logger.info('Training Error: Tip Selection Failed')
             return
@@ -220,48 +227,56 @@ class TangleBuilder:
         _, _update = self._train(model, train_data, num_epochs, batch_size)
 
         c_averaged_model_metrics = model.test(eval_data)
-        logger.info("Current model accuracy:" + str(c_averaged_model_metrics['accuracy']))
+        logger.info('Current model accuracy:' + str(c_averaged_model_metrics['accuracy']))
         observe_model_accuracy(float(c_averaged_model_metrics['accuracy']))
-        logger.info("Current model loss:" + str(c_averaged_model_metrics['loss']))
+        logger.info('Current model loss:' + str(c_averaged_model_metrics['loss']))
         observe_model_loss(float(c_averaged_model_metrics['loss']))
-        logger.info("Consens model accuracy:" + str(c_metrics['accuracy']))
+        logger.info('Consensus model accuracy:' + str(c_metrics['accuracy']))
 
         observe_consensus_accuracy(float(c_metrics['accuracy']))
-        logger.info("Consens model loss:" + str(c_metrics['loss']))
+        logger.info('Consensus model loss:' + str(c_metrics['loss']))
         observe_consensus_model_loss(float(c_metrics['loss']))
 
         if c_averaged_model_metrics['loss'] < c_metrics['loss']:
-            weights_bytes = io.BytesIO()
-            np.save(weights_bytes, model.get_params(), allow_pickle=True)
-            weights_bytes.seek(0)
-            weights_key = self._storage.add_file(weights_bytes)
-            if weights_key is None:
-                logger.warn("Publishing Error: Adding weights failed")
+            parents = set([tip.id for tip in tips])
+            tx = Transaction(parents)
+            tx.add_metadata('peer', self.peer_information)
+            tx.add_metadata('time', 0)
+            tx.add_metadata('timeCreated', str(datetime.datetime.now()))
+            self._tx_store.save(tx, model.get_params())
+
+            if tx.id is None:
+                logger.warn('Publishing Error: Adding transactions failed')
                 return
 
-            parents = set([tip.id for tip in tips])
-            tx = Transaction(self.tangle.id, weights_key, parents, self._storage)
-            if tx.id is None:
-                logger.warn("Publishing Error: Adding transactions failed")
+            publish_success = self._message_broker.publish(tx)
+            if publish_success:
+                logger.info(f'Published transaction {tx.id}')
+                increment_count_transaction_published()
                 return
-            publish_success = tx.publish(self._message_broker, model.get_params(), self.peer_information)
-            if not publish_success:
-                logger.warn("Publishing Error: Adding transactions failed")
+            else:
+                logger.warn(f'Failed to publish transaction {tx.id}')
+                increment_count_transaction_publish_error()
                 return
         else:
             increment_count_publish_error()
-            logger.warn("Training Performance worse than consensus")
+            logger.warn('Training Performance worse than consensus')
 
     def handle_transaction(self, tx_data):
-        tx = Transaction(self.tangle.id, tx_data['weights'], tx_data['parents'], self._storage)
-        tx.peer_information = tx_data["peer"]
+        tx = Transaction(tx_data['parents'])
+        tx.add_metadata('peer', tx_data['peer'])
+        tx.add_metadata('weights_ref', tx_data['weights'])
+        tx.add_metadata('time', 0)
+        tx.id = self._tx_store.compute_transaction_id(tx, only_hash=True)
+
+        self._tx_store.register_transaction(tx.id, tx_data['weights'])
 
         for parent in tx.parents:
             if parent in self.tangle.transactions:
                 continue
 
             logger.info('Try to resolve tx' + str(parent))
-            parent_tx_data = self._storage.get_json(parent)
+            parent_tx_data = self._tx_store.get_json(parent)
             if parent_tx_data is not None:
                 logger.info('Successfully resolved tx' + str(parent))
                 self.handle_transaction(parent_tx_data)
@@ -271,19 +286,19 @@ class TangleBuilder:
         self.__order_transaction_time(tx)
         self.tangle.add_transaction(tx)
         increment_count_transaction_received()
-        logger.info('Received transaction' + str(tx.id))
+        logger.info(f'Received transaction {tx.id}')
 
     def __order_transaction_time(self, tx):
         parents = tx.parents
         if len(parents) == 2:
-            parent_time1 = self.tangle.transactions.get(parents[0]).time
-            parent_time2 = self.tangle.transactions.get(parents[1]).time
+            parent_time1 = self.tangle.transactions[parents[0]].metadata['time']
+            parent_time2 = self.tangle.transactions[parents[1]].metadata['time']
             max_parent_time = max(parent_time1, parent_time2)
             time = max_parent_time + 0.1
         else:
-            parent_time = self.tangle.transactions.get(parents[0]).time
+            parent_time = self.tangle.transactions[parents[0]].metadata['time']
             time = parent_time + 0.1
-        tx.time = time
+        tx.add_metadata('time', time)
 
     # def close(self):
     #     self._client.close()

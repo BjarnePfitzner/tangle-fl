@@ -21,7 +21,7 @@ from .tangle import TangleBuilder
 def start_daemon():
     start = time.process_time()
 
-    command = ["ipfs_entrypoint", "daemon", "--migrate=true", "--enable-pubsub-experiment", "--enable-gc"]
+    command = ['ipfs_entrypoint', 'daemon', '--migrate=true', '--enable-pubsub-experiment', '--enable-gc']
     d = subprocess.Popen(command, stdout=subprocess.PIPE)
 
     while d.stdout.readline() not in b'Daemon is ready\n':
@@ -38,10 +38,10 @@ def parse_args():
             return value
         elif isinstance(value, str) and value.isdigit():
             return int(value)
-        elif value == "None":
+        elif value == 'None':
             return None
         else:
-            msg = f'{value} is neither int nore None'
+            msg = f'{value} is neither int nor None'
             raise argparse.ArgumentTypeError(msg)
 
     parser = argparse.ArgumentParser()
@@ -55,7 +55,7 @@ def parse_args():
     parser.add_argument('--model', default='femnist', help='sets the used model')
     parser.add_argument('--timeout', default=None, type=int_or_none, help='timeout for ipfs')
     parser.add_argument('--training_interval', default=20, type=int, help='trainings interval')
-    parser.add_argument('--num_of_tipps', default=2, type=int, help='number of tipps in tipp selection')
+    parser.add_argument('--NUM_OF_TIPS', default=2, type=int, help='number of tips in tipp selection')
     parser.add_argument('--num_sampling_round', default=35, type=int, help='Number of transactions choosen for conses')
     parser.add_argument('--active_quota', type=float, default=0.01,
                         help='sets the quota of active pears, must be valid percentage (0.00, 0.01, ..., 0.99, 1.00')
@@ -102,7 +102,7 @@ def get_ipfs_client():
     global __IPFS_CLIENT__
     while __IPFS_CLIENT__ == None:
         try:
-            __IPFS_CLIENT__ = ipfshttpclient4ipwb.connect(session=True, timeout=Config["TIMEOUT"])
+            __IPFS_CLIENT__ = ipfshttpclient4ipwb.connect(session=True, timeout=Config['TIMEOUT'])
         except Exception as e:
             logger.error(e)
             __IPFS_CLIENT__ = None
@@ -113,16 +113,16 @@ def get_ipfs_client():
 
 
 def parse_storage(storage):
-    if storage == "ipfs":
-        from .storage.ipfs_storage import IPFSStorage
-        return IPFSStorage(get_ipfs_client())
+    if storage == 'ipfs':
+        from .tangle.ipfs_transaction_store import IPFSTransactionStore
+        return IPFSTransactionStore(get_ipfs_client())
 
 
 # Import only when needed
 
 
 def parse_message_broker(message_broker):
-    if message_broker == "ipfs":
+    if message_broker == 'ipfs':
         from .message_broker.ipfs_message_broker import IPFSMessageBroker
         return IPFSMessageBroker(get_ipfs_client())
 
@@ -131,12 +131,12 @@ def parse_message_broker(message_broker):
 
 
 def parse_model(model):
-    if model == "femnist":
+    if model == 'femnist':
         from .model.femnist import ClientModel
         return ClientModel
-    elif model == "no_tf":
+    elif model == 'no_tf':
         from .model.no_tf_model import NoTfModel
-        logger.info("No TF Model")
+        logger.info('No TF Model')
         return NoTfModel
 
 
@@ -151,15 +151,15 @@ async def main(loop):
             formatter = logging.Formatter(
                 f'{get_client()}| %(asctime)s | %(levelname)-6s | %(filename)s-%(funcName)s-%(lineno)04d | %(message)s')
             h.setFormatter(formatter)
-    logger.info("Config: " + str(Config))
+    logger.info('Config: ' + str(Config))
     d = start_daemon()
 
     train_data, test_data = load_data()
     message_broker = parse_message_broker(args.broker)
-    storage = parse_storage(args.storage)
+    tx_store = parse_storage(args.storage)
     model = parse_model(args.model)
     peer_information = {'client_id': get_client()}
-    tangle_builder = TangleBuilder('/data/genesis.npy', message_broker, storage, model, peer_information)
+    tangle_builder = TangleBuilder('/data/genesis.npy', message_broker, tx_store, model, peer_information)
     threading.Thread(target=PeerHttpServer(tangle_builder.tangle, peer_information).start).start()
     listener = Listener(loop, tangle_builder, message_broker, train_data, test_data)
     await listener.listen()
