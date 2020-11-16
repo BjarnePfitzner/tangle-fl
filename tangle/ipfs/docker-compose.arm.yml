@@ -1,0 +1,18 @@
+version: '3.7'
+services:
+
+  bootstrap:
+    build:
+      context: bootstrap
+      dockerfile: Dockerfile-arm
+    image: hpimpss2020/learning-tangle:bootstrap-arm
+
+  iota_visualization:
+    build: iota_visualization
+    image: hpimpss2020/learning-tangle:iota_visualization-arm
+
+  peer:
+    build:
+      context: peer
+      dockerfile: Dockerfile-arm
+    image: hpimpss2020/learning-tangle:peer-arm

@@ -1,0 +1,44 @@
+version: '3.7'
+
+services:
+
+  bootstrap:
+    build: bootstrap
+    image: hpimpss2020/learning-tangle:bootstrap-x86
+    ports:
+      - 4001:4001
+
+  iota_visualization:
+    build: iota_visualization
+    image: hpimpss2020/learning-tangle:iota_visualization-x86
+    depends_on:
+      - bootstrap
+    ports:
+      - 9000:9000
+
+  peer:
+    build: peer
+    image: hpimpss2020/learning-tangle:peer-x86
+    init: true
+    cap_add:
+      - SYS_PTRACE
+    volumes:
+      - ./logs:/logs:rw
+    environment:
+      - STORAGE=ipfs
+      - MESSAGE_BROKER=ipfs
+      - MODEL=no_tf
+      - TIMEOUT=None
+      - TRAINING_INTERVAL=20
+      - NUM_OF_TIPPS=2
+      - NUM_SAMPLING_ROUND=25
+      - ACTIVE_QUOTA=0.2
+      - CONNECTION_PRUNING_LOW=70
+      - CONNECTION_PRUNING_HIGH=40
+      - CONNECTION_PRUNING_GRACE_PERIOD=60s
+      - IPFS_DATASTORE_STORAGEMAX=10GB
+      - IPFS_DATASTORE_GCPERIOD=1h
+      - IPFS_REPROVIDER_INTERVAL=1h
+    depends_on:
+      - bootstrap
+      - iota_visualization

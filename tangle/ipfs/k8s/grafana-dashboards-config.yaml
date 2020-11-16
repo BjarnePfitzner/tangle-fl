@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboards
+data:
+  dashboards.yaml: |
+    - name: 'Peer Metrics'
+      orgId: 1
+      folder: ''
+      folderUid: ''
+      type: file
+      disableDeletion: false
+      editable: true
+      updateIntervalSeconds: 5
+      allowUiUpdates: true
+      options:
+        path: /var/lib/grafana/dashboards
+        foldersFromFilesStructure: true
