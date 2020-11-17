@@ -24,7 +24,7 @@ class TipSelectorConfiguration:
         parser.add_argument('--acc-ratings-to-weights',
                         help='algorithm to generate weights from ratings. Has effect only if used with WALK',
                         type=str,
-                        choices=['LINEAR'],
+                        choices=['LINEAR', 'ALPHA'],
                         default='LINEAR')
 
         parser.add_argument('--acc-select-from-weights',
