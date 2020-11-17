@@ -17,18 +17,14 @@ WORKDIR /app
 COPY tangle/ipfs/peer/docker/requirements.txt .
 RUN pip3 install -r requirements.txt
 
-COPY tangle/ipfs/peer/docker/prepare_data.sh /usr/bin/prepare_data.sh
-RUN /usr/bin/prepare_data.sh
-
 COPY tangle/ipfs/peer/docker/ipfs_entrypoint /usr/bin/ipfs_entrypoint
-COPY tangle /usr/local/lib/python3.7/site-packages/tangle/
 COPY tangle/ipfs/peer/docker/entrypoint.sh .
 COPY tangle/ipfs/peer/docker/manual_garbage_collection.sh .
+
+COPY tangle /usr/local/lib/python3.7/site-packages/tangle/
 
 EXPOSE 4001
 EXPOSE 8000
 
 ENV PYTHONUNBUFFERED=TRUE
-RUN chmod +x ./entrypoint.sh
-RUN chmod +x ./manual_garbage_collection.sh
 ENTRYPOINT ["./entrypoint.sh"]

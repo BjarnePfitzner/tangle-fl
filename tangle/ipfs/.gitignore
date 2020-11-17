@@ -1,6 +1,5 @@
 /simulation-logs/
 /tangle/
-/data/
 iota_visualization/tangle_data/*
 !iota_visualization/tangle_data/.keep
 *.pyc

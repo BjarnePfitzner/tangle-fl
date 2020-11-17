@@ -1,5 +1,8 @@
 version: '3.7'
 
+volumes:
+  data:
+
 services:
 
   bootstrap:
@@ -14,6 +17,11 @@ services:
     ports:
       - 9000:9000
 
+  data:
+    build: data
+    volumes:
+     - data:/data
+
   peer:
     build:
       context: ../..
@@ -23,6 +31,8 @@ services:
       - SYS_PTRACE
     volumes:
       - ./logs:/logs:rw
+    volumes:
+     - data:/data:ro
     environment:
       - STORAGE=ipfs
       - MESSAGE_BROKER=ipfs
