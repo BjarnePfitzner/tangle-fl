@@ -17,7 +17,6 @@ from ...lab.dataset import read_data
 from ...models.baseline_constants import MODEL_PARAMS
 from .peer_http_server import PeerHttpServer
 from .tangle import TangleBuilder
-from ...lab import TipSelectorFactory
 from ...core import Node, Transaction, Tangle
 
 from ...lab.config import ModelConfiguration, TangleConfiguration, TipSelectorConfiguration
@@ -150,12 +149,9 @@ async def main(loop):
     tangle = Tangle({genesis.id: genesis}, genesis.id)
     message_broker = parse_message_broker(peer_config.broker, peer_config.timeout, tangle.genesis)
 
-    tip_selector_factory = TipSelectorFactory(tip_selector_config)
-    tip_selector = tip_selector_factory.create(tangle)
-    node = Node(tangle, tx_store, tip_selector, get_client(), None, train_data, test_data, model)
-
-    tangle_builder = TangleBuilder(tangle, tx_store, message_broker, node)
-    threading.Thread(target=PeerHttpServer(tangle_builder.tangle, tangle_builder.peer_information).start).start()
+    peer_information = {'client_id': get_client()}
+    tangle_builder = TangleBuilder(tangle, tx_store, message_broker, peer_information, train_data, test_data, tip_selector_config, model)
+    threading.Thread(target=PeerHttpServer(tangle_builder.tangle, peer_information).start).start()
     listener = Listener(loop, tangle_builder, message_broker, train_data, test_data, peer_config)
     await listener.listen()
 

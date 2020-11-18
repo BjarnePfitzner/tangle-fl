@@ -5,20 +5,25 @@ import datetime
 
 import numpy as np
 
-from ....core import Tangle, Transaction
+from ....core import Tangle, Transaction, Node
 from ....core.tip_selection import TipSelector
+from ....lab import TipSelectorFactory
 from .. import logger
 from ..message_broker.message_broker import MessageBroker
 from ..metrics.counter_metrics import *
 from ..metrics.histogram_metrics import *
 
 class TangleBuilder:
-    def __init__(self, tangle, tx_store, message_broker: MessageBroker, node):
+    def __init__(self, tangle, tx_store, message_broker: MessageBroker, peer_information, train_data, test_data, tip_selector_config, model):
         self.tangle = tangle
-        self.peer_information = {'client_id': node.id}
+        self.peer_information = peer_information
         self._tx_store = tx_store
         self._message_broker = message_broker
-        self._node = node
+        self._train_data = train_data
+        self._test_data = test_data
+        self._tip_selector_config = tip_selector_config
+        self._model = model
+
         os.makedirs(f'iota_visualization/tangle_data', exist_ok=True)
         self.last_training = None
 
@@ -33,9 +38,13 @@ class TangleBuilder:
             observe_time_between_training((start - self.last_training) / 1000)
         self.last_training = start
 
+        tip_selector_factory = TipSelectorFactory(self._tip_selector_config)
+        tip_selector = tip_selector_factory.create(self.tangle)
+        node = Node(self.tangle, self._tx_store, tip_selector, self.peer_information['client_id'], None, self._train_data, self._test_data, self._model)
+
         logger.info('Start Training')
         try:
-            tx, tx_weights = self._node.create_transaction()
+            tx, tx_weights = node.create_transaction()
             if tx is not None:
                 tx.add_metadata('peer', self.peer_information)
                 tx.add_metadata('time', 0)
