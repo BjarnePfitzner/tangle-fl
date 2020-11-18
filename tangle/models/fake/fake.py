@@ -1,13 +1,9 @@
-"""Interfaces for ClientModel and ServerModel."""
-
-from abc import ABC, abstractmethod
 import numpy as np
 from numpy.random import rand
 import random
-from .abstract_model import AbstractModel
+from ..model import Model
 
-
-class NoTfModel(AbstractModel):
+class ClientModel(Model):
 
     def __init__(self, seed):
         # Is close enough to weight_size of femnist model
@@ -28,3 +24,13 @@ class NoTfModel(AbstractModel):
             "loss": random.random(),
             "accuracy": random.random()
         }
+
+    # 'Implement' abstract methods (won't be called)
+    def create_model(self):
+        return None, None, None, None, None, None
+
+    def process_x(self, raw_x_batch):
+        pass
+
+    def process_y(self, raw_y_batch):
+        pass

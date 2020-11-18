@@ -8,12 +8,8 @@ from rx.disposable import Disposable
 from rx.scheduler.eventloop import AsyncIOScheduler
 
 from . import logger
-from .config import Config
 
 # https://blog.oakbits.com/rxpy-and-asyncio.html
-
-TRAINING_INTERVAL = Config["TRAINING_INTERVAL"]
-
 
 class Event:
     def __init__(self, type, transaction=None):
@@ -40,13 +36,14 @@ def from_aiter(iter, loop):
 
 
 class Listener:
-    def __init__(self, loop, tangle_builder, message_broker, train_data, test_data):
+    def __init__(self, loop, tangle_builder, message_broker, train_data, test_data, config):
         self._loop = loop
         self._tangle_builder = tangle_builder
         self._train_data = train_data
         self._test_data = test_data
         self._ready = False
         self._message_broker = message_broker
+        self._config = config
 
     async def listen(self):
         done = asyncio.Future()
@@ -65,7 +62,7 @@ class Listener:
     def dispatch(self, event):
         if event.type == 'train' and self._ready:
             dice = round(random.uniform(0, 1), 2)
-            if dice <= Config['ACTIVE_QUOTA']:
+            if dice <= self._config.active_quota:
                 logger.info('Dice roll successful, this peer is active')
                 self._tangle_builder.train_and_publish(self._train_data, self._test_data)
             else:
@@ -76,7 +73,7 @@ class Listener:
     def training_interval(self):
         scheduler = AsyncIOScheduler(self._loop)
 
-        return rx.timer(0, TRAINING_INTERVAL, scheduler).pipe(ops.map(lambda _: Event('train')))
+        return rx.timer(0, self._config.training_interval, scheduler).pipe(ops.map(lambda _: Event('train')))
 
     def on_ready(self):
         self._ready = True

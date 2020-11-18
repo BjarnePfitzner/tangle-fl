@@ -5,17 +5,24 @@ import random
 import subprocess
 import threading
 import time
+import importlib
 from logging import FileHandler
 
 import ipfshttpclient4ipwb
 import numpy as np
 
 from . import logger
-from .config import Config, set_config
 from .listener import Listener
-from .model.utils.model_utils import read_data
+from ...lab.dataset import read_data
+from ...models.baseline_constants import MODEL_PARAMS
 from .peer_http_server import PeerHttpServer
 from .tangle import TangleBuilder
+from ...lab import TipSelectorFactory
+from ...core import Node, Transaction, Tangle
+
+from ...lab.config import ModelConfiguration, TangleConfiguration, TipSelectorConfiguration
+from ...lab.args import parse_args
+from .config import PeerConfiguration
 
 
 def start_daemon():
@@ -30,38 +37,6 @@ def start_daemon():
     logger.info(f'IPFS daemon start: {calc_time}')
 
     return d
-
-
-def parse_args():
-    def int_or_none(value):
-        if isinstance(value, int) or value is None:
-            return value
-        elif isinstance(value, str) and value.isdigit():
-            return int(value)
-        elif value == 'None':
-            return None
-        else:
-            msg = f'{value} is neither int nor None'
-            raise argparse.ArgumentTypeError(msg)
-
-    parser = argparse.ArgumentParser()
-
-    parser.add_argument('--create-genesis',
-                        help='create a genesis transaction at /data/genesis.npy',
-                        action='store_true')
-
-    parser.add_argument('--storage', default='ipfs', help='sets the used storage')
-    parser.add_argument('--broker', default='ipfs', help='sets the used message broker')
-    parser.add_argument('--model', default='femnist', help='sets the used model')
-    parser.add_argument('--timeout', default=None, type=int_or_none, help='timeout for ipfs')
-    parser.add_argument('--training_interval', default=20, type=int, help='trainings interval')
-    parser.add_argument('--NUM_OF_TIPS', default=2, type=int, help='number of tips in tipp selection')
-    parser.add_argument('--num_sampling_round', default=35, type=int, help='Number of transactions choosen for conses')
-    parser.add_argument('--active_quota', type=float, default=0.01,
-                        help='sets the quota of active pears, must be valid percentage (0.00, 0.01, ..., 0.99, 1.00')
-
-    return parser.parse_args()
-
 
 def create_genesis():
     # Required so tensorflow is not loaded by default
@@ -98,70 +73,91 @@ __IPFS_CLIENT__ = None
 # Only creates ipfs client when needed
 
 
-def get_ipfs_client():
+def get_ipfs_client(timeout):
     global __IPFS_CLIENT__
     while __IPFS_CLIENT__ == None:
         try:
-            __IPFS_CLIENT__ = ipfshttpclient4ipwb.connect(session=True, timeout=Config['TIMEOUT'])
+            __IPFS_CLIENT__ = ipfshttpclient4ipwb.connect(session=True, timeout=timeout)
         except Exception as e:
             logger.error(e)
             __IPFS_CLIENT__ = None
     return __IPFS_CLIENT__
 
-
-# Import only when needed
-
-
-def parse_storage(storage):
+def parse_storage(storage, timeout):
     if storage == 'ipfs':
         from .tangle.ipfs_transaction_store import IPFSTransactionStore
-        return IPFSTransactionStore(get_ipfs_client())
+        return IPFSTransactionStore(get_ipfs_client(timeout))
 
-
-# Import only when needed
-
-
-def parse_message_broker(message_broker):
+def parse_message_broker(message_broker, timeout, genesis):
     if message_broker == 'ipfs':
         from .message_broker.ipfs_message_broker import IPFSMessageBroker
-        return IPFSMessageBroker(get_ipfs_client())
+        return IPFSMessageBroker(get_ipfs_client(timeout), genesis)
 
-
-# Import only when needed
-
-
-def parse_model(model):
-    if model == 'femnist':
-        from .model.femnist import ClientModel
-        return ClientModel
-    elif model == 'no_tf':
+def parse_model(mock, model_config):
+    if mock:
         from .model.no_tf_model import NoTfModel
         logger.info('No TF Model')
         return NoTfModel
+    else:
+        return create_client_model(random.randint(0, 4294967295), model_config)
 
+def create_client_model(seed, model_config):
+    model_path = '.%s.%s' % (model_config.dataset, model_config.model)
+    mod = importlib.import_module(model_path, package='tangle.models')
+    ClientModel = getattr(mod, 'ClientModel')
+
+    # Create 2 models
+    model_params = MODEL_PARAMS['%s.%s' % (model_config.dataset, model_config.model)]
+    if model_config.lr != -1:
+        model_params_list = list(model_params)
+        model_params_list[0] = model_config.lr
+        model_params = tuple(model_params_list)
+
+    model = ClientModel(seed, *model_params)
+    model.num_epochs = model_config.num_epochs
+    model.batch_size = model_config.batch_size
+    return model
+
+def load_genesis(genesis_path, tx_store):
+    genesis_weights = np.load(genesis_path, allow_pickle=True)
+    genesis = Transaction([])
+    genesis.add_metadata('peer', {"client_id": "fffff_ff"})
+    genesis.add_metadata('time', 0)
+    tx_store.save(genesis, genesis_weights)
+    return genesis
 
 async def main(loop):
-    args = parse_args()
-    if args.create_genesis:
+    peer_config, model_config, tangle_config, tip_selector_config = \
+        parse_args(PeerConfiguration, ModelConfiguration, TangleConfiguration, TipSelectorConfiguration)
+
+    if peer_config.create_genesis:
         create_genesis()
         return
-    set_config(args)
+
     for h in logger.handlers:
         if type(h) is FileHandler:
             formatter = logging.Formatter(
                 f'{get_client()}| %(asctime)s | %(levelname)-6s | %(filename)s-%(funcName)s-%(lineno)04d | %(message)s')
             h.setFormatter(formatter)
-    logger.info('Config: ' + str(Config))
+
     d = start_daemon()
 
     train_data, test_data = load_data()
-    message_broker = parse_message_broker(args.broker)
-    tx_store = parse_storage(args.storage)
-    model = parse_model(args.model)
-    peer_information = {'client_id': get_client()}
-    tangle_builder = TangleBuilder('/data/genesis.npy', message_broker, tx_store, model, peer_information)
-    threading.Thread(target=PeerHttpServer(tangle_builder.tangle, peer_information).start).start()
-    listener = Listener(loop, tangle_builder, message_broker, train_data, test_data)
+    model = parse_model(peer_config.mock_model, model_config)
+
+    tx_store = parse_storage(peer_config.storage, peer_config.timeout)
+    genesis = load_genesis('/data/genesis.npy', tx_store)
+    tangle = Tangle({genesis.id: genesis}, genesis.id)
+    message_broker = parse_message_broker(peer_config.broker, peer_config.timeout, tangle.genesis)
+
+    tip_selector_factory = TipSelectorFactory(tip_selector_config)
+    tip_selector = tip_selector_factory.create(tangle)
+    node = Node(tangle, tx_store, tip_selector, get_client(), None, train_data, test_data, model)
+
+    tangle_builder = TangleBuilder(tangle, tx_store, message_broker, node)
+    threading.Thread(target=PeerHttpServer(tangle_builder.tangle, tangle_builder.peer_information).start).start()
+    listener = Listener(loop, tangle_builder, message_broker, train_data, test_data, peer_config)
     await listener.listen()
+
     # Stay alive
     d.communicate()

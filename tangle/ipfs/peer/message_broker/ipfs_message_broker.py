@@ -16,10 +16,10 @@ class Event:
 
 class IPFSMessageBroker(MessageBroker):
 
-    def __init__(self, ipfs_client):
+    def __init__(self, ipfs_client, genesis):
         super().__init__()
         self._ipfsclient = ipfs_client
-        self._tangle_id = None  # TODO
+        self._tangle_id = genesis
 
     async def subscribe(self, on_ready=None):
         retry_counter = 10
