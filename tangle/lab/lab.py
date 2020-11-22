@@ -37,6 +37,7 @@ class Lab:
         model = ClientModel(seed, *model_params)
         model.num_epochs = model_config.num_epochs
         model.batch_size = model_config.batch_size
+        model.num_batches = model_config.num_batches
         return model
 
     def create_genesis(self):

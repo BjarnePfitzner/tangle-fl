@@ -54,14 +54,14 @@ class ClientModel(Model):
                 softmax_w = tf.get_variable(
                     'softmax_w', [self.n_hidden, self.vocab_size], dtype=tf.float32)
                 softmax_b = tf.get_variable('softmax_b', [self.vocab_size], dtype=tf.float32)
-            
+
             logits = tf.nn.xw_plus_b(output, softmax_w, softmax_b)
 
             # correct predictions
             labels_reshaped = tf.reshape(labels, [-1])
             pred = tf.cast(tf.argmax(logits, 1), tf.int32)
             correct_pred = tf.cast(tf.equal(pred, labels_reshaped), tf.int32)
-            
+
             # predicting unknown is always considered wrong
             unk_tensor = tf.fill(tf.shape(labels_reshaped), self.unk_symbol)
             pred_unk = tf.cast(tf.equal(pred, unk_tensor), tf.int32)
@@ -130,7 +130,7 @@ class ClientModel(Model):
         to_ret = [tokens_to_word_ids(seq, self.vocab) for seq in raw_batch]
         return np.array(to_ret)
 
-    def batch_data(self, data, batch_size):
+    def batch_data(self, data, batch_size, num_batches):
         data_x = data['x']
         data_y = data['y']
 
@@ -156,7 +156,7 @@ class ClientModel(Model):
                 mask_by_seq.extend([dummy_mask for _ in range(num_dummy)])
 
             return data_x_by_seq, data_y_by_seq, mask_by_seq
-        
+
         data_x, data_y, data_mask = flatten_lists(data_x, data_y)
 
         for i in range(0, len(data_x), batch_size):
@@ -169,7 +169,7 @@ class ClientModel(Model):
 
             yield (input_data, target_data, input_lengths, batched_mask)
 
-    def run_epoch(self, data, batch_size=5):
+    def run_epoch(self, data, batch_size=5, num_batches=35):
         state = None
 
         fetches = {
@@ -177,7 +177,7 @@ class ClientModel(Model):
             'final_state': self.final_state,
         }
 
-        for input_data, target_data, input_lengths, input_mask in self.batch_data(data, batch_size):
+        for input_data, target_data, input_lengths, input_mask in self.batch_data(data, batch_size, num_batches):
 
             feed_dict = {
                 self.features: input_data,
@@ -196,7 +196,7 @@ class ClientModel(Model):
 
             with self.graph.as_default():
                 _, vals = self.sess.run([self.train_op, fetches], feed_dict=feed_dict)
-            
+
             state = vals['final_state']
 
     def test(self, data, batch_size=5):
@@ -207,14 +207,14 @@ class ClientModel(Model):
 
             with self.graph.as_default():
                 acc, loss = self.sess.run(
-                    [self.eval_metric_ops, self.loss], 
+                    [self.eval_metric_ops, self.loss],
                     feed_dict={
                         self.features: input_data,
                         self.labels: target_data,
-                        self.sequence_length_ph: input_lengths, 
+                        self.sequence_length_ph: input_lengths,
                         self.sequence_mask_ph: input_mask,
                     })
-            
+
             tot_acc += acc
             tot_samples += np.sum(input_lengths)
 

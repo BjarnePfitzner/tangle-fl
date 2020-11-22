@@ -37,23 +37,28 @@ class Dataset:
         return [self.clients[i] for i in client_indices]
 
 
-def batch_data(data, batch_size, seed):
+def batch_data(data, batch_size, num_batches, seed):
     '''
     data is a dict := {'x': [numpy array], 'y': [numpy array]} (on one client)
     returns x, y, which are both numpy array of length: batch_size
     '''
 
-    num_batches = 10
+    data_repetitions = (batch_size / len(data['x'])) * num_batches
+    data_repetitions = np.ceil(data_repetitions)
+    data_repetitions = max(data_repetitions, 1)
 
-    data_x = np.repeat(data['x'], max(np.ceil((batch_size / len(data['x'])) * num_batches), 1))
-    data_y = np.repeat(data['y'], max(np.ceil((batch_size / len(data['y'])) * num_batches), 1))
+    print(np.shape(data['x']))
+    print(np.shape(data['y']))
+
+    # data_x = np.repeat(data['x'], data_repetitions)
+    # data_y = np.repeat(data['y'], data_repetitions)
 
     # randomly shuffle data
     np.random.seed(seed)
     rng_state = np.random.get_state()
-    data_x = np.random.permutation(data_x)
+    data_x = np.random.permutation(data['x'])
     np.random.set_state(rng_state)
-    data_y = np.random.permutation(data_y)
+    data_y = np.random.permutation(data['y'])
 
     # loop through mini-batches
     for i in range(0, len(data_x), batch_size):
