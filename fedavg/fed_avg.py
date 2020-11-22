@@ -1,6 +1,7 @@
 import sys
 import time
 import ray
+import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
 
@@ -69,7 +70,7 @@ def train(dataset, run_config, model_config, seed, lr=1.):
     mean_accuracy = test(global_params, dataset, model_config, 1, seed)
     print(f'Test Accuracy on all Clients: {mean_accuracy}')
 
-    # print accuracies boxplot
+    plot_accuracy_boxplot(accuracies)
 
 @ray.remote
 def test_single(client_id, global_params, test_data, model_config, seed):
@@ -99,3 +100,23 @@ def test(global_params, dataset, model_config, eval_on_fraction, seed):
 
     return np.mean(ray.get(futures))
 
+def plot_accuracy_boxplot(data, print_avg_acc=False):
+    last_generation = len(data)
+
+    plt.boxplot(data)
+
+    if print_avg_acc:
+        plt.plot([i for i in range(last_generation)], [np.mean(x) for x in data])
+    
+    # Settings for plot
+    plt.title("Accuracy per round")
+    
+    plt.xlabel("Round")
+    plt.xticks([i for i in range(last_generation)], [i if i % 5 == 0 else '' for i in range(last_generation)])
+    
+    plt.ylabel("")
+    
+    analysis_filepath = ("fed_avg_accuracy_per_round.png")
+    plt.savefig(analysis_filepath)
+    
+    plt.clf()
