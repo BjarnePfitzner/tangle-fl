@@ -41,7 +41,7 @@ class TheoreticalNode(Node):
 
         # Limit the 'learning rate'
         max_step_length = 5
-        length = abs(diff)
+        length = np.linalg.norm(diff)
         if length > max_step_length:
             step = diff / (length / max_step_length)
         else:
