@@ -32,6 +32,9 @@ def train_single(client_id, data, model_config, global_params, seed):
 def train(dataset, run_config, model_config, seed, lr=1.):
     model = Lab.create_client_model(seed, model_config)
     global_params = model.get_params()
+
+    accuracies = []
+
     for epoch in range(run_config.num_rounds):
         print("Started training for round %d" % epoch)
         start = time.time()
@@ -51,6 +54,12 @@ def train(dataset, run_config, model_config, seed, lr=1.):
 
         print('Time for epoch {} is {} sec'.format(epoch, time.time() - start))
 
+        # if evaluate on same clients each round
+        if True:
+            accuracies_this_round = test_this_round(global_params, dataset, model_config, clients, seed)
+            accuracies.append(accuracies_this_round)
+            print(f'Test Accuracy on selected clients: {accuracies_this_round}')
+
         if run_config.eval_every != -1 and epoch % run_config.eval_every == 0:
             mean_accuracy = test(global_params, dataset, model_config, run_config.eval_on_fraction, seed)
             print(f'Test Accuracy on {int(run_config.eval_on_fraction * len(dataset.clients))} clients: {mean_accuracy}')
@@ -60,6 +69,7 @@ def train(dataset, run_config, model_config, seed, lr=1.):
     mean_accuracy = test(global_params, dataset, model_config, 1, seed)
     print(f'Test Accuracy on all Clients: {mean_accuracy}')
 
+    # print accuracies boxplot
 
 @ray.remote
 def test_single(client_id, global_params, test_data, model_config, seed):
@@ -73,6 +83,11 @@ def test_single(client_id, global_params, test_data, model_config, seed):
 
     return results['accuracy']
 
+def test_this_round(global_params, dataset, model_config, clients_to_test_on, seed):
+    futures = [test_single.remote(client_id, global_params, dataset.remote_train_data[client_id], model_config, seed)
+               for (client_id, _) in clients_to_test_on]
+    
+    return ray.get(futures)
 
 def test(global_params, dataset, model_config, eval_on_fraction, seed):
     client_indices = np.random.choice(range(len(dataset.clients)),
@@ -80,7 +95,7 @@ def test(global_params, dataset, model_config, eval_on_fraction, seed):
                                       replace=False)
     validation_clients = [dataset.clients[i] for i in client_indices]
     futures = [test_single.remote(client_id, global_params, dataset.remote_train_data[client_id], model_config, seed)
-               for (client_id, cluster_id) in validation_clients]
+               for (client_id, _) in validation_clients]
 
     return np.mean(ray.get(futures))
 
