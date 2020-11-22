@@ -29,6 +29,7 @@ params = {
     'num_tips': [2],
     'sample_size': [2],
     'batch_size': [10],
+    'num_batches': [35],
     'reference_avg_top': [1],
     'target_accuracy': [1],
     'learning_rate': [0.8],
@@ -71,7 +72,7 @@ def exit_if_repo_not_clean():
         _, errs = proc.communicate()
         print('[Error]: Could not check git status!: %s' % errs, file=sys.stderr)
         exit(1)
-    
+
     if dirty_files:
         print('[Error]: You have uncommited changes. Please commit them before continuing. No experiments will be executed.', file=sys.stderr)
         exit(1)
@@ -102,9 +103,9 @@ def prepare_exp_folder(args):
             default_exp_ids = [int(exp.split("-")[-1]) for exp in default_exps]
             default_exp_ids.sort()
             next_default_exp_id = default_exp_ids[-1] + 1
-        
+
         args.name = "%s-%d" % (default_prefix, next_default_exp_id)
-    
+
     exp_name = args.name
 
     experiment_folder = experiments_base + '/' + exp_name
@@ -113,7 +114,7 @@ def prepare_exp_folder(args):
     if (os.path.exists(experiment_folder) and not args.overwrite_okay):
         print('[Error]: Experiment "%s" already exists! To overwrite set --overwrite_okay to True' % exp_name, file=sys.stderr)
         exit(1)
-    
+
     os.makedirs(experiment_folder, exist_ok=True)
 
     return experiment_folder
@@ -127,7 +128,7 @@ def get_git_hash():
         proc.kill()
         _, errs = proc.communicate()
         git_hash = 'Could not get Githash!: %s' % errs
-    
+
     return git_hash
 
 def run_and_document_experiments(args, experiments_dir, setup_filename, console_output_filename, git_hash):
@@ -152,6 +153,7 @@ def run_and_document_experiments(args, experiments_dir, setup_filename, console_
             '--num-tips %s ' \
             '--sample-size %s ' \
             '--batch-size %s ' \
+            '--num-batches %s ' \
             '-lr %s ' \
             '--num-epochs %s ' \
             '--reference-avg-top %s ' \
@@ -177,6 +179,7 @@ def run_and_document_experiments(args, experiments_dir, setup_filename, console_
             p['num_tips'],
             p['sample_size'],
             p['batch_size'],
+            p['num_batches'],
             p['learning_rate'],
             p['num_epochs'],
             p['reference_avg_top'],
