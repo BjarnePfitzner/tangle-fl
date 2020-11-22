@@ -9,15 +9,15 @@ from ..lab.config import LabConfiguration, ModelConfiguration, PoisoningConfigur
 from . import RayDataset, RayTipSelectorFactory, RayLab
 
 def main():
-    run_config, lab_config, model_config, poisoning_config, tangle_config, tip_selector_config = \
-        parse_args(RunConfiguration, LabConfiguration, ModelConfiguration, PoisoningConfiguration, TangleConfiguration, TipSelectorConfiguration)
+    run_config, lab_config, model_config, node_config, tip_selector_config = \
+        parse_args(RunConfiguration, LabConfiguration, ModelConfiguration, NodeConfiguration, TipSelectorConfiguration)
 
     ray.init(webui_host='0.0.0.0')
 
     dataset = RayDataset(lab_config, model_config)
 
     tip_selector_factory = RayTipSelectorFactory(tip_selector_config)
-    lab = RayLab(tip_selector_factory, lab_config, model_config)
+    lab = RayLab(tip_selector_factory, lab_config, model_config, node_config)
 
     lab.train(run_config.clients_per_round, run_config.start_from_round, run_config.num_rounds, run_config.eval_every, run_config.eval_on_fraction, dataset)
     #lab.print_validation_results(lab.validate(run_config.num_rounds-1, dataset, run_config.eval_on_fraction), mode='all')

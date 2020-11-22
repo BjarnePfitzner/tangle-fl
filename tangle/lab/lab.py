@@ -12,10 +12,11 @@ from .lab_transaction_store import LabTransactionStore
 
 
 class Lab:
-    def __init__(self, tip_selector_factory, config, model_config, tx_store=None):
+    def __init__(self, tip_selector_factory, config, model_config, node_config, tx_store=None):
         self.tip_selector_factory = tip_selector_factory
         self.config = config
         self.model_config = model_config
+        self.node_config = node_config
         self.tx_store = tx_store if tx_store is not None else LabTransactionStore(self.config.tangle_dir, self.config.src_tangle_dir)
 
         # Set the random seed if provided (affects client sampling, and batching)
@@ -57,7 +58,7 @@ class Lab:
     def create_node_transaction(self, tangle, round, client_id, cluster_id, train_data, eval_data, seed, model_config, tip_selector, tx_store):
 
         client_model = Lab.create_client_model(seed, model_config)
-        node = Node(tangle, tx_store, tip_selector, client_id, cluster_id, train_data, eval_data, client_model)
+        node = Node(tangle, tx_store, tip_selector, client_id, cluster_id, train_data, eval_data, client_model, config=self.node_config)
         tx, tx_weights = node.create_transaction()
 
         if tx is not None:
@@ -118,7 +119,7 @@ class Lab:
         tf.compat.v1.set_random_seed(123 + seed)
 
         client_model = self.create_client_model(seed, self.model_config)
-        node = Node(tangle, self.tx_store, tip_selector, client_id, cluster_id, train_data, eval_data, client_model)
+        node = Node(tangle, self.tx_store, tip_selector, client_id, cluster_id, train_data, eval_data, client_model, config=self.node_config)
 
         reference_txs, reference = node.obtain_reference_params()
         metrics = node.test(reference, set_to_use)
