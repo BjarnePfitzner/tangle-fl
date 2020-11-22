@@ -55,19 +55,16 @@ def train(dataset, run_config, model_config, seed, lr=1.):
 
         print('Time for epoch {} is {} sec'.format(epoch, time.time() - start))
 
-        # if evaluate on same clients each round
-        if True:
-            accuracies_this_round = test_this_round(global_params, dataset, model_config, clients, seed)
-            accuracies.append(accuracies_this_round)
-            print(f'Test Accuracy on selected clients: {accuracies_this_round}')
+        # maybe add an Option to deactivate this?
+        accuracies.append(test_acc_clients(global_params, dataset, model_config, clients, seed))
 
         if run_config.eval_every != -1 and epoch % run_config.eval_every == 0:
-            mean_accuracy = test(global_params, dataset, model_config, run_config.eval_on_fraction, seed)
+            mean_accuracy = test_mean_acc_eval_fraction(global_params, dataset, model_config, run_config.eval_on_fraction, seed)
             print(f'Test Accuracy on {int(run_config.eval_on_fraction * len(dataset.clients))} clients: {mean_accuracy}')
         sys.stdout.flush()
 
     # compute average test error
-    mean_accuracy = test(global_params, dataset, model_config, 1, seed)
+    mean_accuracy = test_mean_acc_eval_fraction(global_params, dataset, model_config, 1, seed)
     print(f'Test Accuracy on all Clients: {mean_accuracy}')
 
     plot_accuracy_boxplot(accuracies)
@@ -84,21 +81,20 @@ def test_single(client_id, global_params, test_data, model_config, seed):
 
     return results['accuracy']
 
-def test_this_round(global_params, dataset, model_config, clients_to_test_on, seed):
+def test_acc_clients(global_params, dataset, model_config, clients_to_test_on, seed):
     futures = [test_single.remote(client_id, global_params, dataset.remote_train_data[client_id], model_config, seed)
                for (client_id, _) in clients_to_test_on]
     
     return ray.get(futures)
 
-def test(global_params, dataset, model_config, eval_on_fraction, seed):
+def test_mean_acc_eval_fraction(global_params, dataset, model_config, eval_on_fraction, seed):
     client_indices = np.random.choice(range(len(dataset.clients)),
                                       min(int(len(dataset.clients) * eval_on_fraction), len(dataset.clients)),
                                       replace=False)
     validation_clients = [dataset.clients[i] for i in client_indices]
-    futures = [test_single.remote(client_id, global_params, dataset.remote_train_data[client_id], model_config, seed)
-               for (client_id, _) in validation_clients]
-
-    return np.mean(ray.get(futures))
+    
+    accuracies = test_acc_clients(global_params, dataset, model_config, validation_clients, seed)
+    return np.mean(accuracies)
 
 def plot_accuracy_boxplot(data, print_avg_acc=False):
     last_generation = len(data)
