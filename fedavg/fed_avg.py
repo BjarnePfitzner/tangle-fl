@@ -53,10 +53,12 @@ def train(dataset, run_config, model_config, seed, lr=1.):
 
         global_params -= lr * param_update
 
-        print('Time for epoch {} is {} sec'.format(epoch, time.time() - start))
+        end_training = time.time()
+        print('Time for epoch {} is {} sec'.format(epoch, end_training - start))
 
         # maybe add an Option to deactivate this?
         accuracies.append(test_acc_clients(global_params, dataset, model_config, clients, seed))
+        print('Time for testing clients of epoch {} is {} sec'.format(epoch, time.time() - end_training))
 
         if run_config.eval_every != -1 and epoch % run_config.eval_every == 0:
             mean_accuracy = test_mean_acc_eval_fraction(global_params, dataset, model_config, run_config.eval_on_fraction, seed)
