@@ -46,9 +46,15 @@ class ModelConfiguration:
                         type=int,
                         default=10)
 
+        parser.add_argument('--num-batches',
+                        help='num batches when clients train on data;',
+                        type=int,
+                        default=100)
+
     def parse(self, args):
         self.dataset = args.dataset
         self.model = args.model
         self.lr = args.lr
         self.num_epochs = args.num_epochs
         self.batch_size = args.batch_size
+        self.num_batches = args.num_batches
