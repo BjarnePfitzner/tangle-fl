@@ -6,7 +6,7 @@ def next_tx_id():
     global current_id
     id = current_id
     current_id = current_id + 1
-    return id
+    return str(id)
 
 
 class TempTransactionStore(TransactionStore):
@@ -31,7 +31,7 @@ class TheoreticalNode(Node):
 
     def test(self, model_params, set_to_use='test'):
         error = np.linalg.norm(np.array(model_params) - np.array(self.data))
-        return { 'loss': error, 'accuracy': -error }
+        return { 'loss': error, 'accuracy': 1-(error/250) }
 
 
     def train(self, model_params):
