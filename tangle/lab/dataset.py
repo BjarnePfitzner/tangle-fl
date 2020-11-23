@@ -42,15 +42,13 @@ def batch_data(data, batch_size, num_batches, seed):
     data is a dict := {'x': [numpy array], 'y': [numpy array]} (on one client)
     returns x, y, which are both numpy array of length: batch_size
     '''
-    data_x = data['x']
-    data_y = data['y']
 
     data_repetitions = (batch_size / len(data['x'])) * num_batches
     data_repetitions = np.ceil(data_repetitions)
     data_repetitions = max(data_repetitions, 1)
 
-    data_x = np.repeat(data['x'], data_repetitions)
-    data_y = np.repeat(data['y'], data_repetitions)
+    data_x = np.repeat(data['x'], data_repetitions, axis=0)
+    data_y = np.repeat(data['y'], data_repetitions, axis=0)
 
     # randomly shuffle data
     np.random.seed(seed)
