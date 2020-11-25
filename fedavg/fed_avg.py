@@ -84,7 +84,7 @@ def test_single(client_id, global_params, test_data, model_config, seed):
     return results['accuracy']
 
 def test_acc_clients(global_params, dataset, model_config, clients_to_test_on, seed):
-    futures = [test_single.remote(client_id, global_params, dataset.remote_train_data[client_id], model_config, seed)
+    futures = [test_single.remote(client_id, global_params, dataset.remote_test_data[client_id], model_config, seed)
                for (client_id, _) in clients_to_test_on]
     
     return ray.get(futures)
