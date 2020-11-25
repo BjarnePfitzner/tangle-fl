@@ -7,7 +7,7 @@ from . import Lab, Dataset, TipSelectorFactory
 from .config import LabConfiguration, ModelConfiguration, PoisoningConfiguration, RunConfiguration, TangleConfiguration, TipSelectorConfiguration
 
 def main():
-    run_config, lab_config, model_config, poisoining_config, tangle_config, tip_selector_config = \
+    run_config, lab_config, model_config, poisoning_config, tangle_config, tip_selector_config = \
         parse_args(RunConfiguration, LabConfiguration, ModelConfiguration, PoisoningConfiguration, TangleConfiguration, TipSelectorConfiguration)
 
     tip_selector_factory = TipSelectorFactory(tip_selector_config)

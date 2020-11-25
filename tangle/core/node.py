@@ -1,14 +1,41 @@
 from .transaction import Transaction
+import argparse
 
 class NodeConfiguration:
     num_tips: int
     sample_size: int
     reference_avg_top: int
+    publish_if_better_than: str
 
-    def __init__(self, num_tips=2, sample_size=2, reference_avg_top=1):
-        self.num_tips = num_tips
-        self.sample_size = sample_size
-        self.reference_avg_top = reference_avg_top
+    def __init__(self):
+        parser = argparse.ArgumentParser()
+
+        parser.add_argument('--num-tips',
+                        help='number of tips being selected per round',
+                        type=int,
+                        default=2,
+                        required=False)
+        parser.add_argument('--sample-size',
+                        help='number of possible tips being sampled per round',
+                        type=int,
+                        default=2,
+                        required=False)
+        parser.add_argument('--reference-avg-top',
+                        help='number models to average when picking reference model',
+                        type=int,
+                        default=1,
+                        required=False)
+        parser.add_argument('--publish-if-better-than',
+                        help='number models to average when picking reference model',
+                        type=str,
+                        choices=['TIPS','REFERENCE','BOTH'],
+                        default='TIPS',
+                        required=False)
+        result = parser.parse_args()
+        self.num_tips = result.num_tips
+        self.sample_size = result.sample_size
+        self.reference_avg_top = result.reference_avg_top
+        self.publish_if_better_than = result.publish_if_better_than
 
 class Node:
     def __init__(self, tangle, tx_store, tip_selector, client_id, cluster_id, train_data={'x' : [],'y' : []}, eval_data={'x' : [],'y' : []}, model=None):
@@ -195,13 +222,6 @@ class Node:
         return reference_txs, reference_params
 
     def create_transaction(self):
-        # Compute reference metrics
-        reference_txs, reference_params = self.obtain_reference_params(avg_top=self.config.reference_avg_top)
-        reference_metrics = self.test(reference_params, 'test')
-
-        # Obtain number of tips from the tangle
-        tips = self.choose_tips(num_tips=self.config.num_tips, sample_size=self.config.sample_size)
-
         # Perform averaging
 
         # How averaging is done exactly (e.g. weighted, using which weights) is left to the
@@ -214,6 +234,12 @@ class Node:
         # in order to prevent over-fitting.
 
         # Here: simple unweighted average
+
+
+
+        # Obtain number of tips from the tangle
+        tips = self.choose_tips(num_tips=self.config.num_tips, sample_size=self.config.sample_size)
+
         tx_weights = [self.tx_store.load_transaction_weights(tip.id) for tip in tips]
 
         averaged_params = Node.average_model_params(*tx_weights)
@@ -221,17 +247,31 @@ class Node:
         trained_params = self.train(averaged_params)
 
         trained_model_metrics = self.test(trained_params, 'test')
-        if trained_model_metrics['loss'] < reference_metrics['loss']:
-            t = Transaction(parents=set([tip.id for tip in tips]))
-            t.add_metadata('issuer', self.id)
-            t.add_metadata('clusterId', self.cluster_id)
-            t.add_metadata('loss', float(trained_model_metrics['loss']))
-            t.add_metadata('reference_tx', reference_txs[0])
-            t.add_metadata('reference_tx_loss', float(reference_metrics['loss']))
-            t.add_metadata('reference_tx_accuracy', reference_metrics['accuracy'])
-            t.add_metadata('averaged_accuracy', averaged_model_metrics['accuracy'])
-            t.add_metadata('accuracy', trained_model_metrics['accuracy'])
 
-            return t, trained_params
+        if self.config.publish_if_better_than in ['REFERENCE', 'BOTH']:
+            # Compute reference metrics
+            reference_txs, reference_params = self.obtain_reference_params(avg_top=self.config.reference_avg_top)
+            reference_metrics = self.test(reference_params, 'test')
+            # Don't publish something that is worse than the reference transaction
+            if reference_metrics['loss'] < trained_model_metrics['loss']:
+                return None, None
 
-        return None, None
+        if self.config.publish_if_better_than in ['TIPS', 'BOTH']:
+            # Don't publish something that is worse than any of the two selected tips
+            for tip_metric in [self.test(weights) for weights in tx_weights]:
+                if tip_metric['loss'] < trained_model_metrics['loss']:
+                    return None, None
+
+        t = Transaction(parents=set([tip.id for tip in tips]))
+        t.add_metadata('issuer', self.id)
+        t.add_metadata('clusterId', self.cluster_id)
+        t.add_metadata('loss', float(trained_model_metrics['loss']))
+        # t.add_metadata('reference_tx', reference_txs[0])
+        # t.add_metadata('reference_tx_loss', float(reference_metrics['loss']))
+        # t.add_metadata('reference_tx_accuracy', reference_metrics['accuracy'])
+        t.add_metadata('averaged_accuracy', averaged_model_metrics['accuracy'])
+        t.add_metadata('accuracy', trained_model_metrics['accuracy'])
+
+        return t, trained_params
+
+        # return None, None

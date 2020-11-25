@@ -16,6 +16,12 @@ class TangleConfiguration:
                         type=int,
                         default=1,
                         required=False)
+        parser.add_argument('--publish-if-better-than',
+                        help='number models to average when picking reference model',
+                        type=str,
+                        choices=['TIPS','REFERENCE','BOTH'],
+                        default='TIPS',
+                        required=False)
 
     def parse(self, args):
         self.num_tips = args.num_tips
