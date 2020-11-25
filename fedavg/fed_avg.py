@@ -12,6 +12,8 @@ class DummyTipSelector():
     def compute_ratings(self, node):
         pass
 
+############## Training ##############
+
 @ray.remote
 def train_single(client_id, data, model_config, global_params, seed):
     # Suppress tf warnings
@@ -35,6 +37,7 @@ def train(dataset, run_config, model_config, seed, lr=1.):
     global_params = model.get_params()
 
     accuracies = []
+    unique_cids = get_unique_cluster_ids(dataset.clients)
 
     for epoch in range(run_config.num_rounds):
         print("Started training for round %d" % epoch)
@@ -57,7 +60,7 @@ def train(dataset, run_config, model_config, seed, lr=1.):
         print('Time for epoch {} is {} sec'.format(epoch, end_training - start))
 
         # maybe add an Option to deactivate this?
-        accuracies.append(test_acc_clients(global_params, dataset, model_config, clients, seed))
+        accuracies.append(test_acc_per_cluser(global_params, dataset, model_config, clients, seed, unique_cids))
         print('Time for testing clients of epoch {} is {} sec'.format(epoch, time.time() - end_training))
 
         if run_config.eval_every != -1 and epoch % run_config.eval_every == 0:
@@ -69,10 +72,41 @@ def train(dataset, run_config, model_config, seed, lr=1.):
     mean_accuracy = test_mean_acc_eval_fraction(global_params, dataset, model_config, 1, seed)
     print(f'Test Accuracy on all Clients: {mean_accuracy}')
 
-    plot_accuracy_boxplot(accuracies)
+    plot_accuracy_boxplot(accuracies, unique_cids)
+
+
+############## Testing ##############
+
+def test_acc_per_cluser(global_params, dataset, model_config, clients_to_test_on, seed, cids):
+    accuracies_per_cluster = {}
+
+    for cid in cids:
+        accuracies_per_cluster[cid] = []
+    
+    accuracies = _test_acc_clients(global_params, dataset, model_config, clients_to_test_on, seed)
+
+    for idx, (_, cid) in enumerate(clients_to_test_on):
+        accuracies_per_cluster[cid].append(accuracies[idx])
+    
+    return accuracies_per_cluster
+
+def test_mean_acc_eval_fraction(global_params, dataset, model_config, eval_on_fraction, seed):
+    client_indices = np.random.choice(range(len(dataset.clients)),
+                                      min(int(len(dataset.clients) * eval_on_fraction), len(dataset.clients)),
+                                      replace=False)
+    validation_clients = [dataset.clients[i] for i in client_indices]
+    
+    accuracies = _test_acc_clients(global_params, dataset, model_config, validation_clients, seed)
+    return np.mean(accuracies)
+
+def _test_acc_clients(global_params, dataset, model_config, clients_to_test_on, seed):
+    futures = [_test_single.remote(client_id, global_params, dataset.remote_test_data[client_id], model_config, seed)
+               for (client_id, _) in clients_to_test_on]
+    
+    return ray.get(futures)
 
 @ray.remote
-def test_single(client_id, global_params, test_data, model_config, seed):
+def _test_single(client_id, global_params, test_data, model_config, seed):
     # Suppress tf warnings
     tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
     model = Lab.create_client_model(seed, model_config)
@@ -83,22 +117,23 @@ def test_single(client_id, global_params, test_data, model_config, seed):
 
     return results['accuracy']
 
-def test_acc_clients(global_params, dataset, model_config, clients_to_test_on, seed):
-    futures = [test_single.remote(client_id, global_params, dataset.remote_test_data[client_id], model_config, seed)
-               for (client_id, _) in clients_to_test_on]
-    
-    return ray.get(futures)
 
-def test_mean_acc_eval_fraction(global_params, dataset, model_config, eval_on_fraction, seed):
-    client_indices = np.random.choice(range(len(dataset.clients)),
-                                      min(int(len(dataset.clients) * eval_on_fraction), len(dataset.clients)),
-                                      replace=False)
-    validation_clients = [dataset.clients[i] for i in client_indices]
-    
-    accuracies = test_acc_clients(global_params, dataset, model_config, validation_clients, seed)
-    return np.mean(accuracies)
+############## Helpers ##############
 
-def plot_accuracy_boxplot(data, print_avg_acc=False):
+def get_unique_cluster_ids(clients):
+    return list({ cid for (_, cid) in clients })
+
+def plot_accuracy_boxplot(data, cids, print_avg_acc=False):
+    # print for each cluster
+    for cid in cids:
+        cluster_data = [epoch[cid] for epoch in data if cid in epoch]
+        _plot_accuracy_boxplot(cluster_data, cid, print_avg_acc)
+
+    # print for all clusters
+    all_cluster_data = [sum(epoch.values(), []) for epoch in data]
+    _plot_accuracy_boxplot(all_cluster_data, "all", print_avg_acc)
+
+def _plot_accuracy_boxplot(data, cid, print_avg_acc):
     last_generation = len(data)
 
     plt.boxplot(data)
@@ -107,14 +142,14 @@ def plot_accuracy_boxplot(data, print_avg_acc=False):
         plt.plot([i for i in range(last_generation)], [np.mean(x) for x in data])
     
     # Settings for plot
-    plt.title("Accuracy per round")
+    plt.title("Accuracy per round (cluster: %s)" % cid)
     
     plt.xlabel("Round")
     plt.xticks([i for i in range(last_generation)], [i if i % 5 == 0 else '' for i in range(last_generation)])
     
     plt.ylabel("")
     
-    analysis_filepath = ("fed_avg_accuracy_per_round.png")
+    analysis_filepath = ("fed_avg_accuracy_per_round_cluster_%s.png" % cid)
     plt.savefig(analysis_filepath)
     
     plt.clf()
