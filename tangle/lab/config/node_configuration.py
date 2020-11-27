@@ -1,4 +1,6 @@
-class TangleConfiguration:
+from ...core.node import NodeConfiguration as NC
+
+class NodeConfiguration(NC):
 
     def define_args(self, parser):
         parser.add_argument('--num-tips',

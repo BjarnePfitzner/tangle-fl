@@ -33,9 +33,6 @@ params = {
     'target_accuracy': [1],
     'learning_rate': [0.8],
     'num_epochs': [1],
-    'poison_type': ['none'],
-    'poison_fraction': [0],
-    'poison_from': [1],
     'acc_tip_selection_strategy': ['WALK'],
     'acc_cumulate_ratings': ['False'],
     'acc_ratings_to_weights': ['LINEAR'],
@@ -160,10 +157,7 @@ def run_and_document_experiments(args, experiments_dir, setup_filename, console_
             '--acc-cumulate-ratings %s ' \
             '--acc-ratings-to-weights %s ' \
             '--acc-select-from-weights %s ' \
-            '--acc-alpha %s ' \
-            '--poison-type %s ' \
-            '--poison-fraction %s ' \
-            '--poison-from %s'
+            '--acc-alpha %s '
         parameters = (
             p['dataset'],
             p['model'],
@@ -186,10 +180,8 @@ def run_and_document_experiments(args, experiments_dir, setup_filename, console_
             p['acc_ratings_to_weights'],
             p['acc_select_from_weights'],
             p['acc_alpha'],
-            p['poison_type'],
-            p['poison_fraction'],
-            p['poison_from'])
-        command = command % parameters
+        )
+        command = command.strip() % parameters
 
         if len(p['src_tangle_dir']) > 0:
             command = '%s --src-tangle-dir %s' % (command, p['src_tangle_dir'])
@@ -215,7 +207,7 @@ def run_and_document_experiments(args, experiments_dir, setup_filename, console_
 
             step = 10
             start = p['start_round']
-            for i in range(start, p['num_rounds'],step):
+            for i in range(start, p['num_rounds'], step):
                 end = min(i+step, p['num_rounds'])
 
                 command[-1] = str(start)
@@ -223,6 +215,9 @@ def run_and_document_experiments(args, experiments_dir, setup_filename, console_
 
                 training = subprocess.Popen(command, stdout=file, stderr=file)
                 training.wait()
+
+                if training.returncode != 0:
+                    raise Exception('Training subprocess failed')
 
                 start = end
 
