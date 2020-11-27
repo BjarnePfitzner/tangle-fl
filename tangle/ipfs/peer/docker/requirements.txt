@@ -1,0 +1,10 @@
+ipfshttpclient4ipwb==0.6.0
+tensorflow==1.15
+numpy
+pandas
+py-multihash
+rx==3.1.0
+aiohttp
+Flask
+requests
+prometheus_client
