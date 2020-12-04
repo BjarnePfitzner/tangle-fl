@@ -11,7 +11,7 @@ class NodeConfiguration:
         self.reference_avg_top = reference_avg_top
 
 class Node:
-    def __init__(self, tangle, tx_store, tip_selector, client_id, cluster_id, train_data={'x' : [],'y' : []}, eval_data={'x' : [],'y' : []}, model=None):
+    def __init__(self, tangle, tx_store, tip_selector, client_id, cluster_id, train_data={'x' : [],'y' : []}, eval_data={'x' : [],'y' : []}, model=None, config=NodeConfiguration()):
         self.tangle = tangle
         self.tx_store = tx_store
         self.tip_selector = tip_selector
@@ -20,7 +20,7 @@ class Node:
         self.cluster_id = cluster_id
         self.train_data = train_data
         self.eval_data = eval_data
-        self.config = NodeConfiguration()
+        self.config = config
 
         # Initialize tip selector
         tip_selector.compute_ratings(self)

@@ -4,14 +4,14 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 from .args import parse_args
 
 from . import Lab, Dataset, TipSelectorFactory
-from .config import LabConfiguration, ModelConfiguration, PoisoningConfiguration, RunConfiguration, TangleConfiguration, TipSelectorConfiguration
+from .config import LabConfiguration, ModelConfiguration, PoisoningConfiguration, RunConfiguration, NodeConfiguration, TipSelectorConfiguration
 
 def main():
-    run_config, lab_config, model_config, poisoining_config, tangle_config, tip_selector_config = \
-        parse_args(RunConfiguration, LabConfiguration, ModelConfiguration, PoisoningConfiguration, TangleConfiguration, TipSelectorConfiguration)
+    run_config, lab_config, model_config, node_config, tip_selector_config = \
+        parse_args(RunConfiguration, LabConfiguration, ModelConfiguration, NodeConfiguration, TipSelectorConfiguration)
 
     tip_selector_factory = TipSelectorFactory(tip_selector_config)
-    lab = Lab(tip_selector_factory, lab_config, model_config)
+    lab = Lab(tip_selector_factory, lab_config, model_config, node_config)
 
     dataset = Dataset(lab_config, model_config)
 

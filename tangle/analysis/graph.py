@@ -7,7 +7,7 @@ from .node import Node
 
 class Graph:
     def __init__(self, data, generation, analysis_output_dir=None):
-        self.nodes = [Node(n["id"], n["parents"], n["metadata"]) for n in data["nodes"]]
+        self.nodes = [Node(n["id"], n["parents"], n["metadata"]) for n in data["nodes"] if n["metadata"]["time"] <= generation]
         self.generation = generation
         self.analysis_output_dir = analysis_output_dir
     
@@ -30,6 +30,8 @@ class Graph:
         statistics = self._get_statistics_data()
 
         _print("Average clients per round: %f" % statistics["average_clients_per_round"])
+        _print("")
+        _print("Average parents per round (not including round 1): %f" % statistics["average_parents_per_round"])
         _print("")
         
         # Pureness
@@ -55,6 +57,15 @@ class Graph:
             title='Number of transactions per round',
             data_arrays=[data],
             y_label="Number of transactions",
+            smooth_line=smooth_line)
+
+    def plot_parents_per_round(self, plot_first_round=False, smooth_line=False):
+        data = self._get_mean_parents_per_round(plot_first_round)
+        
+        self._line_plot(
+            title='Mean number of parents per round (%s round 1)' % ("including" if plot_first_round else "excluding"),
+            data_arrays=[data],
+            y_label="Mean number of parents",
             smooth_line=smooth_line)
     
     def plot_accuracy_boxplot(self, print_avg_acc=False):
@@ -139,13 +150,20 @@ class Graph:
         plt.title(title)
         
         end_index = self.generation + 1
+        # All arrays in data_arrays are expected to be of the same length
+        # Use a start_index, as some data lines do not start from round 1 (e.g. mean number of parents)
+        start_index = end_index - len(data_arrays[0])
         
-        # in case of smooth_line define x as 200 equally spaced values between all generations
-        x_data = np.array([i for i in range(1, end_index)])
-        x_spaced = np.linspace(x_data.min(), x_data.max(), 200)
+        x_data_orig = np.array([i for i in range(start_index, end_index)])
         
         for data in data_arrays:
+            # The x positions (x_data) need to be of the same length as data
+            # As there may be data shorter than self.generation adapt the size of x_data
+            x_data = x_data_orig[:len(data)]
+            
             if smooth_line:
+                # in case of smooth_line define x as 200 equally spaced values between all generations
+                x_spaced = np.linspace(x_data.min(), x_data.max(), 200)
                 spl = make_interp_spline(x_data, data, k=7)
                 y_smooth = spl(x_spaced)
                 plt.plot(x_spaced, y_smooth)
@@ -156,7 +174,7 @@ class Graph:
             plt.legend(labels)
         
         plt.xlabel(x_label)
-        plt.xticks([i for i in range(1, end_index)], [i if i % 5 == 0 else '' for i in range(1, end_index)])
+        plt.xticks([i for i in range(start_index, end_index)], [i if i % 5 == 0 else '' for i in range(start_index, end_index)])
         
         plt.ylabel(y_label)
         
@@ -170,28 +188,30 @@ class Graph:
         plt.clf()
     
     #### Private: Data preparation
-        
+
     def _get_statistics_data(self):
         statistics = {}
         
-        # number of clients per round
+        # Clients and parents
         statistics["average_clients_per_round"] = (len(self.nodes) - 1) / self.generation
+        # Divide by len(self.nodes) - 1, because we don't include genesis transaction
+        statistics["average_parents_per_round"] = sum([len(n.parents) for n in self.nodes]) / (len(self.nodes) - 1)
         
         # Reference pureness
-        labels, data = reference_pureness = self._prepare_reference_pureness()
+        labels, data = self._prepare_reference_pureness()
         data = [np.nanmean(pureness) for pureness in data]
         statistics["average_pureness_per_round_approvals"] = (labels, data)
         
-        labels, data = reference_pureness = self._prepare_reference_pureness(compare_to_ref_tx=True)
+        labels, data = self._prepare_reference_pureness(compare_to_ref_tx=True)
         data = [np.nanmean(pureness) for pureness in data]
         statistics["average_pureness_per_round_ref_tx"] = (labels, data)
         
         # Information gain
-        labels, data = reference_pureness = self._get_information_gain_ref_tx()
+        labels, data = self._get_information_gain_ref_tx()
         data = [np.nanmean(info_gain) for info_gain in data]
         statistics["information_gain_per_round_ref_tx"] = (labels, data)
         
-        labels, data = reference_pureness = self._get_information_gain_approvals()
+        labels, data = self._get_information_gain_approvals()
         data = [np.nanmean(info_gain) for info_gain in data]
         statistics["information_gain_per_round_approvals"] = (labels, data)
         
@@ -385,3 +405,19 @@ class Graph:
             transactions_per_round.append(len(self._get_all_nodes_for_time(r)))
         
         return transactions_per_round
+
+    def _get_mean_parents_per_round(self, plot_first_round):
+        mean_parents_per_round = []
+
+        # Skip genesis-round (round 0)
+        # Nodes in round 1 will always have parents = ["id-of-genesis-node"]
+        if plot_first_round:
+            start_gen = 1
+        else:
+            start_gen = 2
+        
+        for r in range(start_gen, self.generation + 1):
+            nodes = self._get_all_nodes_for_time(r)
+            mean_parents_per_round.append(np.mean([len(n.parents) for n in nodes]))
+        
+        return mean_parents_per_round

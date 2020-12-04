@@ -1,6 +1,6 @@
 """Configuration file for common models/experiments"""
 
-MAIN_PARAMS = { 
+MAIN_PARAMS = {
     'sent140': {
         'small': (10, 2, 2),
         'medium': (16, 2, 2),
@@ -67,6 +67,7 @@ MODEL_PARAMS = {
     'reddit.stacked_lstm': (0.0003, 10, 256, 2), # lr, seq_len, num_hidden, num_layers
     'nextcharacter.stacked_lstm': (0.0003, 80, 81, 256), # lr, seq_len, num_classes, num_hidden
     'poets.stacked_lstm': (0.8, 80, 89, 256), # lr, seq_len, num_classes, num_hidden
+    'fake.fake': (),
 }
 """dict: Model specific parameter specification"""
 
