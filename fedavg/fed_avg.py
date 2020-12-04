@@ -30,6 +30,8 @@ def train_single(client_id, data, model_config, global_params, seed):
 
 
 def train(dataset, run_config, model_config, seed, lr=1.):
+    # Suppress tf warnings
+    tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
     model = Lab.create_client_model(seed, model_config)
     global_params = model.get_params()
     for epoch in range(run_config.num_rounds):
@@ -76,8 +78,9 @@ def test_single(client_id, global_params, test_data, model_config, seed):
 
 def test(global_params, dataset, model_config, eval_on_fraction, seed):
     client_indices = np.random.choice(range(len(dataset.clients)),
-                                      min(int(len(dataset.clients) * eval_on_fraction), len(dataset.clients)),
+                                      max(min(int(len(dataset.clients) * eval_on_fraction), len(dataset.clients)), 1),
                                       replace=False)
+    print(f'testing on {len(client_indices)} clients')
     validation_clients = [dataset.clients[i] for i in client_indices]
     futures = [test_single.remote(client_id, global_params, dataset.remote_train_data[client_id], model_config, seed)
                for (client_id, cluster_id) in validation_clients]

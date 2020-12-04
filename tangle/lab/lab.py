@@ -121,13 +121,13 @@ class Lab:
 
         reference_txs, reference = node.obtain_reference_params()
         metrics = node.test(reference, set_to_use)
-        if 'clusterId' in tangle.transactions[reference_txs[0]].metadata.keys():
-            tx_cluster = tangle.transactions[reference_txs[0]].metadata['clusterId']
-        else:
-            tx_cluster = 'None'
-        if cluster_id != tx_cluster:
-            with open(os.path.join(os.path.dirname(self.config.tangle_dir), 'validation_nodes.txt'), 'a') as f:
-                f.write(f'{client_id}({cluster_id}): {reference_txs}({tx_cluster}) (acc: {metrics["accuracy"]:.3f}, loss: {metrics["loss"]:.3f})\n')
+        #if 'clusterId' in tangle.transactions[reference_txs[0]].metadata.keys():
+        #    tx_cluster = tangle.transactions[reference_txs[0]].metadata['clusterId']
+        #else:
+        #    tx_cluster = 'None'
+        #if cluster_id != tx_cluster:
+        #    with open(os.path.join(os.path.dirname(self.config.tangle_dir), 'validation_nodes.txt'), 'a') as f:
+        #        f.write(f'{client_id}({cluster_id}): {reference_txs}({tx_cluster}) (acc: {metrics["accuracy"]:.3f}, loss: {metrics["loss"]:.3f})\n')
 
         return metrics
 
@@ -137,8 +137,9 @@ class Lab:
 
     def validate(self, round, dataset, client_fraction=0.1):
         print('Validate for round %s' % round)
-        with open(os.path.join(os.path.dirname(self.config.tangle_dir), 'validation_nodes.txt'), 'a') as f:
-            f.write('\nValidate for round %s\n' % round)
+        #import os
+        #with open(os.path.join(os.path.dirname(self.config.tangle_dir), 'validation_nodes.txt'), 'a') as f:
+        #    f.write('\nValidate for round %s\n' % round)
         tangle = self.tx_store.load_tangle(round)
         if dataset.clients[0][1] is None:
             # No clusters used
@@ -150,7 +151,7 @@ class Lab:
             client_indices = []
             clusters = np.array(list(map(lambda x: x[1], dataset.clients)))
             unique_clusters = set(clusters)
-            num = min(int(len(dataset.clients) * client_fraction), len(dataset.clients))
+            num = max(min(int(len(dataset.clients) * client_fraction), len(dataset.clients)), 1)
             div = len(unique_clusters)
             clients_per_cluster = [num // div + (1 if x < num % div else 0)  for x in range(div)]
             for cluster_id in unique_clusters:
