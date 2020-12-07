@@ -1,6 +1,9 @@
 import tensorflow as tf
 
 from ..model import Model
+from ..utils.tf_utils import graph_size
+from ..baseline_constants import ACCURACY_KEY
+from ...lab.dataset import batch_data
 import numpy as np
 
 
@@ -9,9 +12,10 @@ DROPOUT = 0.3
 
 
 class ClientModel(Model):
-    def __init__(self, seed, lr, num_classes):
+    def __init__(self, seed, lr, num_classes, optimizer=None):
         self.lr = lr
         self.seed = seed
+        self.num_classes = num_classes
         self._optimizer = optimizer
 
         self.num_epochs = 1
@@ -33,25 +37,24 @@ class ClientModel(Model):
 
         np.random.seed(self.seed)
 
-        self.num_classes = num_classes
 
     def create_model(self):
         """Model function for CNN."""
         features = tf.placeholder(
-            tf.float32, shape=[None, IMAGE_SIZE * IMAGE_SIZE * 3], name='features')
+            tf.float32, shape=[None, IMAGE_SIZE, IMAGE_SIZE, 3], name='features')
         labels = tf.placeholder(tf.int64, shape=[None], name='labels')
         dropout = tf.placeholder(tf.float32, shape=None, name='dropout')
 
-        input_layer = tf.reshape(features, [-1, IMAGE_SIZE, IMAGE_SIZE, 3])
+        # input_layer = tf.reshape(features, [-1, IMAGE_SIZE, IMAGE_SIZE, 3])
         
         conv1 = tf.layers.conv2d(
-          inputs=input_layer,
+          inputs=features,
           filters=64,
           kernel_size=[3, 3],
           kernel_initializer=tf.keras.initializers.TruncatedNormal(mean=0.0, stddev=0.08),
           padding="same",
           activation=tf.nn.relu)
-        pool1 = tf.layers.max_pooling2d(inputs=conv1, pool_size=[2, 2], strides=2), padding='same')
+        pool1 = tf.layers.max_pooling2d(inputs=conv1, pool_size=[2, 2], strides=2, padding='same')
         bn1 = tf.layers.batch_normalization(pool1)
         
         conv2 = tf.layers.conv2d(
@@ -61,7 +64,7 @@ class ClientModel(Model):
           kernel_initializer=tf.keras.initializers.TruncatedNormal(mean=0.0, stddev=0.08),
           padding="same",
           activation=tf.nn.relu)
-        pool2 = tf.layers.max_pooling2d(inputs=conv2, pool_size=[2, 2], strides=2), padding='same')
+        pool2 = tf.layers.max_pooling2d(inputs=conv2, pool_size=[2, 2], strides=2, padding='same')
         bn2 = tf.layers.batch_normalization(pool2)
 
         conv3 = tf.layers.conv2d(
@@ -71,7 +74,7 @@ class ClientModel(Model):
           kernel_initializer=tf.keras.initializers.TruncatedNormal(mean=0.0, stddev=0.08),
           padding="same",
           activation=tf.nn.relu)
-        pool3 = tf.layers.max_pooling2d(inputs=conv3, pool_size=[2, 2], strides=2), padding='same')
+        pool3 = tf.layers.max_pooling2d(inputs=conv3, pool_size=[2, 2], strides=2, padding='same')
         bn3 = tf.layers.batch_normalization(pool3)
 
         conv4 = tf.layers.conv2d(
@@ -81,7 +84,7 @@ class ClientModel(Model):
           kernel_initializer=tf.keras.initializers.TruncatedNormal(mean=0.0, stddev=0.08),
           padding="same",
           activation=tf.nn.relu)
-        pool4 = tf.layers.max_pooling2d(inputs=conv4, pool_size=[2, 2], strides=2), padding='same')
+        pool4 = tf.layers.max_pooling2d(inputs=conv4, pool_size=[2, 2], strides=2, padding='same')
         bn4 = tf.layers.batch_normalization(pool4)
 
         bn4_flat = tf.layers.flatten(bn4)
@@ -108,7 +111,6 @@ class ClientModel(Model):
           "probabilities": tf.nn.softmax(logits, name="softmax_tensor")
         }
         loss = tf.losses.sparse_softmax_cross_entropy(labels=labels, logits=logits)
-        # TODO: Confirm that opt initialized once is ok?
         train_op = self.optimizer.minimize(
             loss=loss,
             global_step=tf.train.get_global_step())

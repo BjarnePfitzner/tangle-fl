@@ -4,13 +4,13 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import ray
 
 from ..lab import parse_args
-from ..lab.config import LabConfiguration, ModelConfiguration, PoisoningConfiguration, RunConfiguration, TangleConfiguration, TipSelectorConfiguration
+from ..lab.config import LabConfiguration, ModelConfiguration, PoisoningConfiguration, RunConfiguration, NodeConfiguration, TipSelectorConfiguration
 
 from . import RayDataset, RayTipSelectorFactory, RayLab
 
 def main():
     run_config, lab_config, model_config, node_config, tip_selector_config = \
-        parse_args(RunConfiguration, LabConfiguration, ModelConfiguration, NodeConfiguration, TipSelectorConfiguration)
+            parse_args(RunConfiguration, LabConfiguration, ModelConfiguration, NodeConfiguration, TipSelectorConfiguration)
 
     ray.init(webui_host='0.0.0.0')
 
