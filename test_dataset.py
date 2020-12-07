@@ -4,7 +4,7 @@ from tangle.lab import Dataset
 from tangle.lab.config.lab_configuration import LabConfiguration
 
 
-def main(data_dir, num_clusters):
+def main(data_dir, num_clusters, num_classes=10):
     labConfig = LabConfiguration()
     labConfig.model_data_dir = '../data/' + data_dir
 
@@ -20,7 +20,7 @@ def main(data_dir, num_clusters):
     cluster_train_data = {cluster: np.concatenate([dataset.train_data[client]['y'] for client in clients]) for (cluster, clients) in cluster_clients.items()}
     print('Train data:')
     for cluster in range(num_clusters):
-        hist, _ = np.histogram(cluster_train_data[cluster], bins=range(11))
+        hist, _ = np.histogram(cluster_train_data[cluster], bins=range(num_classes+1))
         print(hist)
 
     for cluster in range(num_clusters):
@@ -32,7 +32,7 @@ def main(data_dir, num_clusters):
     cluster_test_data = {cluster: np.concatenate([dataset.test_data[client]['y'] for client in clients]) for (cluster, clients) in cluster_clients.items()}
     print('\nTest data:')
     for cluster in range(num_clusters):
-        hist, _ = np.histogram(cluster_test_data[cluster], bins=range(11))
+        hist, _ = np.histogram(cluster_test_data[cluster], bins=range(num_classes+1))
         print(hist)
 
     for cluster in range(num_clusters):
@@ -51,6 +51,10 @@ if __name__ == '__main__':
                         help='number of clusters',
                         type=int,
                         default=3)
+    parser.add_argument('--num-classes',
+                        help='number of classes',
+                        type=int,
+                        default=10)
     args = parser.parse_args()
-    main(args.data_dir, args.num_clusters)
+    main(args.data_dir, args.num_clusters, args.num_classes)
 
