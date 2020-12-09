@@ -1,4 +1,5 @@
 from .tip_selector import TipSelector
 from .accuracy_tip_selector import AccuracyTipSelector
+from .lazy_accuracy_tip_selector import LazyAccuracyTipSelector
 from .malicious_tip_selector import MaliciousTipSelector
 from .max_depth_tip_selector import MaxDepthTipSelector

@@ -6,7 +6,7 @@ class TipSelectorConfiguration:
         parser.add_argument('--tip-selector',
                         help='tip selection algorithm',
                         type=str,
-                        choices=['default', 'accuracy'],
+                        choices=['default', 'accuracy', 'lazy_accuracy'],
                         default='default')
 
         # Parameters for AccuracyTipSelector
@@ -38,8 +38,28 @@ class TipSelectorConfiguration:
                         type=float,
                         default=0.001)
 
+        # Parameters for particles
+        parser.add_argument('--use-particles',
+                        help='use particles to start walk instead of starting from genesis',
+                        type=str2bool,
+                        default=False)
+        
+        parser.add_argument('--particles-w',
+                        help='the interval particles will be choosen from. Will start from genesis, if current_round <= W, else interval is [last_round - 3 * W, last_round - W]',
+                        type=int,
+                        default=10)
+
+        parser.add_argument('--particles-number',
+                        help='the number of particles to use. If num-tips < particles-number, only num-tips particles will be used',
+                        type=int,
+                        default=10)
+
+
     def parse(self, args):
         self.tip_selector = args.tip_selector
+        self.use_particles = args.use_particles
+        self.particles_w = args.particles_w
+        self.particles_number = args.particles_number
         self.acc_tip_selection_strategy = args.acc_tip_selection_strategy
         self.acc_cumulate_ratings = args.acc_cumulate_ratings
         self.acc_ratings_to_weights = args.acc_ratings_to_weights

@@ -22,10 +22,10 @@ params = {
     'eval_every': [99],
     'eval_on_fraction': [0.05],
     'clients_per_round': [10],
-    'model_data_dir': ['./tangle/data/nextcharacter/data'],
+    'model_data_dir': ['../data/poets-balanced/data'],
     'src_tangle_dir': [''],         # Set to '' to not use --src-tangle-dir parameter
-    'start_round': [2],
-    'tip_selector': ['default'],
+    'start_round': [0],
+    'tip_selector': ['lazy_accuracy'],
     'num_tips': [2],
     'sample_size': [2],
     'batch_size': [10],
@@ -36,9 +36,12 @@ params = {
     'num_epochs': [1],
     'acc_tip_selection_strategy': ['WALK'],
     'acc_cumulate_ratings': ['False'],
-    'acc_ratings_to_weights': ['LINEAR'],
+    'acc_ratings_to_weights': ['ALPHA'],
     'acc_select_from_weights': ['WEIGHTED_CHOICE'],
-    'acc_alpha': [0.001],
+    'acc_alpha': [0.3],
+    'use_particles': ['True'],
+    'particles_w': [5],
+    'particles_number': [10]
 }
 
 ##############################################################################
@@ -159,7 +162,10 @@ def run_and_document_experiments(args, experiments_dir, setup_filename, console_
             '--acc-cumulate-ratings %s ' \
             '--acc-ratings-to-weights %s ' \
             '--acc-select-from-weights %s ' \
-            '--acc-alpha %s '
+            '--acc-alpha %s ' \
+            '--use-particles %s ' \
+            '--particles-w %s ' \
+            '--particles-number %s'
         parameters = (
             p['dataset'],
             p['model'],
@@ -183,7 +189,9 @@ def run_and_document_experiments(args, experiments_dir, setup_filename, console_
             p['acc_ratings_to_weights'],
             p['acc_select_from_weights'],
             p['acc_alpha'],
-        )
+            p['use_particles'],
+            p['particles_w'],
+            p['particles_number'])
         command = command.strip() % parameters
 
         if len(p['src_tangle_dir']) > 0:

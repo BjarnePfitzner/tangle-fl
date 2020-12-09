@@ -68,10 +68,10 @@ class Lab:
         return tx, tx_weights
 
     def create_node_transactions(self, tangle, round, clients, dataset):
-        tip_selector = self.tip_selector_factory.create(tangle)
+        tip_selectors = [self.tip_selector_factory.create(tangle) for _ in range(len(clients))]
 
         result = [self.create_node_transaction(tangle, round, client_id, cluster_id, dataset.train_data[client_id], dataset.test_data[client_id], self.config.seed, self.model_config, tip_selector, self.tx_store)
-                  for (client_id, cluster_id) in clients]
+                  for ((client_id, cluster_id), tip_selector) in zip(clients, tip_selectors)]
 
         for tx, tx_weights in result:
             if tx is not None:

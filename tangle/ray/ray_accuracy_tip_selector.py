@@ -1,8 +1,8 @@
 from ..core.tip_selection import AccuracyTipSelector
 
 class RayAccuracyTipSelector(AccuracyTipSelector):
-    def __init__(self, tangle, settings):
-        super().__init__(tangle, settings)
+    def __init__(self, tangle, tip_selection_settings, particle_settings):
+        super().__init__(tangle, tip_selection_settings, particle_settings)
         self.precomputed_ratings = None
 
     def add_precomputed_ratings(self, precomputed_ratings):
