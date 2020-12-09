@@ -14,21 +14,21 @@ class AccuracyTipSelectorSettings(Enum):
     SELECT_FROM_WEIGHTS = 4
 
 class AccuracyTipSelector(TipSelector):
-    def __init__(self, tangle, settings):
-        super().__init__(tangle)
-        self.settings = settings
+    def __init__(self, tangle, tip_selection_settings, particle_settings):
+        super().__init__(tangle, particle_settings=particle_settings)
+        self.settings = tip_selection_settings
 
         self.tips = []
         for x, tx in self.tangle.transactions.items():
             if len(self.approving_transactions[x]) == 0:
                 self.tips.append(x)
 
-    def tip_selection(self, num_tips):
+    def tip_selection(self, num_tips, node):
         if self.settings[AccuracyTipSelectorSettings.SELECTION_STRATEGY] == "GLOBAL":
-            self.tips.sort(key=lambda x: self.ratings[x], reverse=True)
+            self.tips.sort(key=lambda x: self.tx_rating(x, node), reverse=True)
             return self.tips[0:num_tips]
         else:
-            return super(AccuracyTipSelector, self).tip_selection(num_tips)
+            return super(AccuracyTipSelector, self).tip_selection(num_tips, node)
 
     def _compute_ratings(self, node):
         rating = {}
