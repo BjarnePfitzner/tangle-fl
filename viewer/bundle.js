@@ -27844,7 +27844,7 @@ var TangleContainer = function (_React$Component) {
 
     var _this = _possibleConstructorReturn(this, (TangleContainer.__proto__ || Object.getPrototypeOf(TangleContainer)).call(this));
 
-    _this.clusterColors = ["#001f3f", "#FF851B", "#3D9970", "#FFDC00", "#B10DC9"];
+    _this.clusterColors = ['#001f3f', '#FF851B', '#3D9970', '#FFDC00', '#B10DC9', '#556b2f', '#00008b', '#ffc0cb', '#00ffff', '#00ff00', '#ffa500', '#e9967a', '#000000', '#bdb76b', '#f0e68c', '#ff0000', '#800080', '#a52a2a', '#ffff00', '#a9a9a9', '#808000', '#90ee90', '#008b8b', '#4b0082', '#8b0000', '#ff00ff', '#9400d3', '#add8e6', '#0000ff', '#c0c0c0'];
 
     _this.state = {
       nodes: [],

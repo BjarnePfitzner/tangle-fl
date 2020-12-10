@@ -4,7 +4,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import ray
 
 from ..lab import parse_args
-from ..lab.config import LabConfiguration, ModelConfiguration, PoisoningConfiguration, RunConfiguration, NodeConfiguration, TipSelectorConfiguration
+from ..lab.config import LabConfiguration, ModelConfiguration, RunConfiguration, NodeConfiguration, TipSelectorConfiguration
 
 from . import RayDataset, RayTipSelectorFactory, RayLab
 

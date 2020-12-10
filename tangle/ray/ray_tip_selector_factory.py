@@ -6,6 +6,7 @@ from ..lab import TipSelectorFactory, Lab
 from ..models.baseline_constants import ACCURACY_KEY
 
 from .ray_accuracy_tip_selector import RayAccuracyTipSelector
+from .ray_lazy_accuracy_tip_selector import RayLazyAccuracyTipSelector
 
 class RayTipSelectorFactory(TipSelectorFactory):
     def __init__(self, config):
@@ -13,15 +14,15 @@ class RayTipSelectorFactory(TipSelectorFactory):
         self.accuracy_cache = {}
 
     def create(self, tangle, dataset, client_id, tx_store):
-        if self.config.tip_selector == 'accuracy':
-            tip_selection_settings = {}
-            tip_selection_settings[AccuracyTipSelectorSettings.SELECTION_STRATEGY] = self.config.acc_tip_selection_strategy
-            tip_selection_settings[AccuracyTipSelectorSettings.CUMULATE_RATINGS] = self.config.acc_cumulate_ratings
-            tip_selection_settings[AccuracyTipSelectorSettings.RATINGS_TO_WEIGHT] = self.config.acc_ratings_to_weights
-            tip_selection_settings[AccuracyTipSelectorSettings.SELECT_FROM_WEIGHTS] = self.config.acc_select_from_weights
-            tip_selection_settings[AccuracyTipSelectorSettings.ALPHA] = self.config.acc_alpha
+        tip_selection_settings = {}
+        tip_selection_settings[AccuracyTipSelectorSettings.SELECTION_STRATEGY] = self.config.acc_tip_selection_strategy
+        tip_selection_settings[AccuracyTipSelectorSettings.CUMULATE_RATINGS] = self.config.acc_cumulate_ratings
+        tip_selection_settings[AccuracyTipSelectorSettings.RATINGS_TO_WEIGHT] = self.config.acc_ratings_to_weights
+        tip_selection_settings[AccuracyTipSelectorSettings.SELECT_FROM_WEIGHTS] = self.config.acc_select_from_weights
+        tip_selection_settings[AccuracyTipSelectorSettings.ALPHA] = self.config.acc_alpha
 
-            rayAccuracyTipSelector = RayAccuracyTipSelector(tangle, tip_selection_settings)
+        if self.config.tip_selector == 'accuracy':
+            rayAccuracyTipSelector = RayAccuracyTipSelector(tangle, tip_selection_settings, self.particle_settings)
 
             if self.config.acc_tip_selection_strategy == 'GLOBAL' and not self.config.acc_cumulate_ratings:
                 txs_to_eval = rayAccuracyTipSelector.tips
@@ -38,6 +39,9 @@ class RayTipSelectorFactory(TipSelectorFactory):
                     self.accuracy_cache[node_id][tx_id] = accuracy
 
             return rayAccuracyTipSelector
+
+        elif self.config.tip_selector == 'lazy_accuracy':
+            return RayLazyAccuracyTipSelector(tangle, tip_selection_settings, self.particle_settings, dataset)
 
         return super().create(tangle)
 

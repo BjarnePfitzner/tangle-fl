@@ -87,14 +87,14 @@ class Model(ABC):
                 corresponding to a variable in the resulting graph
         """
         for _ in range(self.num_epochs):
-            self.run_epoch(data, self.batch_size)
+            self.run_epoch(data, self.batch_size, self.num_batches)
 
         update = self.get_params()
         return update
 
-    def run_epoch(self, data, batch_size):
+    def run_epoch(self, data, batch_size, num_batches):
 
-        for batched_x, batched_y in batch_data(data, batch_size, seed=self.seed):
+        for batched_x, batched_y in batch_data(data, batch_size, num_batches, seed=self.seed):
 
             input_data = self.process_x(batched_x)
             target_data = self.process_y(batched_y)
