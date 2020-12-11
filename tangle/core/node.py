@@ -151,7 +151,7 @@ class Node:
         return tip_txs
 
     def compute_confidence(self, approved_transactions_cache={}):
-        num_sampling_rounds = 35
+        num_sampling_rounds = 5
 
         transaction_confidence = {x: 0 for x in self.tangle.transactions}
 
