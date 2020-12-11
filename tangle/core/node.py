@@ -228,7 +228,7 @@ class Node:
         trained_params = self.train(averaged_params)
         trained_model_metrics = self.test(trained_params, 'test')
 
-        t, trained_params = None, None
+        t = None
 
         assert self.config.publish_if_better_than in ['PARENTS', 'REFERENCE']
         if(self.config.publish_if_better_than == 'REFERENCE'):
