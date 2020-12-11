@@ -51,7 +51,7 @@ class Node:
         # return num_train_samples, update
         return self.model.get_params()
 
-    def test(self, model_params, set_to_use='test'):
+    def test(self, model_params, set_to_use='test', only_test_on_first_1000=False):
         """Tests self.model on self.test_data.
 
         Args:
@@ -67,6 +67,8 @@ class Node:
             data = self.train_data
         elif set_to_use == 'test' or set_to_use == 'val':
             data = self.eval_data
+        if(only_test_on_first_1000):
+            data = {'x': data['x'][:1000], 'y': data['y'][:1000]}
         # begin = time.time()
         metrics = self.model.test(data)
         # print(f'Testing took: {time.time()-begin}')
