@@ -25,7 +25,7 @@ params = {
     'model_data_dir': ['../data/poets-balanced/data'],
     'src_tangle_dir': [''],         # Set to '' to not use --src-tangle-dir parameter
     'start_round': [0],
-    'tip_selector': ['lazy_accuracy'],
+    'tip_selector': ['accuracy'],
     'num_tips': [2],
     'sample_size': [2],
     'batch_size': [10],
@@ -39,8 +39,8 @@ params = {
     'acc_cumulate_ratings': ['False'],
     'acc_ratings_to_weights': ['ALPHA'],
     'acc_select_from_weights': ['WEIGHTED_CHOICE'],
-    'acc_alpha': [20],
-    'use_particles': ['True'],
+    'acc_alpha': [30],
+    'use_particles': ['False'],
     'particles_w': [5],
     'particles_number': [10]
 }
@@ -225,6 +225,7 @@ def run_and_document_experiments(args, experiments_dir, setup_filename, console_
                 command[-1] = str(start)
                 command[8] = str(end)
 
+                print(f"Running {start} to {end}...")
                 training = subprocess.Popen(command, stdout=file, stderr=file)
                 training.wait()
 

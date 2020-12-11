@@ -23,7 +23,8 @@ class TipSelector:
         # whereas the 'branch' may lie on the outside.
         self.trunk = trunk if trunk is not None else self.tangle.genesis
         self.branch = branch if branch is not None else self.tangle.genesis
-        self.rated_transactions = rated_transactions if rated_transactions is not None else set(self.tangle.transactions.keys())
+        self.rated_transactions = rated_transactions if rated_transactions is not None else set(
+            self.tangle.transactions.keys())
 
         # Build a map of transactions that directly approve a given transaction
         self.approving_transactions = {x: [] for x in self.rated_transactions}
@@ -51,10 +52,10 @@ class TipSelector:
             # num_particles cannot be greater than the number of transactions, which could act as particles
             if len(particles) < num_particles:
                 num_particles = len(particles)
-            
+
             random.shuffle(particles)
             particles = particles[:num_particles]
-            
+
             for idx in range(num_tips):
                 entry_point_idx = idx % num_particles
                 tips.append(self.walk(particles[entry_point_idx], node, self.approving_transactions))
@@ -96,12 +97,18 @@ class TipSelector:
             return None
 
         if len(approvers) == 1:
+            print("Only one approver")
             return approvers[0]
 
         approvers_ratings = [self.tx_rating(a, node) for a in approvers]
         weights = self.ratings_to_weight(approvers_ratings)
         approver = self.weighted_choice(approvers, weights)
 
+        print("Approvers: ")
+        print([self.tangle.transactions[approver_id].metadata['issuer'] for approver_id in approvers])
+        print(approvers_ratings)
+        print(weights)
+        print(f"{self.tangle.transactions[approver].metadata['issuer'] }({approver})")
         # Skip validation.
         # At least a validation of some PoW is necessary in a real-world implementation.
 
@@ -126,6 +133,7 @@ class TipSelector:
         return [np.exp(r * alpha) for r in normalized_ratings]
 
     def weighted_choice(self, approvers, weights):
+
         rn = random.uniform(0, sum(weights))
         for i in range(len(approvers)):
             rn -= weights[i]
@@ -143,7 +151,8 @@ class TipSelector:
             return future_set_cache[t]
 
         return recurse_future_set(tx)
-
+    #
+    # ratings_to_probability is not used currently.
     # @staticmethod
     # def ratings_to_probability(ratings):
     #     # Calculating a probability according to the IOTA randomness blog

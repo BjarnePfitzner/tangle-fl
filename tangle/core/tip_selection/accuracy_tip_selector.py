@@ -37,6 +37,7 @@ class AccuracyTipSelector(TipSelector):
             txs = self.tips
         else:
             txs = self.tangle.transactions.keys()
+
         for tx_id in txs:
             rating[tx_id] = node.test(node.tx_store.load_transaction_weights(tx_id), 'train')[ACCURACY_KEY]
 
@@ -47,6 +48,7 @@ class AccuracyTipSelector(TipSelector):
         return rating
 
     def compute_ratings(self, node):
+        print(f"computing ratings for node {node.id}")
         rating = self._compute_ratings(node)
 
         if self.settings[AccuracyTipSelectorSettings.CUMULATE_RATINGS]:
@@ -61,6 +63,7 @@ class AccuracyTipSelector(TipSelector):
                 future_set = super().future_set(tx_id, self.approving_transactions, future_set_cache)
                 rating[tx_id] = cumulate_ratings(future_set, rating) + rating[tx_id]
 
+        print("done computing ratings")
         self.ratings = rating
 
     def ratings_to_weight(self, ratings, alpha=None):

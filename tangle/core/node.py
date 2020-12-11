@@ -1,3 +1,5 @@
+import time
+
 from .transaction import Transaction
 
 class NodeConfiguration:
@@ -65,7 +67,10 @@ class Node:
             data = self.train_data
         elif set_to_use == 'test' or set_to_use == 'val':
             data = self.eval_data
-        return self.model.test(data)
+        # begin = time.time()
+        metrics = self.model.test(data)
+        # print(f'Testing took: {time.time()-begin}')
+        return metrics
 
     @property
     def num_test_samples(self):
@@ -225,6 +230,7 @@ class Node:
 
         assert self.config.publish_if_better_than in ['PARENTS', 'REFERENCE']
         if(self.config.publish_if_better_than == 'REFERENCE'):
+            print("publish if better than reference")
             # Compute reference metrics
             reference_txs, reference_params = self.obtain_reference_params(avg_top=self.config.reference_avg_top)
             reference_metrics = self.test(reference_params, 'test')
@@ -239,6 +245,7 @@ class Node:
                 t.add_metadata('averaged_accuracy', averaged_model_metrics['accuracy'])
                 t.add_metadata('accuracy', trained_model_metrics['accuracy'])
         else:
+            print("publish if better than parents")
             if trained_model_metrics['loss'] < averaged_model_metrics['loss']:
                 t = Transaction(parents=set([tip.id for tip in tips]))
                 t.add_metadata('issuer', self.id)
