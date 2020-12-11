@@ -90,15 +90,17 @@ class TipSelector:
         return prev_step
 
     def next_step(self, approvers, node):
-        approvers_with_rating = approvers  # There is a rating for every possible approver
 
-        # There is no valid approver, this transaction is a tip
-        if len(approvers_with_rating) == 0:
+        # If there is no valid approver, this transaction is a tip
+        if len(approvers) == 0:
             return None
 
-        approvers_ratings = [self.tx_rating(a, node) for a in approvers_with_rating]
+        if len(approvers) == 1:
+            return approvers[0]
+
+        approvers_ratings = [self.tx_rating(a, node) for a in approvers]
         weights = self.ratings_to_weight(approvers_ratings)
-        approver = self.weighted_choice(approvers_with_rating, weights)
+        approver = self.weighted_choice(approvers, weights)
 
         # Skip validation.
         # At least a validation of some PoW is necessary in a real-world implementation.
@@ -124,10 +126,6 @@ class TipSelector:
         return [np.exp(r * alpha) for r in normalized_ratings]
 
     def weighted_choice(self, approvers, weights):
-        # Instead of a random choice, one could also think about a more 'intelligent'
-        # variant for this use case. E.g. choose a transaction that was published by a
-        # node with 'similar' characteristics
-
         rn = random.uniform(0, sum(weights))
         for i in range(len(approvers)):
             rn -= weights[i]
@@ -145,7 +143,7 @@ class TipSelector:
             return future_set_cache[t]
 
         return recurse_future_set(tx)
-    #
+
     # @staticmethod
     # def ratings_to_probability(ratings):
     #     # Calculating a probability according to the IOTA randomness blog
