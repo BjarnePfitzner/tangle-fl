@@ -7,7 +7,7 @@ import numpy as np
 # https://docs.iota.org/docs/node-software/0.1/iri/references/iri-configuration-options
 DEFAULT_ALPHA = 0.001
 
-class TipSelectorParticleSettings(Enum):
+class TipSelectorSettings(Enum):
     USE_PARTICLES = 0
     W = 1
     NUM_PARTICLES = 2
@@ -41,9 +41,9 @@ class TipSelector:
         # The docs say entry_point = latestSolidMilestone - depth.
         tips = []
 
-        if self.particle_settings[TipSelectorParticleSettings.USE_PARTICLES]:
-            W = self.particle_settings[TipSelectorParticleSettings.W]
-            num_particles = self.particle_settings[TipSelectorParticleSettings.NUM_PARTICLES]
+        if self.particle_settings[TipSelectorSettings.USE_PARTICLES]:
+            W = self.particle_settings[TipSelectorSettings.W]
+            num_particles = self.particle_settings[TipSelectorSettings.NUM_PARTICLES]
 
             # particles are from the interval [last_generation - 3*W, last_generation - W,]
             particles = self.tangle.get_transaction_ids_of_time_interval(steps_back=W, width=2*W)
