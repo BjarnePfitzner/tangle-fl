@@ -145,10 +145,10 @@ class TipSelector:
             return future_set_cache[t]
 
         return recurse_future_set(tx)
-
-    @staticmethod
-    def ratings_to_probability(ratings):
-        # Calculating a probability according to the IOTA randomness blog
-        # https://blog.iota.org/alpha-d176d7601f1c
-        b = sum(map(lambda r: np.exp(DEFAULT_ALPHA * r), ratings))
-        return [np.exp(r * DEFAULT_ALPHA) / b for r in ratings]
+    #
+    # @staticmethod
+    # def ratings_to_probability(ratings):
+    #     # Calculating a probability according to the IOTA randomness blog
+    #     # https://blog.iota.org/alpha-d176d7601f1c
+    #     b = sum(map(lambda r: np.exp(DEFAULT_ALPHA * r), ratings))
+    #     return [np.exp(r * DEFAULT_ALPHA) / b for r in ratings]
