@@ -63,7 +63,7 @@ class LazyAccuracyTipSelector(AccuracyTipSelector):
 
             acc = node.test(node.tx_store.load_transaction_weights(tx), 'train')[ACCURACY_KEY]
             # Multiply size of tree behind this node (see `_compute_ratings` in accuracy_tip_selector.py)
-            acc *= len(super().future_set(tx, self.approving_transactions, future_set_cache)) + 1
+            # acc *= len(super().future_set(tx, self.approving_transactions, future_set_cache)) + 1
 
             return acc
 
