@@ -22,14 +22,15 @@ params = {
     'eval_every': [99],
     'eval_on_fraction': [0.05],
     'clients_per_round': [10],
-    'model_data_dir': ['../data/poets-8/data'],
+    'model_data_dir': ['../data/poets-balanced/data'],
     'src_tangle_dir': [''],         # Set to '' to not use --src-tangle-dir parameter
-    'start_round': [2],
-    'tip_selector': ['default'],
+    'start_round': [0],
+    'tip_selector': ['lazy_accuracy'],
     'num_tips': [2],
     'sample_size': [2],
     'batch_size': [10],
     'num_batches': [35],
+    'publish_if_better_than': ['REFERENCE'], # or parents
     'reference_avg_top': [1],
     'target_accuracy': [1],
     'learning_rate': [0.8],
@@ -38,7 +39,7 @@ params = {
     'acc_cumulate_ratings': ['False'],
     'acc_ratings_to_weights': ['ALPHA'],
     'acc_select_from_weights': ['WEIGHTED_CHOICE'],
-    'acc_alpha': [0.3],
+    'acc_alpha': [20],
     'use_particles': ['True'],
     'particles_w': [5],
     'particles_number': [10]
