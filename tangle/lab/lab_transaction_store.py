@@ -48,6 +48,8 @@ class LabTransactionStore(TransactionStore):
         print(f"saving transaction weights{len(tx_weights)}")
         tx.id = self.compute_transaction_id(tx_weights)
 
+        assert tx_weights, tx.id is not None
+
         os.makedirs(self.dest_tx_path, exist_ok=True)
 
         with open(f'{self.dest_tx_path}/{tx.id}.npy', 'wb') as tx_file:
