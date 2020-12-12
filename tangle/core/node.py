@@ -228,7 +228,7 @@ class Node:
         trained_params = self.train(averaged_params)
         trained_model_metrics = self.test(trained_params, 'test')
 
-        t = None
+        transaction = None
 
         assert self.config.publish_if_better_than in ['PARENTS', 'REFERENCE']
         if(self.config.publish_if_better_than == 'REFERENCE'):
@@ -237,23 +237,27 @@ class Node:
             reference_txs, reference_params = self.obtain_reference_params(avg_top=self.config.reference_avg_top)
             reference_metrics = self.test(reference_params, 'test')
             if trained_model_metrics['loss'] < reference_metrics['loss']:
-                t = Transaction(parents=set([tip.id for tip in tips]))
-                t.add_metadata('issuer', self.id)
-                t.add_metadata('clusterId', self.cluster_id)
-                t.add_metadata('loss', float(trained_model_metrics['loss']))
-                t.add_metadata('reference_tx', reference_txs[0])
-                t.add_metadata('reference_tx_loss', float(reference_metrics['loss']))
-                t.add_metadata('reference_tx_accuracy', reference_metrics['accuracy'])
-                t.add_metadata('averaged_accuracy', averaged_model_metrics['accuracy'])
-                t.add_metadata('accuracy', trained_model_metrics['accuracy'])
+                print("i'll publish!")
+                transaction = Transaction(parents=set([tip.id for tip in tips]))
+                transaction.add_metadata('issuer', self.id)
+                transaction.add_metadata('clusterId', self.cluster_id)
+                transaction.add_metadata('loss', float(trained_model_metrics['loss']))
+                transaction.add_metadata('reference_tx', reference_txs[0])
+                transaction.add_metadata('reference_tx_loss', float(reference_metrics['loss']))
+                transaction.add_metadata('reference_tx_accuracy', reference_metrics['accuracy'])
+                transaction.add_metadata('averaged_accuracy', averaged_model_metrics['accuracy'])
+                transaction.add_metadata('accuracy', trained_model_metrics['accuracy'])
         else:
             print("publish if better than parents")
             if trained_model_metrics['loss'] < averaged_model_metrics['loss']:
-                t = Transaction(parents=set([tip.id for tip in tips]))
-                t.add_metadata('issuer', self.id)
-                t.add_metadata('clusterId', self.cluster_id)
-                t.add_metadata('loss', float(trained_model_metrics['loss']))
-                t.add_metadata('averaged_accuracy', averaged_model_metrics['accuracy'])
-                t.add_metadata('accuracy', trained_model_metrics['accuracy'])
+                print("i'll publish!")
+                transaction = Transaction(parents=set([tip.id for tip in tips]))
+                transaction.add_metadata('issuer', self.id)
+                transaction.add_metadata('issuer_data_size', len(self.train_data))
+                transaction.add_metadata('clusterId', self.cluster_id)
+                transaction.add_metadata('loss', float(trained_model_metrics['loss']))
+                transaction.add_metadata('accuracy', trained_model_metrics['accuracy'])
+                transaction.add_metadata('averaged_loss', float(averaged_model_metrics['loss']))
+                transaction.add_metadata('averaged_accuracy', averaged_model_metrics['accuracy'])
 
-        return t, trained_params
+        return transaction, trained_params
