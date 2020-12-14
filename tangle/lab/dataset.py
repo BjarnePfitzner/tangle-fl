@@ -17,7 +17,9 @@ class Dataset:
 
         users, cluster_ids, train_data, test_data = read_data(train_data_dir, test_data_dir)
 
-        return list(itertools.zip_longest(users, cluster_ids)), train_data, test_data
+        clients = list(itertools.zip_longest(users, cluster_ids))
+
+        return clients, train_data, test_data
 
     def select_clients(self, my_round, num_clients=20):
         """Selects num_clients clients randomly from possible_clients.
@@ -44,6 +46,7 @@ def batch_data(data, batch_size, num_batches, seed):
     '''
 
     data_repetitions = (batch_size / len(data['x'])) * num_batches
+    print(f'batch_data will return {data_repetitions} times the data')
     data_repetitions = np.ceil(data_repetitions)
     data_repetitions = max(data_repetitions, 1)
 
@@ -105,6 +108,7 @@ def read_data(train_data_dir, test_data_dir):
         train_data: dictionary of train data
         test_data: dictionary of test data
     '''
+    print("Reading Data...")
     train_clients, train_cluster_ids, train_groups, train_data = read_dir(train_data_dir)
     test_clients, test_cluster_ids, test_groups, test_data = read_dir(test_data_dir)
 
@@ -112,5 +116,6 @@ def read_data(train_data_dir, test_data_dir):
     assert train_groups == test_groups
     assert train_cluster_ids == test_cluster_ids
 
+    print("Done Reading Data...")
     # Todo return groups if required
     return train_clients, train_cluster_ids, train_data, test_data

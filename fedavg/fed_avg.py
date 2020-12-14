@@ -126,7 +126,7 @@ def test(global_params, dataset, model_config, eval_on_fraction, seed):
                                       replace=False)
     print(f'testing on {len(client_indices)} clients')
     validation_clients = [dataset.clients[i] for i in client_indices]
-    futures = [test_single.remote(client_id, global_params, dataset.remote_train_data[client_id], model_config, seed)
+    futures = [test_single.remote(client_id, global_params, dataset.remote_test_data[client_id], model_config, seed)
                for (client_id, cluster_id) in validation_clients]
 
     return np.mean(ray.get(futures))

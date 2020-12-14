@@ -1,14 +1,18 @@
+import time
+
 from .transaction import Transaction
 
 class NodeConfiguration:
     num_tips: int
     sample_size: int
     reference_avg_top: int
+    publish_if_better_than: str
 
-    def __init__(self, num_tips=2, sample_size=2, reference_avg_top=1):
+    def __init__(self, num_tips=2, sample_size=2, reference_avg_top=1, publish_if_better_than='REFERENCE'):
         self.num_tips = num_tips
         self.sample_size = sample_size
         self.reference_avg_top = reference_avg_top
+        self.publish_if_better_than = publish_if_better_than
 
 class Node:
     def __init__(self, tangle, tx_store, tip_selector, client_id, cluster_id, train_data={'x' : [],'y' : []}, eval_data={'x' : [],'y' : []}, model=None, config=NodeConfiguration()):
@@ -47,7 +51,7 @@ class Node:
         # return num_train_samples, update
         return self.model.get_params()
 
-    def test(self, model_params, set_to_use='test'):
+    def test(self, model_params, set_to_use='test', only_test_on_first_1000=False):
         """Tests self.model on self.test_data.
 
         Args:
@@ -63,7 +67,12 @@ class Node:
             data = self.train_data
         elif set_to_use == 'test' or set_to_use == 'val':
             data = self.eval_data
-        return self.model.test(data)
+        if(only_test_on_first_1000):
+            data = {'x': data['x'][:1000], 'y': data['y'][:1000]}
+        # begin = time.time()
+        metrics = self.model.test(data)
+        # print(f'Testing took: {time.time()-begin}')
+        return metrics
 
     @property
     def num_test_samples(self):
@@ -142,7 +151,7 @@ class Node:
         return tip_txs
 
     def compute_confidence(self, approved_transactions_cache={}):
-        num_sampling_rounds = 35
+        num_sampling_rounds = 5
 
         transaction_confidence = {x: 0 for x in self.tangle.transactions}
 
@@ -195,9 +204,6 @@ class Node:
         return reference_txs, reference_params
 
     def create_transaction(self):
-        # Compute reference metrics
-        reference_txs, reference_params = self.obtain_reference_params(avg_top=self.config.reference_avg_top)
-        reference_metrics = self.test(reference_params, 'test')
 
         # Obtain number of tips from the tangle
         tips = self.choose_tips(num_tips=self.config.num_tips, sample_size=self.config.sample_size)
@@ -218,20 +224,40 @@ class Node:
 
         averaged_params = Node.average_model_params(*tx_weights)
         averaged_model_metrics = self.test(averaged_params, 'test')
+
         trained_params = self.train(averaged_params)
-
         trained_model_metrics = self.test(trained_params, 'test')
-        if trained_model_metrics['loss'] < reference_metrics['loss']:
-            t = Transaction(parents=set([tip.id for tip in tips]))
-            t.add_metadata('issuer', self.id)
-            t.add_metadata('clusterId', self.cluster_id)
-            t.add_metadata('loss', float(trained_model_metrics['loss']))
-            t.add_metadata('reference_tx', reference_txs[0])
-            t.add_metadata('reference_tx_loss', float(reference_metrics['loss']))
-            t.add_metadata('reference_tx_accuracy', reference_metrics['accuracy'])
-            t.add_metadata('averaged_accuracy', averaged_model_metrics['accuracy'])
-            t.add_metadata('accuracy', trained_model_metrics['accuracy'])
 
-            return t, trained_params
+        transaction = None
 
-        return None, None
+        assert self.config.publish_if_better_than in ['PARENTS', 'REFERENCE']
+        if(self.config.publish_if_better_than == 'REFERENCE'):
+            print("publish if better than reference")
+            # Compute reference metrics
+            reference_txs, reference_params = self.obtain_reference_params(avg_top=self.config.reference_avg_top)
+            reference_metrics = self.test(reference_params, 'test')
+            if trained_model_metrics['loss'] < reference_metrics['loss']:
+                print("i'll publish!")
+                transaction = Transaction(parents=set([tip.id for tip in tips]))
+                transaction.add_metadata('issuer', self.id)
+                transaction.add_metadata('clusterId', self.cluster_id)
+                transaction.add_metadata('loss', float(trained_model_metrics['loss']))
+                transaction.add_metadata('reference_tx', reference_txs[0])
+                transaction.add_metadata('reference_tx_loss', float(reference_metrics['loss']))
+                transaction.add_metadata('reference_tx_accuracy', reference_metrics['accuracy'])
+                transaction.add_metadata('averaged_accuracy', averaged_model_metrics['accuracy'])
+                transaction.add_metadata('accuracy', trained_model_metrics['accuracy'])
+        else:
+            print("publish if better than parents")
+            if trained_model_metrics['loss'] < averaged_model_metrics['loss']:
+                print("i'll publish!")
+                transaction = Transaction(parents=set([tip.id for tip in tips]))
+                transaction.add_metadata('issuer', self.id)
+                transaction.add_metadata('issuer_data_size', len(self.train_data))
+                transaction.add_metadata('clusterId', self.cluster_id)
+                transaction.add_metadata('loss', float(trained_model_metrics['loss']))
+                transaction.add_metadata('accuracy', trained_model_metrics['accuracy'])
+                transaction.add_metadata('averaged_loss', float(averaged_model_metrics['loss']))
+                transaction.add_metadata('averaged_accuracy', averaged_model_metrics['accuracy'])
+
+        return transaction, trained_params
