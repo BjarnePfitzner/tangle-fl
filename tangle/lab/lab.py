@@ -6,6 +6,7 @@ import time
 import numpy as np
 import importlib
 import itertools
+from zlib import crc32
 
 from ..models.baseline_constants import MODEL_PARAMS, ACCURACY_KEY
 from ..core import Tangle, Transaction, Node, MaliciousNode, PoisonType
@@ -62,10 +63,13 @@ class Lab:
 
         client_model = Lab.create_client_model(seed, model_config)
 
+        # Choose which node are malicious based on a hash, not based on a random variable
+        # to have it consistent over the entire experiment run
+        # https://stackoverflow.com/questions/40351791/how-to-hash-strings-into-a-float-in-01
         use_poisoning_node = \
             self.poisoning_config.poison_type != PoisonType.Disabled and \
             self.poisoning_config.poison_from <= round and \
-            random.uniform(0, 1) < self.poisoning_config.poison_fraction
+            (float(crc32(client_id.encode('utf-8')) & 0xffffffff) / 2**32) < self.poisoning_config.poison_fraction
 
         if use_poisoning_node:
             node = MaliciousNode(tangle, tx_store, tip_selector, client_id, cluster_id, train_data, eval_data, client_model, self.poisoning_config.poison_type, config=self.node_config)
