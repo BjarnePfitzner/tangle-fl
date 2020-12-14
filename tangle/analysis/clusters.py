@@ -15,12 +15,16 @@ def load(tangle_json_path):
         tangle_data = json.load(inf)
 
     nid_to_client = {}
+    clients_to_clusters = {}
 
     for n in tangle_data['nodes']:
         if 'issuer' in n['metadata']:
             nid_to_client[n['id']] = n['metadata']['issuer']
+
+            if 'clusterId' in n['metadata']:
+                clients_to_clusters[n['metadata']['issuer']] = n['metadata']['clusterId']
         else:
-            nid_to_client[n['id']] = "genesis"
+            nid_to_client[n['id']] = 'genesis'
 
     clients = list(set(nid_to_client.values()))
 
@@ -53,7 +57,7 @@ def load(tangle_json_path):
 
     idx_to_client = clients
 
-    return approval_count, idx_to_client
+    return approval_count, idx_to_client, clients_to_clusters
 
 def compute_clusters(approval_count):
     louvain = Louvain(modularity='newman')
