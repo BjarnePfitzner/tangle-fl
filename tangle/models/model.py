@@ -90,7 +90,7 @@ class Model(ABC):
         print("Training...")
         for _ in range(self.num_epochs):
             self.run_epoch(data, self.batch_size, self.num_batches)
-        print("Done Training...")
+        print("Done Training.")
         update = self.get_params()
         return update
 

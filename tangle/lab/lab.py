@@ -110,9 +110,9 @@ class Lab:
                         tangle.add_transaction(tx)
 
             print(f'This round took: {time.time() - begin}s')
-            self.tx_store.save_tangle(tangle, round)
-            print(f'Including testing: {time.time() - begin}s')
             sys.stdout.flush()
+
+            self.tx_store.save_tangle(tangle, round)
 
             if eval_every != -1 and round % eval_every == 0:
                 self.print_validation_results(self.validate(round, dataset, eval_on_fraction), mode='avg')

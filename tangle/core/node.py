@@ -1,5 +1,3 @@
-import time
-
 from .transaction import Transaction
 
 class NodeConfiguration:
@@ -239,25 +237,23 @@ class Node:
             if trained_model_metrics['loss'] < reference_metrics['loss']:
                 print("i'll publish!")
                 transaction = Transaction(parents=set([tip.id for tip in tips]))
-                transaction.add_metadata('issuer', self.id)
-                transaction.add_metadata('clusterId', self.cluster_id)
-                transaction.add_metadata('loss', float(trained_model_metrics['loss']))
                 transaction.add_metadata('reference_tx', reference_txs[0])
                 transaction.add_metadata('reference_tx_loss', float(reference_metrics['loss']))
                 transaction.add_metadata('reference_tx_accuracy', reference_metrics['accuracy'])
-                transaction.add_metadata('averaged_accuracy', averaged_model_metrics['accuracy'])
-                transaction.add_metadata('accuracy', trained_model_metrics['accuracy'])
         else:
             print("publish if better than parents")
             if trained_model_metrics['loss'] < averaged_model_metrics['loss']:
                 print("i'll publish!")
                 transaction = Transaction(parents=set([tip.id for tip in tips]))
-                transaction.add_metadata('issuer', self.id)
-                transaction.add_metadata('issuer_data_size', len(self.train_data))
-                transaction.add_metadata('clusterId', self.cluster_id)
-                transaction.add_metadata('loss', float(trained_model_metrics['loss']))
-                transaction.add_metadata('accuracy', trained_model_metrics['accuracy'])
-                transaction.add_metadata('averaged_loss', float(averaged_model_metrics['loss']))
-                transaction.add_metadata('averaged_accuracy', averaged_model_metrics['accuracy'])
+
+        if transaction is not None:
+            transaction.add_metadata('issuer', self.id)
+            transaction.add_metadata('issuer_data_size', len(self.train_data))
+            transaction.add_metadata('clusterId', self.cluster_id)
+            transaction.add_metadata('loss', float(trained_model_metrics['loss']))
+            transaction.add_metadata('accuracy', trained_model_metrics['accuracy'])
+            transaction.add_metadata('averaged_loss', float(averaged_model_metrics['loss']))
+            transaction.add_metadata('averaged_accuracy', averaged_model_metrics['accuracy'])
+            transaction.add_metadata('trace', self.tip_selector.trace)
 
         return transaction, trained_params

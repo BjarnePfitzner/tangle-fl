@@ -34,6 +34,8 @@ class TipSelector:
                     continue
                 self.approving_transactions[unique_parent].append(x)
 
+        self.trace = []
+
     def tx_rating(self, tx, node):
         return self.ratings[tx]
 
@@ -104,11 +106,14 @@ class TipSelector:
         weights = self.ratings_to_weight(approvers_ratings)
         approver = self.weighted_choice(approvers, weights)
 
-        print("Approvers: ")
-        print([self.tangle.transactions[approver_id].metadata['issuer'] for approver_id in approvers])
-        print(approvers_ratings)
-        print(weights)
-        print(f"{self.tangle.transactions[approver].metadata['issuer'] }({approver})")
+
+        trace_of_this_step = zip(approvers, [self.tangle.transactions[approver_id].metadata['issuer'] for approver_id in approvers], approvers_ratings, weights)
+        self.trace.append((list(trace_of_this_step), approver, self.tangle.transactions[approver].metadata['issuer']))
+        # print("Approvers: ")
+        # print([self.tangle.transactions[approver_id].metadata['issuer'] for approver_id in approvers])
+        # print(approvers_ratings)
+        # print(weights)
+        # print(f"{self.tangle.transactions[approver].metadata['issuer'] }({approver})")
         # Skip validation.
         # At least a validation of some PoW is necessary in a real-world implementation.
 

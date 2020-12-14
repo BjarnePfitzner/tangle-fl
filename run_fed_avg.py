@@ -1,15 +1,16 @@
 import subprocess
 
 params = {
-    'dataset': 'femnist',   # is expected to be one value to construct default experiment name
-    'model': 'cnn',       # is expected to be one value to construct default experiment name
+    'dataset': 'poets',   # is expected to be one value to construct default experiment name
+    'model': 'stacked_lstm',       # is expected to be one value to construct default experiment name
     'num_rounds': 100,
-    'eval_every': 5,
+    'eval_every': 99,
     'eval_on_fraction': 0.05,
     'clients_per_round': 10,
-    'model_data_dir': '../data/femnist-data-small',
+    'model_data_dir': '../data/poets-balanced/data',
     'batch_size': 10,
-    'learning_rate': 0.05,
+    'num_batches': 35,
+    'learning_rate': 0.05
 }
 
 def main():
@@ -22,6 +23,7 @@ def main():
                 '--clients-per-round %s ' \
                 '--model-data-dir %s ' \
                 '--batch-size %s ' \
+                '--num-batches %s ' \
                 '-lr %s'
     parameters = (
         params['dataset'],
@@ -32,6 +34,7 @@ def main():
         params['clients_per_round'],
         params['model_data_dir'],
         params['batch_size'],
+        params['num_batches'],
         params['learning_rate'])
     command = command % parameters
 
