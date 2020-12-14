@@ -7,11 +7,11 @@ from . import Lab, Dataset, TipSelectorFactory
 from .config import LabConfiguration, ModelConfiguration, PoisoningConfiguration, RunConfiguration, NodeConfiguration, TipSelectorConfiguration
 
 def main():
-    run_config, lab_config, model_config, node_config, tip_selector_config = \
-        parse_args(RunConfiguration, LabConfiguration, ModelConfiguration, NodeConfiguration, TipSelectorConfiguration)
+    run_config, lab_config, model_config, node_config, tip_selector_config, poisoning_config = \
+        parse_args(RunConfiguration, LabConfiguration, ModelConfiguration, NodeConfiguration, TipSelectorConfiguration, PoisoningConfiguration)
 
     tip_selector_factory = TipSelectorFactory(tip_selector_config)
-    lab = Lab(tip_selector_factory, lab_config, model_config, node_config)
+    lab = Lab(tip_selector_factory, lab_config, model_config, node_config, poisoning_config)
 
     dataset = Dataset(lab_config, model_config)
 

@@ -1,6 +1,6 @@
-from enum import IntEnum
+from enum import Enum
 
-class PoisonType(IntEnum):
-    NONE = 0
-    RANDOM = 1
-    LABELFLIP = 2
+class PoisonType(Enum):
+    Disabled = 0
+    Random = 1
+    LabelFlip = 2
