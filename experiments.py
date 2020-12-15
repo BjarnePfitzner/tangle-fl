@@ -244,7 +244,7 @@ def run_and_document_experiments(args, experiments_dir, setup_filename, console_
         print('Analysing tangle...')
         os.makedirs(experiment_folder + '/tangle_analysis', exist_ok=True)
         analysator = TangleAnalysator(experiment_folder + '/tangle_data', p['num_rounds'] - 1, experiment_folder + '/tangle_analysis')
-        analysator.save_statistics()
+        analysator.save_statistics(include_reference_statistics=(params['publish_if_better_than'] is 'REFERENCE'))
 
 if __name__ == "__main__":
     main()

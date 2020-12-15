@@ -108,7 +108,7 @@ class Graph:
             labels=labels,
             smooth_line=smooth_line)
 
-    def plot_information_gain_app(self, smooth_line=False):
+    def plot_information_gain_approvals(self, smooth_line=False):
         labels, data_arrays = self._get_information_gain_approvals()
 
         # Plot data
@@ -118,7 +118,7 @@ class Graph:
             labels=labels,
             smooth_line=smooth_line)
 
-    def plot_reference_pureness_ref_tx(self, smooth_line=False):
+    def plot_pureness_ref_tx(self, smooth_line=False):
         labels, data_arrays = self._prepare_reference_pureness(compare_to_ref_tx=True)
 
         self._line_plot(
@@ -127,7 +127,7 @@ class Graph:
             labels=labels,
             smooth_line=smooth_line)
 
-    def plot_reference_pureness_approvals(self, smooth_line=False):
+    def plot_pureness_approvals(self, smooth_line=False):
         labels, data_arrays = self._prepare_reference_pureness()
 
         self._line_plot(
