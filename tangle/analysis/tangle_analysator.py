@@ -13,12 +13,12 @@ class TangleAnalysator:
     
     def save_statistics(self, include_reference_statistics=True):
         self.graph.print_statistics(include_reference_statistics)
-        self.graph.plot_transactions_per_round()
-        self.graph.plot_parents_per_round(plot_first_round=False)
-        self.graph.plot_accuracy_boxplot()
-        self.graph.plot_information_gain_approvals()
+        self.graph.plot_transactions_per_round(plot_for_paper=True)
+        self.graph.plot_parents_per_round(plot_first_round=False, plot_for_paper=True)
+        self.graph.plot_accuracy_boxplot(plot_for_paper=True)
+        self.graph.plot_information_gain_approvals(plot_for_paper=True)
         if include_reference_statistics:
-            self.graph.plot_information_gain_ref_tx()
-            self.graph.plot_avg_age_difference_ref_tx()
-            self.graph.plot_pureness_ref_tx()
-            self.graph.plot_pureness_approvals()
+            self.graph.plot_information_gain_ref_tx(plot_for_paper=True)
+            self.graph.plot_avg_age_difference_ref_tx(plot_for_paper=True)
+            self.graph.plot_pureness_ref_tx(plot_for_paper=True)
+            self.graph.plot_pureness_approvals(plot_for_paper=True)

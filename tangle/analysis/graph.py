@@ -56,25 +56,29 @@ class Graph:
                 *statistics["information_gain_per_round_ref_tx"],
                 "Average information gain (ref_tx) for %s per round: %f")
 
-    def plot_transactions_per_round(self, smooth_line=False):
+    def plot_transactions_per_round(self, smooth_line=False, plot_axis_labels=True, plot_for_paper=False):
         data = self._get_num_transactions_per_round()
 
         self._line_plot(
             title='Number of transactions per round',
             data_arrays=[data],
             y_label="Number of transactions",
-            smooth_line=smooth_line)
+            smooth_line=smooth_line,
+            plot_axis_labels=plot_axis_labels,
+            plot_for_paper=plot_for_paper)
 
-    def plot_parents_per_round(self, plot_first_round=False, smooth_line=False):
+    def plot_parents_per_round(self, plot_first_round=False, smooth_line=False, plot_axis_labels=True, plot_for_paper=False):
         data = self._get_mean_parents_per_round(plot_first_round)
 
         self._line_plot(
             title='Mean number of parents per round (%s round 1)' % ("including" if plot_first_round else "excluding"),
             data_arrays=[data],
             y_label="Mean number of parents",
-            smooth_line=smooth_line)
+            smooth_line=smooth_line,
+            plot_axis_labels=plot_axis_labels,
+            plot_for_paper=plot_for_paper)
 
-    def plot_accuracy_boxplot(self, print_avg_acc=False):
+    def plot_accuracy_boxplot(self, print_avg_acc=False, plot_axis_labels=True, plot_for_paper=False):
         data = self._prepare_acc_data()
         plt.boxplot(data)
 
@@ -84,21 +88,34 @@ class Graph:
         # Settings for plot
         plt.title('Accuracy per round')
 
-        plt.xlabel("Round")
-        plt.xticks([i for i in range(1, self.generation + 1)],
-                   [i if i % 5 == 0 else '' for i in range(1, self.generation + 1)])
+        # Fix y axis data range to [0, 1]
+        plt.ylim([0, 1])
 
-        plt.ylabel("")
+        if plot_axis_labels:
+            plt.xlabel("Round")
+            plt.xticks([i for i in range(1, self.generation + 1)],
+                    [i if i % 5 == 0 else '' for i in range(1, self.generation + 1)])
 
-        if self.analysis_output_dir:
-            analysis_filepath = os.path.join(self.analysis_output_dir, "accuracy_per_round.png")
-            plt.savefig(analysis_filepath)
-        else:
-            plt.show()
+            plt.ylabel("")
 
+        def save_or_plot_fig(format="png"):
+            if self.analysis_output_dir:
+                analysis_filepath = os.path.join(self.analysis_output_dir, f"accuracy_per_round.{format}")
+                plt.savefig(analysis_filepath, format=format)
+            else:
+                plt.show()
+        
+        save_or_plot_fig()
+
+        if plot_for_paper:
+            # Remove title
+            plt.title("")
+            save_or_plot_fig(format="eps")
+
+        # Clear canvas for next diagram
         plt.clf()
 
-    def plot_information_gain_ref_tx(self, smooth_line=False):
+    def plot_information_gain_ref_tx(self, smooth_line=False, plot_axis_labels=True, plot_for_paper=False):
         labels, data_arrays = self._get_information_gain_ref_tx()
 
         # Plot data
@@ -106,9 +123,11 @@ class Graph:
             title='Information gain (reference tx)',
             data_arrays=data_arrays,
             labels=labels,
-            smooth_line=smooth_line)
+            smooth_line=smooth_line,
+            plot_axis_labels=plot_axis_labels,
+            plot_for_paper=plot_for_paper)
 
-    def plot_information_gain_approvals(self, smooth_line=False):
+    def plot_information_gain_approvals(self, smooth_line=False, plot_axis_labels=True, plot_for_paper=False):
         labels, data_arrays = self._get_information_gain_approvals()
 
         # Plot data
@@ -116,34 +135,42 @@ class Graph:
             title='Information gain (approvals)',
             data_arrays=data_arrays,
             labels=labels,
-            smooth_line=smooth_line)
+            smooth_line=smooth_line,
+            plot_axis_labels=plot_axis_labels,
+            plot_for_paper=plot_for_paper)
 
-    def plot_pureness_ref_tx(self, smooth_line=False):
+    def plot_pureness_ref_tx(self, smooth_line=False, plot_axis_labels=True, plot_for_paper=False):
         labels, data_arrays = self._prepare_reference_pureness(compare_to_ref_tx=True)
 
         self._line_plot(
             title='Cluster pureness (reference transaction)',
             data_arrays=data_arrays,
             labels=labels,
-            smooth_line=smooth_line)
+            smooth_line=smooth_line,
+            plot_axis_labels=plot_axis_labels,
+            plot_for_paper=plot_for_paper)
 
-    def plot_pureness_approvals(self, smooth_line=False):
+    def plot_pureness_approvals(self, smooth_line=False, plot_axis_labels=True, plot_for_paper=False):
         labels, data_arrays = self._prepare_reference_pureness()
 
         self._line_plot(
             title='Cluster pureness (approvals)',
             data_arrays=data_arrays,
             labels=labels,
-            smooth_line=smooth_line)
+            smooth_line=smooth_line,
+            plot_axis_labels=plot_axis_labels,
+            plot_for_paper=plot_for_paper)
 
-    def plot_avg_age_difference_ref_tx(self, smooth_line=False):
+    def plot_avg_age_difference_ref_tx(self, smooth_line=False, plot_axis_labels=True, plot_for_paper=False):
         avg_age_difference_per_round = self._prepare_data_avg_age_difference_to_ref_tx()
 
         self._line_plot(
             title='Average age difference to reference transaction per round',
             data_arrays=[avg_age_difference_per_round],
             y_label='Age in rounds',
-            smooth_line=smooth_line)
+            smooth_line=smooth_line,
+            plot_axis_labels=plot_axis_labels,
+            plot_for_paper=plot_for_paper)
 
     ##### Private: plots
 
@@ -153,7 +180,9 @@ class Graph:
                    x_label="Round",
                    y_label="",
                    labels=(),
-                   smooth_line=False):
+                   smooth_line=False,
+                   plot_for_paper=False,
+                   plot_axis_labels=True):
         plt.title(title)
 
         end_index = self.generation + 1
@@ -180,19 +209,29 @@ class Graph:
         if (len(labels) > 0):
             plt.legend(labels)
 
-        plt.xlabel(x_label)
-        plt.xticks([i for i in range(start_index, end_index)],
-                   [i if i % 5 == 0 else '' for i in range(start_index, end_index)])
+        if plot_axis_labels:
+            plt.xlabel(x_label)
+            plt.xticks([i for i in range(start_index, end_index)],
+                    [i if i % 5 == 0 else '' for i in range(start_index, end_index)])
 
-        plt.ylabel(y_label)
+            plt.ylabel(y_label)
 
-        if self.analysis_output_dir:
-            diagram_filename = title.replace(" ", "_").lower() + ".png"
-            diagram_filepath = os.path.join(self.analysis_output_dir, diagram_filename)
-            plt.savefig(diagram_filepath)
-        else:
-            plt.show()
+        def save_or_plot_fig(format="png"):
+            if self.analysis_output_dir:
+                diagram_filename = title.replace(" ", "_").lower() + f".{format}"
+                diagram_filepath = os.path.join(self.analysis_output_dir, diagram_filename)
+                plt.savefig(diagram_filepath, format=format)
+            else:
+                plt.show()
+        
+        save_or_plot_fig()
 
+        if plot_for_paper:
+            # Remove title
+            plt.title("")
+            save_or_plot_fig(format="eps")
+
+        # Clear canvas for next diagram
         plt.clf()
 
     #### Private: Data preparation
