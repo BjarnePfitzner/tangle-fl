@@ -25,11 +25,12 @@ params = {
     'model_data_dir': ['../data/poets-balanced/data'],
     'src_tangle_dir': [''],         # Set to '' to not use --src-tangle-dir parameter
     'start_round': [0],
-    'tip_selector': ['lazy_accuracy'],
+    'tip_selector': ['accuracy'],
     'num_tips': [2],
     'sample_size': [2],
     'batch_size': [10],
     'num_batches': [35],
+    'publish_if_better_than': ['REFERENCE'], # or parents
     'reference_avg_top': [1],
     'target_accuracy': [1],
     'learning_rate': [0.8],
@@ -38,8 +39,8 @@ params = {
     'acc_cumulate_ratings': ['False'],
     'acc_ratings_to_weights': ['ALPHA'],
     'acc_select_from_weights': ['WEIGHTED_CHOICE'],
-    'acc_alpha': [0.3],
-    'use_particles': ['True'],
+    'acc_alpha': [30],
+    'use_particles': ['False'],
     'particles_w': [5],
     'particles_number': [10]
 }
@@ -224,6 +225,7 @@ def run_and_document_experiments(args, experiments_dir, setup_filename, console_
                 command[-1] = str(start)
                 command[8] = str(end)
 
+                print(f"Running {start} to {end}...")
                 training = subprocess.Popen(command, stdout=file, stderr=file)
                 training.wait()
 
@@ -242,7 +244,7 @@ def run_and_document_experiments(args, experiments_dir, setup_filename, console_
         print('Analysing tangle...')
         os.makedirs(experiment_folder + '/tangle_analysis', exist_ok=True)
         analysator = TangleAnalysator(experiment_folder + '/tangle_data', p['num_rounds'] - 1, experiment_folder + '/tangle_analysis')
-        analysator.save_statistics()
+        analysator.save_statistics(include_reference_statistics=(params['publish_if_better_than'] is 'REFERENCE'))
 
 if __name__ == "__main__":
     main()

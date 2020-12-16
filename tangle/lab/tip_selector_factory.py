@@ -1,5 +1,5 @@
 from ..core.tip_selection import TipSelector, AccuracyTipSelector
-from ..core.tip_selection.tip_selector import TipSelectorParticleSettings
+from ..core.tip_selection.tip_selector import TipSelectorSettings
 from ..core.tip_selection.accuracy_tip_selector import AccuracyTipSelectorSettings
 from ..core.tip_selection.lazy_accuracy_tip_selector import LazyAccuracyTipSelector
 
@@ -8,9 +8,9 @@ class TipSelectorFactory:
         self.config = config
         
         self.particle_settings = {}
-        self.particle_settings[TipSelectorParticleSettings.USE_PARTICLES] = self.config.use_particles
-        self.particle_settings[TipSelectorParticleSettings.W] = self.config.particles_w
-        self.particle_settings[TipSelectorParticleSettings.NUM_PARTICLES] = self.config.particles_number
+        self.particle_settings[TipSelectorSettings.USE_PARTICLES] = self.config.use_particles
+        self.particle_settings[TipSelectorSettings.W] = self.config.particles_w
+        self.particle_settings[TipSelectorSettings.NUM_PARTICLES] = self.config.particles_number
 
     def create(self, tangle):
 

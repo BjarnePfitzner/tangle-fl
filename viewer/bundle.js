@@ -49224,6 +49224,7 @@ var Node = function Node(_ref3) {
       id = _ref3.id,
       issuer = _ref3.issuer,
       accuracy = _ref3.accuracy,
+      averaged_accuracy = _ref3.averaged_accuracy,
       style = _ref3.style;
   return _react2.default.createElement(
     'rect',
@@ -49245,7 +49246,9 @@ var Node = function Node(_ref3) {
       'Issuer Id: ',
       issuer,
       ', Accuracy: ',
-      accuracy
+      accuracy,
+      ', Averaged_Accuracy: ',
+      averaged_accuracy
     )
   );
 };
@@ -49257,6 +49260,7 @@ Node.propTypes = {
   id: _propTypes2.default.string,
   issuer: _propTypes2.default.string,
   accuracy: _propTypes2.default.string,
+  averaged_accuracy: _propTypes2.default.string,
   style: _propTypes2.default.object
 };
 
@@ -49323,6 +49327,7 @@ var Tangle = function Tangle(props) {
               id: node.id,
               issuer: node.metadata.issuer,
               accuracy: node.metadata.accuracy,
+              averaged_accuracy: node.metadata.averaged_accuracy,
               mouseEntersNodeHandler: props.mouseEntersNodeHandler,
               mouseLeavesNodeHandler: props.mouseLeavesNodeHandler,
               style: props.getStyle(node) }),

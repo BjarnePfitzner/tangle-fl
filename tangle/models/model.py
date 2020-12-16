@@ -15,6 +15,7 @@ class Model(ABC):
     def __init__(self, seed, lr, optimizer=None):
         self.lr = lr
         self.seed = seed
+        self.batch_seed = 12 + seed
         self._optimizer = optimizer
 
         self.num_epochs = 1
@@ -26,7 +27,7 @@ class Model(ABC):
             self.features, self.labels, self.train_op, self.eval_metric_ops, self.conf_matrix, self.loss, *self.additional_params = self.create_model()
             self.saver = tf.train.Saver()
         self.sess = tf.Session(graph=self.graph,config=tf.ConfigProto(inter_op_parallelism_threads=1,
-                                        intra_op_parallelism_threads=1,
+                                        intra_op_parallelism_threads=20,
                                         use_per_session_threads=True))
 
         self.size = graph_size(self.graph)
@@ -86,15 +87,18 @@ class Model(ABC):
             update: List of np.ndarray weights, with each weight array
                 corresponding to a variable in the resulting graph
         """
+        print("Training...")
         for _ in range(self.num_epochs):
             self.run_epoch(data, self.batch_size, self.num_batches)
-
+        print("Done Training.")
         update = self.get_params()
         return update
 
     def run_epoch(self, data, batch_size, num_batches):
 
-        for batched_x, batched_y in batch_data(data, batch_size, num_batches, seed=self.seed):
+        self.batch_seed += 1
+
+        for batched_x, batched_y in batch_data(data, batch_size, num_batches, seed=self.batch_seed):
 
             input_data = self.process_x(batched_x)
             target_data = self.process_y(batched_y)
@@ -117,6 +121,7 @@ class Model(ABC):
         """
         x_vecs = self.process_x(data['x'])
         labels = self.process_y(data['y'])
+        # print(f"testing on {len(labels)} data")
         with self.graph.as_default():
             tot_acc, conf_matrix, loss, *adds = self.sess.run(
                 [self.eval_metric_ops, self.conf_matrix, self.loss, *self.additional_params],

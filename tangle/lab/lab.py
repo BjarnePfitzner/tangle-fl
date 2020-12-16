@@ -1,6 +1,7 @@
 import os
 import random
 import sys
+import time
 
 import numpy as np
 import importlib
@@ -94,6 +95,7 @@ class Lab:
             tangle = self.tx_store.load_tangle(tangle_name)
 
         for round in rounds_iter:
+            begin = time.time()
             print('Started training for round %s' % round)
             sys.stdout.flush()
 
@@ -102,10 +104,13 @@ class Lab:
                 tangle = Tangle({genesis.id: genesis}, genesis.id)
             else:
                 clients = dataset.select_clients(round, num_nodes)
-
+                print(f"Clients this round: {clients}")
                 for tx in self.create_node_transactions(tangle, round, clients, dataset):
                     if tx is not None:
                         tangle.add_transaction(tx)
+
+            print(f'This round took: {time.time() - begin}s')
+            sys.stdout.flush()
 
             self.tx_store.save_tangle(tangle, round)
 
