@@ -6,8 +6,8 @@ from ..lab import Lab
 from . import RayTransactionStore
 
 class RayLab(Lab):
-    def __init__(self, tip_selector_factory, config, model_config, node_config):
-        super().__init__(tip_selector_factory, config, model_config, node_config, tx_store=RayTransactionStore(config.tangle_dir, config.src_tangle_dir))
+    def __init__(self, tip_selector_factory, config, model_config, node_config, poisoning_config):
+        super().__init__(tip_selector_factory, config, model_config, node_config, poisoning_config, tx_store=RayTransactionStore(config.tangle_dir, config.src_tangle_dir))
 
     def create_genesis(self):
         @ray.remote

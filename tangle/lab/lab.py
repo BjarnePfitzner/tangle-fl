@@ -6,18 +6,20 @@ import time
 import numpy as np
 import importlib
 import itertools
+from zlib import crc32
 
 from ..models.baseline_constants import MODEL_PARAMS, ACCURACY_KEY
-from ..core import Tangle, Transaction, Node
+from ..core import Tangle, Transaction, Node, MaliciousNode, PoisonType
 from .lab_transaction_store import LabTransactionStore
 
 
 class Lab:
-    def __init__(self, tip_selector_factory, config, model_config, node_config, tx_store=None):
+    def __init__(self, tip_selector_factory, config, model_config, node_config, poisoning_config, tx_store=None):
         self.tip_selector_factory = tip_selector_factory
         self.config = config
         self.model_config = model_config
         self.node_config = node_config
+        self.poisoning_config = poisoning_config
         self.tx_store = tx_store if tx_store is not None else LabTransactionStore(self.config.tangle_dir, self.config.src_tangle_dir)
 
         # Set the random seed if provided (affects client sampling, and batching)
@@ -60,7 +62,20 @@ class Lab:
     def create_node_transaction(self, tangle, round, client_id, cluster_id, train_data, eval_data, seed, model_config, tip_selector, tx_store):
 
         client_model = Lab.create_client_model(seed, model_config)
-        node = Node(tangle, tx_store, tip_selector, client_id, cluster_id, train_data, eval_data, client_model, config=self.node_config)
+
+        # Choose which node are malicious based on a hash, not based on a random variable
+        # to have it consistent over the entire experiment run
+        # https://stackoverflow.com/questions/40351791/how-to-hash-strings-into-a-float-in-01
+        use_poisoning_node = \
+            self.poisoning_config.poison_type != PoisonType.Disabled and \
+            self.poisoning_config.poison_from <= round and \
+            (float(crc32(client_id.encode('utf-8')) & 0xffffffff) / 2**32) < self.poisoning_config.poison_fraction
+
+        if use_poisoning_node:
+            node = MaliciousNode(tangle, tx_store, tip_selector, client_id, cluster_id, train_data, eval_data, client_model, self.poisoning_config.poison_type, config=self.node_config)
+        else:
+            node = Node(tangle, tx_store, tip_selector, client_id, cluster_id, train_data, eval_data, client_model, config=self.node_config)
+
         tx, tx_weights = node.create_transaction()
 
         if tx is not None:
@@ -136,6 +151,23 @@ class Lab:
         #if cluster_id != tx_cluster:
         #    with open(os.path.join(os.path.dirname(self.config.tangle_dir), 'validation_nodes.txt'), 'a') as f:
         #        f.write(f'{client_id}({cluster_id}): {reference_txs}({tx_cluster}) (acc: {metrics["accuracy"]:.3f}, loss: {metrics["loss"]:.3f})\n')
+
+        # How many unique poisoned transactions have found their way into the consensus
+        # through direct or indirect approvals?
+
+        approved_poisoned_transactions_cache = {}
+
+        def compute_approved_poisoned_transactions(transaction):
+            if transaction not in approved_poisoned_transactions_cache:
+                tx = tangle.transactions[transaction]
+                result = set([transaction]) if 'poisoned' in tx.metadata and tx.metadata['poisoned'] else set([])
+                result = result.union(*[compute_approved_poisoned_transactions(parent) for parent in tangle.transactions[transaction].parents])
+                approved_poisoned_transactions_cache[transaction] = result
+
+            return approved_poisoned_transactions_cache[transaction]
+
+        approved_poisoned_transactions = set(*[compute_approved_poisoned_transactions(tx) for tx in reference_txs])
+        metrics['num_approved_poisoned_transactions'] = len(approved_poisoned_transactions)
 
         return metrics
 
