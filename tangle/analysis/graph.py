@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 from scipy.interpolate import make_interp_spline, BSpline
+from sknetwork.clustering import Louvain, modularity
 
 from .node import Node
 
@@ -106,7 +107,7 @@ class Graph:
                 plt.savefig(analysis_filepath, format=format)
             else:
                 plt.show()
-        
+
         save_or_plot_fig()
 
         if plot_for_paper:
@@ -174,6 +175,28 @@ class Graph:
             plot_axis_labels=plot_axis_labels,
             plot_for_paper=plot_for_paper)
 
+    def plot_modularity_per_round(self, smooth_line=False, plot_axis_labels=True, plot_for_paper=False):
+        m = self._prepare_modularity()
+
+        self._line_plot(
+            title='Modularity per round',
+            data_arrays=[list(m)],
+            y_label='modularity',
+            smooth_line=smooth_line,
+            plot_axis_labels=plot_axis_labels,
+            plot_for_paper=plot_for_paper)
+
+    def plot_total_participating_clients_per_round(self, smooth_line=False, plot_axis_labels=True, plot_for_paper=False):
+        n = self._prepare_total_participating_clients()
+
+        self._line_plot(
+            title='Total participating clients per round',
+            data_arrays=[list(n)],
+            y_label='#clients',
+            smooth_line=smooth_line,
+            plot_axis_labels=plot_axis_labels,
+            plot_for_paper=plot_for_paper)
+
     ##### Private: plots
 
     def _line_plot(self,
@@ -225,7 +248,7 @@ class Graph:
                 plt.savefig(diagram_filepath, format=format)
             else:
                 plt.show()
-        
+
         save_or_plot_fig()
 
         if plot_for_paper:
@@ -437,6 +460,87 @@ class Graph:
 
         return labels, data_arrays
 
+    def _prepare_modularity(self):
+        def load(r):
+            nodes_until_round = self._get_all_nodes_until_time(r)
+
+            nid_to_client = {}
+            clients_to_clusters = {}
+
+            for n in nodes_until_round:
+                if 'issuer' in n.metadata:
+                    nid_to_client[n.id] = n.metadata['issuer']
+
+                    if 'clusterId' in n.metadata:
+                        clients_to_clusters[n.metadata['issuer']] = n.metadata['clusterId']
+                else:
+                    nid_to_client[n.id] = 'genesis'
+
+            clients = list(set(nid_to_client.values()))
+
+            client_to_idx = {}
+
+            for idx, c in enumerate(clients):
+                client_to_idx[c] = idx
+            client_to_idx['genesis'] = -1
+
+            def nid_to_idx(nid):
+                return client_to_idx[nid_to_client[nid]]
+
+            approval_count = np.zeros((len(clients), len(clients)))
+
+            for n in nodes_until_round:
+                # skip genesis round
+                if len(n.parents) == 0:
+                    continue
+
+                for p in n.parents:
+                    if nid_to_client[p] == "genesis":
+                        continue
+
+                    # no self loops
+                    if nid_to_idx(n.id) == nid_to_idx(p):
+                        continue
+
+                    approval_count[nid_to_idx(n.id)][nid_to_idx(p)] += 1
+
+            idx_to_client = clients
+
+            return approval_count, idx_to_client, clients_to_clusters
+
+        def compute_clusters(approval_count):
+            louvain = Louvain(modularity='newman')
+            adjacency = approval_count
+            labels = louvain.fit_transform(adjacency)
+            return labels, modularity(approval_count, labels)
+
+        ###
+        # Do it
+
+        for r in range(1, self.generation + 1):
+            # Skip first round
+            if r == 1:
+                yield None
+                continue
+
+            approval_count, _, _ = load(r)
+            _, m = compute_clusters(approval_count)
+            yield m
+
+    def _prepare_total_participating_clients(self):
+        for r in range(1, self.generation + 1):
+            nodes_until_round = self._get_all_nodes_until_time(r)
+
+            unique_clients = set()
+
+            for n in nodes_until_round:
+                if 'issuer' in n.metadata:
+                    unique_clients.add(n.metadata['issuer'])
+                else:
+                    unique_clients.add('genesis')
+
+            yield len(unique_clients)
+
     #### Private: Helpers
 
     def _get_unique_cluster_ids(self):
@@ -450,6 +554,9 @@ class Graph:
 
     def _get_all_nodes_for_time(self, time):
         return [n for n in self.nodes if n.metadata["time"] == time]
+
+    def _get_all_nodes_until_time(self, time):
+        return [n for n in self.nodes if n.metadata["time"] <= time]
 
     def _get_num_transactions_per_round(self):
         transactions_per_round = []
