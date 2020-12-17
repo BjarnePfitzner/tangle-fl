@@ -157,6 +157,7 @@ def run_and_document_experiments(args, experiments_dir, setup_filename, console_
             '--num-batches %s ' \
             '-lr %s ' \
             '--num-epochs %s ' \
+            '--publish-if-better-than %s ' \
             '--reference-avg-top %s ' \
             '--tip-selector %s ' \
             '--acc-tip-selection-strategy %s ' \
@@ -183,6 +184,7 @@ def run_and_document_experiments(args, experiments_dir, setup_filename, console_
             p['num_batches'],
             p['learning_rate'],
             p['num_epochs'],
+            p['publish_if_better_than'],
             p['reference_avg_top'],
             p['tip_selector'],
             p['acc_tip_selection_strategy'],
