@@ -99,7 +99,7 @@ class TipSelector:
             return None
 
         if len(approvers) == 1:
-            print("Only one approver")
+            # print("Only one approver")
             return approvers[0]
 
         approvers_ratings = [self.tx_rating(a, node) for a in approvers]

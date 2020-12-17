@@ -31,6 +31,8 @@ class Graph:
         #### Get statistics data and print it
         statistics = self._get_statistics_data(include_reference_statistics)
 
+        _print(f"Average accuracy in the last 5 rounds: {statistics['average_accuracy_last_5_rounds']}")
+        _print('')
         _print("Average clients per round: %f" % statistics["average_clients_per_round"])
         _print("")
         _print("Average parents per round (not including round 1): %f" % statistics["average_parents_per_round"])
@@ -238,6 +240,10 @@ class Graph:
 
     def _get_statistics_data(self, include_reference_statistics):
         statistics = {}
+
+        acc_per_node = self._prepare_acc_data()
+        avg_acc_per_round = [np.mean(x) for x in acc_per_node]
+        statistics['average_accuracy_last_5_rounds'] = np.mean(avg_acc_per_round[-5:])
 
         # Clients and parents
         statistics["average_clients_per_round"] = (len(self.nodes) - 1) / self.generation
