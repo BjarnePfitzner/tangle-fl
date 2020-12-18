@@ -130,7 +130,7 @@ class Lab:
             self.tx_store.save_tangle(tangle, round)
 
             if eval_every != -1 and round % eval_every == 0:
-                self.print_validation_results(self.validate(round, dataset, eval_on_fraction), mode='avg')
+                self.print_validation_results(self.validate(round, dataset, eval_on_fraction), round)
 
     def test_single(self, tangle, client_id, cluster_id, train_data, eval_data, seed, set_to_use, tip_selector):
         import tensorflow as tf
@@ -200,19 +200,30 @@ class Lab:
         validation_clients = [dataset.clients[i] for i in client_indices]
         return self.validate_nodes(tangle, validation_clients, dataset)
 
-    def print_validation_results(self, results, mode='avg'):
+    def print_validation_results(self, results, rnd):
         avg_acc = np.average([r[ACCURACY_KEY] for r in results])
         avg_loss = np.average([r['loss'] for r in results])
 
         avg_message = 'Average %s: %s\nAverage loss: %s' % (ACCURACY_KEY, avg_acc, avg_loss)
+        print(avg_message)
 
-        if mode == 'avg':
-            print(avg_message)
-            import csv
-            import os
-            with open(os.path.join(os.path.dirname(self.config.tangle_dir), 'acc_and_loss.csv'), 'a', newline='') as f:
-                csvwriter = csv.writer(f)
-                csvwriter.writerow([avg_acc, avg_loss])
-        if mode == 'all':
-            print(avg_message)
-            print(results)
+        import csv
+        import os
+        with open(os.path.join(os.path.dirname(self.config.tangle_dir), 'acc_and_loss.csv'), 'a', newline='') as f:
+            csvwriter = csv.writer(f)
+            csvwriter.writerow([rnd, avg_acc, avg_loss])
+
+        write_header = False
+        if not os.path.exists(os.path.join(os.path.dirname(self.config.tangle_dir), 'acc_and_loss_all.csv')):
+            write_header = True
+
+        with open(os.path.join(os.path.dirname(self.config.tangle_dir), 'acc_and_loss_all.csv'), 'a', newline='') as f:
+            for r in results:
+                r['round'] = rnd
+
+                w = csv.DictWriter(f, r.keys())
+                if write_header:
+                    w.writeheader()
+                    write_header = False
+
+                w.writerow(r)
