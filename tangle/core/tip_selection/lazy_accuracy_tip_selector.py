@@ -1,3 +1,4 @@
+from tangle.core.tip_selection.tip_selector import TipSelector
 from .accuracy_tip_selector import AccuracyTipSelector, AccuracyTipSelectorSettings
 
 from ...models.baseline_constants import ACCURACY_KEY
@@ -5,66 +6,62 @@ from ...models.baseline_constants import ACCURACY_KEY
 class LazyAccuracyTipSelector(AccuracyTipSelector):
     def __init__(self, tangle, tip_selection_settings, particle_settings):
         super().__init__(tangle, tip_selection_settings, particle_settings)
-        # a cache holding accuracy for transactions
-        self.accuracies = {}
-        # holds the actual ratings (e.g. in case of CUMULATE_RATINGS cumulated accuracies)
         self.ratings = {}
+
+    def tx_rating(self, tx, node):
+
+        if node.id in self.ratings and tx in self.ratings[node.id]:
+            return self.ratings[node.id][tx]
+
+        if not(node.id in self.ratings and tx in self.ratings[node.id]):
+            self.compute_ratings_lazy(node, tx)
+        
+        return self.ratings[node.id][tx]
+
+    ########################################
 
     def compute_ratings(self, node):
         # Do not calculate ratings yet, because we are lazy
-        pass
-
-    def tx_rating(self, tx, node):
-        if node.id in self.ratings and tx in self.ratings[node.id]:
-            return self.ratings[node.id][tx]
-        
-        self._calculate_tx_ratings(tx, node)
-        return self.ratings[node.id][tx]
-
-    def _calculate_tx_ratings(self, tx, node):
-        if node.id not in self.accuracies:
-            self.accuracies[node.id] = {}
+        # But initialize the cache
         if node.id not in self.ratings:
             self.ratings[node.id] = {}
 
-        txs_to_eval = [tx]
+    def compute_ratings_lazy(self, node, tx):
+        rating = self._compute_ratings(node, tx)
 
-        # If we cumulate ratings, get all future transactions
-        future_set_cache = {}
         if self.settings[AccuracyTipSelectorSettings.CUMULATE_RATINGS]:
-            txs_to_eval.extend(super().future_set(tx, self.approving_transactions, future_set_cache))
+            def cumulate_ratings(future_set, ratings):
+                cumulated = 0
+                for tx_id in future_set:
+                    cumulated += ratings[tx_id]
+                return cumulated
 
-        # Calculate accuracies for tx and its future transactions or get them from cache
-        accuracies = self._get_or_calculate_accuracies(txs_to_eval, node, future_set_cache)
+            future_set_cache = {}
+            for tx_id in self.tangle.transactions:
+                future_set = TipSelector.future_set(tx_id, self.approving_transactions, future_set_cache)
+                rating[tx_id] = cumulate_ratings(future_set, rating) + rating[tx_id]
 
-        # Save calculated accuracies to cache
-        for (t_id, acc) in dict(zip(txs_to_eval, accuracies)).items():
-            self.accuracies[node.id][t_id] = acc
+        self.ratings[node.id].update(rating)
 
-        # For each transaction in txs_to_eval calculate the rating
-        # This is no great computational overhead, because we already calculated all necessary accuracies and future sets
-        for t in txs_to_eval:
-            rating = self.accuracies[node.id][t]
+    def _compute_ratings(self, node, tx):
+        rating = {}
 
-            if self.settings[AccuracyTipSelectorSettings.CUMULATE_RATINGS]:
-                future_txs = super().future_set(t, self.approving_transactions, future_set_cache)
-            else:
-                future_txs = []
-            
-            for ft in future_txs:
-                rating += self.accuracies[node.id][ft]
-            
-            self.ratings[node.id][t] = rating
+        if self.settings[AccuracyTipSelectorSettings.SELECTION_STRATEGY] == "GLOBAL":
+            txs = self.tips
+            if tx not in txs:
+                txs.append(tx)
+        elif self.settings[AccuracyTipSelectorSettings.CUMULATE_RATINGS]:
+            future_set_cache = {}
+            txs = TipSelector.future_set(tx, self.approving_transactions, future_set_cache)
+        else:
+            txs = [tx]
+
+        for tx_id in txs:
+            rating[tx_id] = node.test(node.tx_store.load_transaction_weights(tx_id), 'train', True)[ACCURACY_KEY]
+
+        # future_set_cache = {}
+        # for tx in txs:
+        #     rating[tx] *= len(TipSelector.future_set(tx, self.approving_transactions, future_set_cache)) + 1
+
+        return rating
     
-    def _get_or_calculate_accuracies(self, txs_to_eval, node, future_set_cache):
-        def _get_or_calculate_acc(tx, node,future_set_cache):
-            if node.id in self.accuracies and tx in self.accuracies[node.id]:
-                return self.accuracies[node.id][tx]
-
-            acc = node.test(node.tx_store.load_transaction_weights(tx), 'train', True)[ACCURACY_KEY]
-            # Multiply size of tree behind this node (see `_compute_ratings` in accuracy_tip_selector.py)
-            # acc *= len(super().future_set(tx, self.approving_transactions, future_set_cache)) + 1
-
-            return acc
-
-        return [_get_or_calculate_acc(t, node, future_set_cache) for t in txs_to_eval]

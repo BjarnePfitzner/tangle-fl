@@ -1,13 +1,21 @@
 import random
 import ray
 
-from ..lab import Lab
+from ..lab import Lab, LabTransactionStore
 
 from . import RayTransactionStore
 
 class RayLab(Lab):
-    def __init__(self, tip_selector_factory, config, model_config, node_config):
-        super().__init__(tip_selector_factory, config, model_config, node_config, tx_store=RayTransactionStore(config.tangle_dir, config.src_tangle_dir))
+    def __init__(self, tip_selector_factory, config, model_config, node_config, tip_selection_config):
+        # In case of lazy_accuracy use LabTransactionStore
+        # because of it lazy nature the RayTransactionStore would lead to ObjectStore overload
+        # (because each client has it's own transaction store due to ray design)
+        if tip_selection_config.tip_selector == 'lazy_accuracy':
+            tx_store = LabTransactionStore(config.tangle_dir, config.src_tangle_dir)
+        else:
+            tx_store = RayTransactionStore(config.tangle_dir, config.src_tangle_dir)
+
+        super().__init__(tip_selector_factory, config, model_config, node_config, tx_store=tx_store)
 
     def create_genesis(self):
         @ray.remote
