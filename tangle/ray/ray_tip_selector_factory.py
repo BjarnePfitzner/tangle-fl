@@ -40,6 +40,10 @@ class RayTipSelectorFactory(TipSelectorFactory):
 
             return rayAccuracyTipSelector
 
+        elif self.config.tip_selector == 'lazy_accuracy':
+            # Use "normal" LazyAccuracyTipSelector, as there is no need for a ray version of it
+            return LazyAccuracyTipSelector(tangle, tip_selection_settings, self.particle_settings)
+
         return super().create(tangle)
 
     @ray.remote
