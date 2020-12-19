@@ -6,7 +6,7 @@ from ..lab import Lab, LabTransactionStore
 from . import RayTransactionStore
 
 class RayLab(Lab):
-    def __init__(self, tip_selector_factory, config, model_config, node_config, tip_selection_config):
+    def __init__(self, tip_selector_factory, config, model_config, node_config, poisoning_config, tip_selection_config):
         # In case of lazy_accuracy use LabTransactionStore
         # because of it lazy nature the RayTransactionStore would lead to ObjectStore overload
         # (because each client has it's own transaction store due to ray design)
@@ -15,7 +15,7 @@ class RayLab(Lab):
         else:
             tx_store = RayTransactionStore(config.tangle_dir, config.src_tangle_dir)
 
-        super().__init__(tip_selector_factory, config, model_config, node_config, tx_store=tx_store)
+        super().__init__(tip_selector_factory, config, model_config, node_config, poisoning_config, tx_store=tx_store)
 
     def create_genesis(self):
         @ray.remote

@@ -16,18 +16,18 @@ from sklearn.model_selection import ParameterGrid
 #############################################################################
 
 params = {
-    'dataset': ['femnistclustered'],   # is expected to be one value to construct default experiment name
+    'dataset': ['femnist'],   # is expected to be one value to construct default experiment name
     'model': ['cnn'],      # is expected to be one value to construct default experiment name
     'num_rounds': [100],
     'eval_every': [5],
     'eval_on_fraction': [0.05],
     'clients_per_round': [10],
-    'model_data_dir': ['../data/femnist-data-clustered-alt/'],
+    'model_data_dir': ['../data/femnist-data/small'],
     'src_tangle_dir': [''],         # Set to '' to not use --src-tangle-dir parameter
     'start_round': [0],
     'tip_selector': ['lazy_accuracy'],
     'num_tips': [2],
-    'sample_size': [2],
+    'sample_size': [5],
     'batch_size': [10],
     'num_batches': [10],
     'publish_if_better_than': ['REFERENCE'], # or parents
@@ -39,10 +39,13 @@ params = {
     'acc_cumulate_ratings': ['False'],
     'acc_ratings_to_weights': ['ALPHA'],
     'acc_select_from_weights': ['WEIGHTED_CHOICE'],
-    'acc_alpha': [0.3],
-    'use_particles': ['True'],
+    'acc_alpha': [0.001, 0.1, 1],
+    'use_particles': ['False'],
     'particles_w': [5],
-    'particles_number': [10]
+    'particles_number': [10],
+    'poison_type': ['disabled'],
+    'poison_fraction': [0],
+    'poison_from': [0],
 }
 
 ##############################################################################
