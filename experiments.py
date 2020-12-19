@@ -136,6 +136,9 @@ def get_git_hash():
     return git_hash
 
 def run_and_document_experiments(args, experiments_dir, setup_filename, console_output_filename, git_hash):
+
+    shutil.copy(__file__, experiments_dir)
+
     parameter_grid = ParameterGrid(params)
     print(f'Starting experiments for {len(parameter_grid)} parameter combinations...')
     for idx, p in enumerate(parameter_grid):
