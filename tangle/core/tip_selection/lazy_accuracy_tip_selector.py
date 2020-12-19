@@ -17,7 +17,7 @@ class LazyAccuracyTipSelector(AccuracyTipSelector):
     def tx_rating(self, tx, node):
         # If the transaction is not in the cache, calculate it's rating first
         if (node.id not in self.ratings) or (tx not in self.ratings[node.id]):
-            super(AccuracyTipSelector, self).compute_ratings(node, tx)
+            super(LazyAccuracyTipSelector, self).compute_ratings(node, tx)
         
         return self.ratings[node.id][tx]
 

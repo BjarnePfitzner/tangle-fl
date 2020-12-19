@@ -42,7 +42,10 @@ params = {
     'acc_alpha': [0.3],
     'use_particles': ['True'],
     'particles_w': [5],
-    'particles_number': [10]
+    'particles_number': [10],
+    'poison_type': ['disabled'],
+    'poison_fraction': [0],
+    'poison_from': [0],
 }
 
 ##############################################################################
