@@ -2,11 +2,11 @@ import random
 import ray
 
 from ..core.tip_selection.accuracy_tip_selector import AccuracyTipSelectorSettings
+from ..core.tip_selection.lazy_accuracy_tip_selector import LazyAccuracyTipSelector
 from ..lab import TipSelectorFactory, Lab
 from ..models.baseline_constants import ACCURACY_KEY
 
 from .ray_accuracy_tip_selector import RayAccuracyTipSelector
-from .ray_lazy_accuracy_tip_selector import RayLazyAccuracyTipSelector
 
 class RayTipSelectorFactory(TipSelectorFactory):
     def __init__(self, config):
@@ -39,9 +39,6 @@ class RayTipSelectorFactory(TipSelectorFactory):
                     self.accuracy_cache[node_id][tx_id] = accuracy
 
             return rayAccuracyTipSelector
-
-        elif self.config.tip_selector == 'lazy_accuracy':
-            return RayLazyAccuracyTipSelector(tangle, tip_selection_settings, self.particle_settings, dataset)
 
         return super().create(tangle)
 
