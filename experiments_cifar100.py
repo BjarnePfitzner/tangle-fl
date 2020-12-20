@@ -40,7 +40,8 @@ params = {
     'acc_select_from_weights': ['WEIGHTED_CHOICE'],
     'acc_alpha': [0.001],
     'use_particles': ['False'],
-    'particles_w': [5],
+    'particles_depth_start': [10],
+    'particles_depth_end': [20],
     'particles_number': [10]
 }
 
@@ -164,7 +165,8 @@ def run_and_document_experiments(args, experiments_dir, setup_filename, console_
             '--acc-select-from-weights %s ' \
             '--acc-alpha %s ' \
             '--use-particles %s ' \
-            '--particles-w %s ' \
+            '--particles-depth-start %s ' \
+            '--particles-depth-end %s ' \
             '--particles-number %s'
         parameters = (
             p['dataset'],
@@ -190,7 +192,8 @@ def run_and_document_experiments(args, experiments_dir, setup_filename, console_
             p['acc_select_from_weights'],
             p['acc_alpha'],
             p['use_particles'],
-            p['particles_w'],
+            p['particles_depth_start'],
+            p['particles_depth_end'],
             p['particles_number'])
         command = command.strip() % parameters
 

@@ -1,8 +1,47 @@
+import itertools
+
 class Tangle:
     def __init__(self, transactions, genesis):
         self.transactions = transactions
         self.genesis = genesis
         self.tips = self.find_tips(transactions)
+        self.depth_cache = self.calculate_depth()
+
+    def calculate_depth(self):
+        """
+        Returns dict with {depth: [transaction_ids]}
+
+        Depth is defined as the length of the longest directed path from a tip to the transaction.
+        """
+
+        # first calculate depth for each transaction
+
+        depth_per_transaction = {}
+        depth = 0
+        current_transactions = [tx for _, tx in self.transactions.items() if tx.id in self.tips]
+
+        for t in current_transactions:
+            depth_per_transaction[t.id] = depth
+        
+        depth += 1
+        parents = set(itertools.chain(*[tx.parents for tx in current_transactions]))
+
+        while len(parents) > 0:
+            for parent in parents:
+                depth_per_transaction[parent] = depth
+
+            depth += 1
+            current_transactions = [tx for _, tx in self.transactions.items() if tx.id in parents]
+            parents = set(itertools.chain(*[tx.parents for tx in current_transactions]))
+
+        # build desired dict structure
+        
+        transactions_per_depth = {}
+
+        for d in range(depth):
+            transactions_per_depth[d] = [tx for tx, tx_depth in depth_per_transaction.items() if tx_depth == d]
+        
+        return transactions_per_depth
 
     def find_tips(self, transactions):
         potential_tips = set(transactions.keys())
@@ -17,28 +56,18 @@ class Tangle:
             self.tips.discard(parent_tx)
         self.tips.add(tip.id)
 
-    def get_transaction_ids_of_time_interval(self, steps_back, width):
+    def get_transaction_ids_of_depth_interval(self, depth_start, depth_end):
         """
-        Returns all transaction ids from the tangle, which are in the specified interval.
-
-        First the end of the interval ist computed by going n steps back from the last generation in the tangle.
-        Next, the interval starts `width` timesteps before the end.
-
-        E.g. current latest generation = 50, steps_back = 5, width = 10: interval = [35, 45]
+        Returns all transaction ids from the tangle, which have a depth between or equal depth_start and depth_end.
         """
         gathered_transaction_ids = []
 
-        tip_transactions = [self.transactions[x] for x in self.tips]
-        last_generation = max([n.metadata['time'] for n in tip_transactions])
-        end = max(0, last_generation - steps_back)
-        start = max(0, end - width)
-
-        for t_id in self.transactions:
-            if "time" in self.transactions[t_id].metadata:
-                issued_time = self.transactions[t_id].metadata["time"]
-                if issued_time >= start and (end is None or issued_time <= end):
-                    gathered_transaction_ids.append(t_id)
-            elif start == 0:
-                gathered_transaction_ids.append(t_id)
+        for depth in range(depth_start, depth_end + 1):
+            if depth in self.depth_cache:
+                gathered_transaction_ids.extend(self.depth_cache[depth])
+        
+        # If no transaction was found inside this interval return genesis
+        if len(gathered_transaction_ids) == 0:
+            gathered_transaction_ids.append(self.genesis)
         
         return gathered_transaction_ids
