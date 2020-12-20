@@ -56,10 +56,13 @@ class AccuracyTipSelector(TipSelector):
                     cumulated += ratings[tx_id]
                 return cumulated
 
+            # copy calculated accuracies
+            accuracies = dict(rating)
+
             future_set_cache = {}
-            for tx_id in self.tangle.transactions:
+            for tx_id in rating:
                 future_set = super().future_set(tx_id, self.approving_transactions, future_set_cache)
-                rating[tx_id] = cumulate_ratings(future_set, rating) + rating[tx_id]
+                rating[tx_id] = cumulate_ratings(future_set, accuracies) + accuracies[tx_id]
 
         print("done computing ratings")
         self._update_ratings(node.id, rating)

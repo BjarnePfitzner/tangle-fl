@@ -30,6 +30,8 @@ class LazyAccuracyTipSelector(AccuracyTipSelector):
     def _get_transactions_to_compute(self, tx):
         if self.settings[AccuracyTipSelectorSettings.CUMULATE_RATINGS]:
             future_set_cache = {}
-            return TipSelector.future_set(tx, self.approving_transactions, future_set_cache)
+            future_set = TipSelector.future_set(tx, self.approving_transactions, future_set_cache)
+            future_set.add(tx)
+            return future_set
         
         return [tx]
