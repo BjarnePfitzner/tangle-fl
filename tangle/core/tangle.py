@@ -63,7 +63,8 @@ class Tangle:
         gathered_transaction_ids = []
 
         for depth in range(depth_start, depth_end + 1):
-            gathered_transaction_ids.extend(self.depth_cache[depth])
+            if depth in self.depth_cache:
+                gathered_transaction_ids.extend(self.depth_cache[depth])
         
         # If no transaction was found inside this interval return genesis
         if len(gathered_transaction_ids) == 0:
