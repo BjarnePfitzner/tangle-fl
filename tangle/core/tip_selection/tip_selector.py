@@ -1,5 +1,4 @@
 from enum import Enum
-import itertools
 import random
 
 import numpy as np
@@ -56,12 +55,14 @@ class TipSelector:
             if len(particles) < num_particles:
                 num_particles = len(particles)
 
+            # randomly reduce particles to num_particles
             random.shuffle(particles)
             particles = particles[:num_particles]
 
-            for idx in range(num_tips):
-                entry_point_idx = idx % num_particles
-                tips.append(self.walk(particles[entry_point_idx], node, self.approving_transactions))
+            for _ in range(num_tips):
+                # select particle
+                start_tx = self._select_particle(particles, node)
+                tips.append(self.walk(start_tx, node, self.approving_transactions))
 
         else:
             # Start from the 'branch' once
@@ -72,6 +73,9 @@ class TipSelector:
                 tips.append(self.walk(self.trunk, node, self.approving_transactions))
 
         return tips
+    
+    def _select_particle(self, particles, node):
+        return random.choice(particles)
 
     def compute_ratings(self, node):
         rating = {}

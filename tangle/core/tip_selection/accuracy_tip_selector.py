@@ -29,6 +29,11 @@ class AccuracyTipSelector(TipSelector):
             return self.tips[0:num_tips]
         else:
             return super(AccuracyTipSelector, self).tip_selection(num_tips, node)
+    
+    def _select_particle(self, particles, node):
+        particle_ratings = [self.tx_rating(p, node) for p in particles]
+        weights = self.ratings_to_weight(particle_ratings)
+        return self.weighted_choice(particles, weights)
 
     def _compute_ratings(self, node, tx=None):
         rating = {}
