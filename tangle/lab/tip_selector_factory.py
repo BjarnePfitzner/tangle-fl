@@ -9,7 +9,8 @@ class TipSelectorFactory:
         
         self.particle_settings = {}
         self.particle_settings[TipSelectorSettings.USE_PARTICLES] = self.config.use_particles
-        self.particle_settings[TipSelectorSettings.W] = self.config.particles_w
+        self.particle_settings[TipSelectorSettings.PARTICLES_DEPTH_START] = self.config.particles_depth_start
+        self.particle_settings[TipSelectorSettings.PARTICLES_DEPTH_END] = self.config.particles_depth_end
         self.particle_settings[TipSelectorSettings.NUM_PARTICLES] = self.config.particles_number
 
     def create(self, tangle):

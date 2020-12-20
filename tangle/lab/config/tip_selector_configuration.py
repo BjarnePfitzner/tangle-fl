@@ -44,10 +44,15 @@ class TipSelectorConfiguration:
                         type=str2bool,
                         default=False)
         
-        parser.add_argument('--particles-w',
-                        help='the interval particles will be choosen from. Will start from genesis, if current_round <= W, else interval is [last_round - 3 * W, last_round - W]',
+        parser.add_argument('--particles-depth-start',
+                        help='the begin of the depth based interval too choose particles from',
                         type=int,
                         default=10)
+        
+        parser.add_argument('--particles-depth-end',
+                        help='the end of the depth based interval too choose particles from',
+                        type=int,
+                        default=20)
 
         parser.add_argument('--particles-number',
                         help='the number of particles to use. If num-tips < particles-number, only num-tips particles will be used',
@@ -58,7 +63,8 @@ class TipSelectorConfiguration:
     def parse(self, args):
         self.tip_selector = args.tip_selector
         self.use_particles = args.use_particles
-        self.particles_w = args.particles_w
+        self.particles_depth_start = args.particles_depth_start
+        self.particles_depth_end = args.particles_depth_end
         self.particles_number = args.particles_number
         self.acc_tip_selection_strategy = args.acc_tip_selection_strategy
         self.acc_cumulate_ratings = args.acc_cumulate_ratings

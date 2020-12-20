@@ -9,8 +9,9 @@ DEFAULT_ALPHA = 0.001
 
 class TipSelectorSettings(Enum):
     USE_PARTICLES = 0
-    W = 1
-    NUM_PARTICLES = 2
+    PARTICLES_DEPTH_START = 1
+    PARTICLES_DEPTH_END = 2
+    NUM_PARTICLES = 3
 
 class TipSelector:
     def __init__(self, tangle, trunk=None, branch=None, rated_transactions=None, particle_settings=None):
@@ -45,11 +46,11 @@ class TipSelector:
         tips = []
 
         if self.particle_settings[TipSelectorSettings.USE_PARTICLES]:
-            W = self.particle_settings[TipSelectorSettings.W]
             num_particles = self.particle_settings[TipSelectorSettings.NUM_PARTICLES]
+            depth_start = self.particle_settings[TipSelectorSettings.PARTICLES_DEPTH_START]
+            depth_end = self.particle_settings[TipSelectorSettings.PARTICLES_DEPTH_END]
 
-            # particles are from the interval [last_generation - 3*W, last_generation - W,]
-            particles = self.tangle.get_transaction_ids_of_time_interval(steps_back=W, width=2*W)
+            particles = self.tangle.get_transaction_ids_of_depth_interval(depth_start=depth_start, depth_end=depth_end)
 
             # num_particles cannot be greater than the number of transactions, which could act as particles
             if len(particles) < num_particles:
