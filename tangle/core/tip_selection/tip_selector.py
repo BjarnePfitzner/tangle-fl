@@ -137,9 +137,21 @@ class TipSelector:
         #
         # return None
 
-    def ratings_to_weight(self, ratings, alpha=DEFAULT_ALPHA):
+    def normalize_ratings(self, ratings, dynamic=False):
+        # with dynamic = True, the ratings are linearly mapped to a scale between -1 and 0
         highest_rating = max(ratings)
-        normalized_ratings = [r - highest_rating for r in ratings]
+        lowest_rating = min(ratings)
+        rating_spread = highest_rating - lowest_rating
+
+        normalized_ratings = [rating - highest_rating for rating in ratings]
+
+        if dynamic and rating_spread != 0:
+            normalized_ratings = [rating / rating_spread for rating in normalized_ratings]
+
+        return normalized_ratings
+
+    def ratings_to_weight(self, ratings, alpha=DEFAULT_ALPHA, dynamic=False):
+        normalized_ratings = self.normalize_ratings(ratings, dynamic)
         return [np.exp(r * alpha) for r in normalized_ratings]
 
     def weighted_choice(self, approvers, weights):
