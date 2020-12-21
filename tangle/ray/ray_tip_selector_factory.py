@@ -41,6 +41,9 @@ class RayTipSelectorFactory(TipSelectorFactory):
             return rayAccuracyTipSelector
 
         elif self.config.tip_selector == 'lazy_accuracy':
+            # To be consistent with self.config.tip_selector == 'accuracy', draw a random number.
+            # If we do not draw a number, in future execution the generated random numbers and thereby train/test data and models will differ
+            _ = random.randint(0, 4294967295)
             # Use "normal" LazyAccuracyTipSelector, as there is no need for a ray version of it
             return LazyAccuracyTipSelector(tangle, tip_selection_settings, self.particle_settings)
 
