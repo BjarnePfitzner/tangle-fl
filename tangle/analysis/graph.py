@@ -1,6 +1,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import os
+from collections import Counter
+import csv
 from scipy.interpolate import make_interp_spline, BSpline
 from sknetwork.clustering import Louvain, modularity
 
@@ -180,8 +182,30 @@ class Graph:
 
         self._line_plot(
             title='Modularity per round',
-            data_arrays=[list(m)],
+            data_arrays=[[x for x, _, _ in m]],
             y_label='modularity',
+            smooth_line=smooth_line,
+            plot_axis_labels=plot_axis_labels,
+            plot_for_paper=plot_for_paper)
+
+    def plot_num_modules_per_round(self, smooth_line=False, plot_axis_labels=True, plot_for_paper=False):
+        m = self._prepare_modularity()
+
+        self._line_plot(
+            title='Modules per round',
+            data_arrays=[[x for _, x, _ in m]],
+            y_label='#modules',
+            smooth_line=smooth_line,
+            plot_axis_labels=plot_axis_labels,
+            plot_for_paper=plot_for_paper)
+
+    def plot_misclassification_per_round(self, smooth_line=False, plot_axis_labels=True, plot_for_paper=False):
+        m = self._prepare_modularity()
+
+        self._line_plot(
+            title='Misclassification per round',
+            data_arrays=[[x for _, _, x in m]],
+            y_label='misclassification fraction',
             smooth_line=smooth_line,
             plot_axis_labels=plot_axis_labels,
             plot_for_paper=plot_for_paper)
@@ -255,6 +279,16 @@ class Graph:
             # Remove title
             plt.title("")
             save_or_plot_fig(format="eps")
+
+            # Save data as space-separated txt file for use with pgfplots
+            csv_filename = f'{title.replace(" ", "_").lower()}.txt'
+            with open(csv_filename, 'w', newline='') as csvfile:
+                writer = csv.writer(csvfile, delimiter=' ')
+                ax = plt.gca()
+                x_data = ax.lines[0].get_xdata()
+                y_data = [l.get_ydata() for l in ax.lines]
+                writer.writerow(['x', *[f'y{i}' for i, _ in enumerate(y_data)]])
+                writer.writerows([x for x in np.array([x_data, *y_data]).transpose() if not None in x])
 
         # Clear canvas for next diagram
         plt.clf()
@@ -514,18 +548,34 @@ class Graph:
             labels = louvain.fit_transform(adjacency)
             return labels, modularity(approval_count, labels)
 
+        def partitions(labels, idx_to_client):
+            clusters = [[] for z in range(max(labels) + 1)]
+            for idx, label in enumerate(labels):
+                t = idx_to_client[idx]
+                clusters[label].append(t)
+
+            return clusters
+
+        def compute_misclassification(clients_to_clusters, ps):
+            counters = [Counter([clients_to_clusters[c] for c in p if c != 'genesis']) for p in ps]
+            most_common = [x for c in counters for x in c.most_common(1)]
+            cluster_results = [(common[0], len(ps[i]), common[1] / len(ps[i])) for i, common in enumerate(most_common)]
+            return 1 - (sum([count * correct_percent for _, count, correct_percent in cluster_results]) / sum([len(x) for x in ps]))
+
         ###
         # Do it
 
         for r in range(1, self.generation + 1):
             # Skip first round
             if r == 1:
-                yield None
+                yield None, None, None
                 continue
 
-            approval_count, _, _ = load(r)
-            _, m = compute_clusters(approval_count)
-            yield m
+            approval_count, idx_to_client, clients_to_clusters = load(r)
+            clusters, m = compute_clusters(approval_count)
+            ps = partitions(clusters, idx_to_client)
+            misclassification = compute_misclassification(clients_to_clusters, ps)
+            yield m, len(ps), misclassification
 
     def _prepare_total_participating_clients(self):
         for r in range(1, self.generation + 1):

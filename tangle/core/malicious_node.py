@@ -29,7 +29,7 @@ class MaliciousNode(Node):
             train_data = flip_labels(train_data)
             eval_data = flip_labels(eval_data)
 
-        super().__init__(tangle, tx_store, tip_selector, client_id, cluster_id, train_data, eval_data, model=None, config=config)
+        super().__init__(tangle, tx_store, tip_selector, client_id, cluster_id, train_data, eval_data, model=model, config=config)
 
     def train(self, model_params):
         if self.poison_type == PoisonType.Random:
