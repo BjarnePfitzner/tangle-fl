@@ -30,7 +30,7 @@ params = {
     'sample_size': [2],
     'batch_size': [10],
     'num_batches': [10],
-    'publish_if_better_than': ['REFERENCE'], # or parents
+    'publish_if_better_than': ['REFERENCE', 'PARENTS'], # or parents
     'reference_avg_top': [1],
     'target_accuracy': [1],
     'learning_rate': [0.05],
@@ -39,7 +39,7 @@ params = {
     'acc_cumulate_ratings': ['False'],
     'acc_ratings_to_weights': ['LINEAR', 'ALPHA'],
     'acc_select_from_weights': ['WEIGHTED_CHOICE'],
-    'acc_alpha': [0.001],
+    'acc_alpha': [0.1],
     'use_particles': ['False'],
     'particles_depth_start': [10],
     'particles_depth_end': [20],
