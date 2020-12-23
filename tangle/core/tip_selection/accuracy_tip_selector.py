@@ -51,7 +51,7 @@ class AccuracyTipSelector(TipSelector):
         return rating
 
     def compute_ratings(self, node, tx=None):
-        print(f"computing ratings for node {node.id}")
+        # print(f"computing ratings for node {node.id}")
         rating = self._compute_ratings(node, tx)
 
         if self.settings[AccuracyTipSelectorSettings.CUMULATE_RATINGS]:
@@ -69,7 +69,7 @@ class AccuracyTipSelector(TipSelector):
                 future_set = super().future_set(tx_id, self.approving_transactions, future_set_cache)
                 rating[tx_id] = cumulate_ratings(future_set, accuracies) + accuracies[tx_id]
 
-        print("done computing ratings")
+        # print("done computing ratings")
         self._update_ratings(node.id, rating)
     
     #### Provide template methods for subclasses (e.g. LazyAccuracyTipSelector)

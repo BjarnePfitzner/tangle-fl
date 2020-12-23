@@ -45,7 +45,7 @@ class LabTransactionStore(TransactionStore):
         return self.hash_file(tmpfile)
 
     def save(self, tx, tx_weights):
-        print(f"saving transaction weights{len(tx_weights)}")
+        # print(f"saving transaction weights{len(tx_weights)}")
         tx.id = self.compute_transaction_id(tx_weights)
 
         assert tx_weights, tx.id is not None
