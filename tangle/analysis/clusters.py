@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 
 from ..lab.dataset import read_data
 
-from sknetwork.clustering import Louvain
+from sknetwork.clustering import Louvain, modularity
 
 def load(tangle_json_path):
     with open(tangle_json_path) as inf:
@@ -63,7 +63,7 @@ def compute_clusters(approval_count):
     louvain = Louvain(modularity='newman')
     adjacency = approval_count
     labels = louvain.fit_transform(adjacency)
-    return labels
+    return labels, modularity(approval_count, labels)
 
 def partitions(labels, idx_to_client, num_clusters):
     clusters = [[] for z in range(num_clusters)]

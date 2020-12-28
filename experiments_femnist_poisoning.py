@@ -22,12 +22,12 @@ params = {
     'eval_every': [5],
     'eval_on_fraction': [0.05],
     'clients_per_round': [10],
-    'model_data_dir': ['../data/femnist-data/small'],
+    'model_data_dir': ['../data/femnist-data/large'],
     'src_tangle_dir': [''],         # Set to '' to not use --src-tangle-dir parameter
     'start_round': [0],
     'tip_selector': ['lazy_accuracy'],
     'num_tips': [2],
-    'sample_size': [5],
+    'sample_size': [2],
     'batch_size': [10],
     'num_batches': [10],
     'publish_if_better_than': ['REFERENCE'], # or parents

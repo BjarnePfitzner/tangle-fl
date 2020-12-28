@@ -28,10 +28,11 @@ class TheoreticalNode(Node):
     def __init__(self, tangle, tx_store, tip_selector, client_id, cluster_id, data):
         self.data = data
         super().__init__(tangle, tx_store, tip_selector, client_id, cluster_id)
+        self.config.sample_size = 5
 
-    def test(self, model_params, set_to_use='test'):
+    def test(self, model_params, set_to_use='test', only_test_on_first_1000=False):
         error = np.linalg.norm(np.array(model_params) - np.array(self.data))
-        return { 'loss': error, 'accuracy': -error }
+        return { 'loss': error, 'accuracy': 1-(error/250) }
 
 
     def train(self, model_params):
@@ -39,7 +40,7 @@ class TheoreticalNode(Node):
 
         # Limit the 'learning rate'
         max_step_length = 5
-        length = abs(diff)
+        length = np.linalg.norm(diff)
         if length > max_step_length:
             step = diff / (length / max_step_length)
         else:

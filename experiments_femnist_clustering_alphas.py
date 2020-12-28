@@ -27,7 +27,7 @@ params = {
     'start_round': [0],
     'tip_selector': ['lazy_accuracy'],
     'num_tips': [2],
-    'sample_size': [5],
+    'sample_size': [2],
     'batch_size': [10],
     'num_batches': [10],
     'publish_if_better_than': ['REFERENCE'], # or parents
@@ -39,7 +39,7 @@ params = {
     'acc_cumulate_ratings': ['False'],
     'acc_ratings_to_weights': ['ALPHA'],
     'acc_select_from_weights': ['WEIGHTED_CHOICE'],
-    'acc_alpha': [0.001, 0.1, 1],
+    'acc_alpha': [0.001, 1, 10, 100],
     'use_particles': ['False'],
     'particles_w': [5],
     'particles_number': [10],

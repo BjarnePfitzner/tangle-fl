@@ -221,6 +221,8 @@ class Lab:
             for r in results:
                 r['round'] = rnd
 
+                r['conf_matrix'] = r['conf_matrix'].tolist()
+
                 w = csv.DictWriter(f, r.keys())
                 if write_header:
                     w.writeheader()

@@ -1,5 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
+import ast
 import os
 from collections import Counter
 import csv
@@ -189,11 +191,20 @@ class Graph:
             plot_for_paper=plot_for_paper)
 
     def plot_num_modules_per_round(self, smooth_line=False, plot_axis_labels=True, plot_for_paper=False):
-        m = self._prepare_modularity()
+        m = [x for _, x, _ in self._prepare_modularity()]
+
+        N = 10
+        cumsum, moving_aves = [0], []
+
+        for i, x in enumerate(m, 1):
+            cumsum.append(cumsum[i-1] + x)
+            if i>=N:
+                moving_ave = (cumsum[i] - cumsum[i-N])/N
+                moving_aves.append(moving_ave)
 
         self._line_plot(
             title='Modules per round',
-            data_arrays=[[x for _, x, _ in m]],
+            data_arrays=[moving_aves],
             y_label='#modules',
             smooth_line=smooth_line,
             plot_axis_labels=plot_axis_labels,
@@ -217,6 +228,82 @@ class Graph:
             title='Total participating clients per round',
             data_arrays=[list(n)],
             y_label='#clients',
+            smooth_line=smooth_line,
+            plot_axis_labels=plot_axis_labels,
+            plot_for_paper=plot_for_paper)
+
+    def plot_consensus_accuracy_per_round(self, acc_and_loss_all_path, smooth_line=False, plot_axis_labels=True, plot_for_paper=False):
+        with open(acc_and_loss_all_path, "r") as csvfile:
+            reader = csv.DictReader(csvfile)
+            accuracies = [(int(row['round']), float(row['accuracy'])) for row in reader]
+
+        accuracies = pd.DataFrame(data=accuracies)
+        accuracies = accuracies.groupby(0).mean()
+
+        line = [None for _ in range(self.generation)]
+        for row in accuracies.itertuples():
+            line[int(row[0])] = row[1]
+
+        self._line_plot(
+            title='Average consensus accuracy per round',
+            data_arrays=[line],
+            y_label='num approved poisoned transactions',
+            smooth_line=smooth_line,
+            plot_axis_labels=plot_axis_labels,
+            plot_for_paper=plot_for_paper)
+
+
+    def plot_poisoning_avg_num_approved_poisoned_tx_in_consensus_per_round(self, acc_and_loss_all_path, smooth_line=False, plot_axis_labels=True, plot_for_paper=False):
+        with open(acc_and_loss_all_path, "r") as csvfile:
+            reader = csv.DictReader(csvfile)
+            approved_txs = [(int(row['round']), int(row['num_approved_poisoned_transactions'])) for row in reader]
+
+        approved_txs = pd.DataFrame(data=approved_txs)
+        approved_txs = approved_txs.groupby(0).mean()
+
+        line = [None for _ in range(self.generation)]
+        for row in approved_txs.itertuples():
+            line[int(row[0])] = row[1]
+
+        self._line_plot(
+            title='Average num approved poisoned transactions in consensus per round',
+            data_arrays=[line],
+            y_label='num approved poisoned transactions',
+            smooth_line=smooth_line,
+            plot_axis_labels=plot_axis_labels,
+            plot_for_paper=plot_for_paper)
+
+    def plot_poisoning_misclassification_by_confusion_matrix_per_round(self, acc_and_loss_all_path, smooth_line=False, plot_axis_labels=True, plot_for_paper=False):
+        with open(acc_and_loss_all_path, "r") as csvfile:
+            reader = csv.DictReader(csvfile)
+            cms = [(int(row['round']), np.array(ast.literal_eval(row['conf_matrix']))) for row in reader]
+
+        cms = pd.DataFrame(data=cms)
+
+        # Specific to femnist.
+        FLIP_FROM_CLASS = 3
+        FLIP_TO_CLASS = 8
+        labels = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+        FLIP_FROM_CLASS = labels.index(str(FLIP_FROM_CLASS))
+        FLIP_TO_CLASS = labels.index(str(FLIP_TO_CLASS))
+
+        def compute_misclassification(row):
+            full_conf_matrix = row[1]
+            misclassification = full_conf_matrix[FLIP_FROM_CLASS, FLIP_TO_CLASS] / \
+                np.sum(full_conf_matrix[FLIP_FROM_CLASS]) * 100
+            return row[0], misclassification
+
+        mcs = cms.apply(compute_misclassification, axis=1, result_type='expand')
+        mcs = mcs.groupby(0).mean()
+
+        line = [None for _ in range(self.generation)]
+        for row in mcs.itertuples():
+            line[int(row[0])] = row[1]
+
+        self._line_plot(
+            title='Average label flip misclassification per round',
+            data_arrays=[line],
+            y_label='misclassification %',
             smooth_line=smooth_line,
             plot_axis_labels=plot_axis_labels,
             plot_for_paper=plot_for_paper)
@@ -282,7 +369,7 @@ class Graph:
 
             # Save data as space-separated txt file for use with pgfplots
             csv_filename = f'{title.replace(" ", "_").lower()}.txt'
-            with open(csv_filename, 'w', newline='') as csvfile:
+            with open(os.path.join(self.analysis_output_dir, csv_filename), 'w', newline='') as csvfile:
                 writer = csv.writer(csvfile, delimiter=' ')
                 ax = plt.gca()
                 x_data = ax.lines[0].get_xdata()
@@ -568,7 +655,7 @@ class Graph:
         for r in range(1, self.generation + 1):
             # Skip first round
             if r == 1:
-                yield None, None, None
+                yield None, 0, None
                 continue
 
             approval_count, idx_to_client, clients_to_clusters = load(r)

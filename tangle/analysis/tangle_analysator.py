@@ -18,6 +18,8 @@ class TangleAnalysator:
         self.graph.plot_accuracy_boxplot(plot_for_paper=True)
         self.graph.plot_information_gain_approvals(plot_for_paper=True)
         self.graph.plot_modularity_per_round(plot_for_paper=True)
+        self.graph.plot_num_modules_per_round(plot_for_paper=True)
+        # self.graph.plot_misclassification_per_round(plot_for_paper=True)
         self.graph.plot_total_participating_clients_per_round(plot_for_paper=True)
         if include_reference_statistics:
             self.graph.plot_information_gain_ref_tx(plot_for_paper=True)

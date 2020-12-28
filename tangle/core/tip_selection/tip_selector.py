@@ -13,7 +13,7 @@ class TipSelectorSettings(Enum):
     NUM_PARTICLES = 2
 
 class TipSelector:
-    def __init__(self, tangle, trunk=None, branch=None, rated_transactions=None, particle_settings=None):
+    def __init__(self, tangle, trunk=None, branch=None, rated_transactions=None, particle_settings={TipSelectorSettings.USE_PARTICLES: False}):
         self.tangle = tangle
         self.ratings = None
         self.particle_settings = particle_settings

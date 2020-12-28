@@ -1,6 +1,6 @@
 from enum import Enum
 
-from .tip_selector import TipSelector
+from .tip_selector import TipSelector, TipSelectorSettings
 
 from ...models.baseline_constants import ACCURACY_KEY
 
@@ -14,7 +14,7 @@ class AccuracyTipSelectorSettings(Enum):
     SELECT_FROM_WEIGHTS = 4
 
 class AccuracyTipSelector(TipSelector):
-    def __init__(self, tangle, tip_selection_settings, particle_settings):
+    def __init__(self, tangle, tip_selection_settings, particle_settings={TipSelectorSettings.USE_PARTICLES: False}):
         super().__init__(tangle, particle_settings=particle_settings)
         self.settings = tip_selection_settings
 
