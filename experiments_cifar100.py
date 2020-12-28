@@ -22,26 +22,31 @@ params = {
     'eval_every': [5],
     'eval_on_fraction': [0.05],
     'clients_per_round': [10],
-    'model_data_dir': ['../data/cifar100/'],
+    'model_data_dir': ['../data/cifar100/regular/'],
     'src_tangle_dir': [''],         # Set to '' to not use --src-tangle-dir parameter
     'start_round': [0],
-    'tip_selector': ['accuracy'],
+    'tip_selector': ['lazy_accuracy'],
     'num_tips': [2],
     'sample_size': [2],
     'batch_size': [10],
     'num_batches': [9],
+    'publish_if_better_than': ['REFERENCE'], # or parents
     'reference_avg_top': [1],
     'target_accuracy': [1],
-    'learning_rate': [0.1],
-    'num_epochs': [1],
+    'learning_rate': [0.1, 0.01],
+    'num_epochs': [10, 1],
     'acc_tip_selection_strategy': ['WALK'],
     'acc_cumulate_ratings': ['False'],
-    'acc_ratings_to_weights': ['LINEAR', 'ALPHA'],
+    'acc_ratings_to_weights': ['ALPHA'],
     'acc_select_from_weights': ['WEIGHTED_CHOICE'],
-    'acc_alpha': [0.001],
+    'acc_alpha': [100, 1],
     'use_particles': ['False'],
-    'particles_w': [5],
-    'particles_number': [10]
+    'particles_depth_start': [10],
+    'particles_depth_end': [20],
+    'particles_number': [10],
+    'poison_type': ['disabled'],
+    'poison_fraction': [0],
+    'poison_from': [0],
 }
 
 ##############################################################################
@@ -154,6 +159,7 @@ def run_and_document_experiments(args, experiments_dir, setup_filename, console_
             '--sample-size %s ' \
             '--batch-size %s ' \
             '--num-batches %s ' \
+            '--publish-if-better-than %s ' \
             '-lr %s ' \
             '--num-epochs %s ' \
             '--reference-avg-top %s ' \
@@ -164,8 +170,13 @@ def run_and_document_experiments(args, experiments_dir, setup_filename, console_
             '--acc-select-from-weights %s ' \
             '--acc-alpha %s ' \
             '--use-particles %s ' \
-            '--particles-w %s ' \
-            '--particles-number %s'
+            '--particles-depth-start %s ' \
+            '--particles-depth-end %s ' \
+            '--particles-number %s ' \
+            '--poison-type %s ' \
+            '--poison-fraction %s ' \
+            '--poison-from %s ' \
+            ''
         parameters = (
             p['dataset'],
             p['model'],
@@ -180,6 +191,7 @@ def run_and_document_experiments(args, experiments_dir, setup_filename, console_
             p['sample_size'],
             p['batch_size'],
             p['num_batches'],
+            p['publish_if_better_than'],
             p['learning_rate'],
             p['num_epochs'],
             p['reference_avg_top'],
@@ -190,8 +202,13 @@ def run_and_document_experiments(args, experiments_dir, setup_filename, console_
             p['acc_select_from_weights'],
             p['acc_alpha'],
             p['use_particles'],
-            p['particles_w'],
-            p['particles_number'])
+            p['particles_depth_start'],
+            p['particles_depth_end'],
+            p['particles_number'],
+            p['poison_type'],
+            p['poison_fraction'],
+            p['poison_from'],
+        )
         command = command.strip() % parameters
 
         if len(p['src_tangle_dir']) > 0:
@@ -242,7 +259,7 @@ def run_and_document_experiments(args, experiments_dir, setup_filename, console_
         print('Analysing tangle...')
         os.makedirs(experiment_folder + '/tangle_analysis', exist_ok=True)
         analysator = TangleAnalysator(experiment_folder + '/tangle_data', p['num_rounds'] - 1, experiment_folder + '/tangle_analysis')
-        analysator.save_statistics()
+        analysator.save_statistics(include_reference_statistics=(params['publish_if_better_than'] is 'REFERENCE'))
 
 if __name__ == "__main__":
     main()

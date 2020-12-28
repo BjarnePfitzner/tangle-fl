@@ -29,27 +29,30 @@ class AccuracyTipSelector(TipSelector):
             return self.tips[0:num_tips]
         else:
             return super(AccuracyTipSelector, self).tip_selection(num_tips, node)
+    
+    def _select_particle(self, particles, node):
+        particle_ratings = [self.tx_rating(p, node) for p in particles]
+        weights = self.ratings_to_weight(particle_ratings)
+        return self.weighted_choice(particles, weights)
 
-    def _compute_ratings(self, node):
+    def _compute_ratings(self, node, tx=None):
         rating = {}
 
-        if self.settings[AccuracyTipSelectorSettings.SELECTION_STRATEGY] == "GLOBAL" and not self.settings[AccuracyTipSelectorSettings.CUMULATE_RATINGS]:
-            txs = self.tips
-        else:
-            txs = self.tangle.transactions.keys()
+        txs = self._get_transactions_to_compute(tx)
 
         for tx_id in txs:
             rating[tx_id] = node.test(node.tx_store.load_transaction_weights(tx_id), 'train', True)[ACCURACY_KEY]
 
+        # We (currently) do not care about the future-set-size-based rating
         # future_set_cache = {}
         # for tx in txs:
         #     rating[tx] *= len(TipSelector.future_set(tx, self.approving_transactions, future_set_cache)) + 1
 
         return rating
 
-    def compute_ratings(self, node):
-        print(f"computing ratings for node {node.id}")
-        rating = self._compute_ratings(node)
+    def compute_ratings(self, node, tx=None):
+        # print(f"computing ratings for node {node.id}")
+        rating = self._compute_ratings(node, tx)
 
         if self.settings[AccuracyTipSelectorSettings.CUMULATE_RATINGS]:
             def cumulate_ratings(future_set, ratings):
@@ -58,13 +61,29 @@ class AccuracyTipSelector(TipSelector):
                     cumulated += ratings[tx_id]
                 return cumulated
 
-            future_set_cache = {}
-            for tx_id in self.tangle.transactions:
-                future_set = super().future_set(tx_id, self.approving_transactions, future_set_cache)
-                rating[tx_id] = cumulate_ratings(future_set, rating) + rating[tx_id]
+            # copy calculated accuracies
+            accuracies = dict(rating)
 
-        print("done computing ratings")
+            future_set_cache = {}
+            for tx_id in rating:
+                future_set = super().future_set(tx_id, self.approving_transactions, future_set_cache)
+                rating[tx_id] = cumulate_ratings(future_set, accuracies) + accuracies[tx_id]
+
+        # print("done computing ratings")
+        self._update_ratings(node.id, rating)
+    
+    #### Provide template methods for subclasses (e.g. LazyAccuracyTipSelector)
+
+    def _get_transactions_to_compute(self, tx):
+        if self.settings[AccuracyTipSelectorSettings.SELECTION_STRATEGY] == "GLOBAL" and not self.settings[AccuracyTipSelectorSettings.CUMULATE_RATINGS]:
+            return self.tips
+        
+        return self.tangle.transactions.keys()
+
+    def _update_ratings(self, node_id, rating):
         self.ratings = rating
+
+    #### Override weight functions with accuracy related settings
 
     def ratings_to_weight(self, ratings, alpha=None):
         if self.settings[AccuracyTipSelectorSettings.RATINGS_TO_WEIGHT] == 'LINEAR':

@@ -1,16 +1,16 @@
 import subprocess
 
 params = {
-    'dataset': 'poets',   # is expected to be one value to construct default experiment name
-    'model': 'stacked_lstm',       # is expected to be one value to construct default experiment name
-    'num_rounds': 100,
-    'eval_every': 99,
+    'dataset': 'cifar100',   # is expected to be one value to construct default experiment name
+    'model': 'cnn',       # is expected to be one value to construct default experiment name
+    'num_rounds': 500,
+    'eval_every': 25,
     'eval_on_fraction': 0.05,
     'clients_per_round': 10,
-    'model_data_dir': '../data/poets-balanced/data',
+    'model_data_dir': '../data/cifar100',
     'batch_size': 10,
-    'num_batches': 35,
-    'learning_rate': 0.05
+    'num_batches': 90,
+    'learning_rate': 0.01
 }
 
 def main():

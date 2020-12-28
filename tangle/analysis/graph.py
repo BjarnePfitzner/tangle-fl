@@ -117,7 +117,7 @@ class Graph:
         if plot_for_paper:
             # Remove title
             plt.title("")
-            save_or_plot_fig(format="eps")
+            save_or_plot_fig(format="pdf")
 
         # Clear canvas for next diagram
         plt.clf()
@@ -365,7 +365,7 @@ class Graph:
         if plot_for_paper:
             # Remove title
             plt.title("")
-            save_or_plot_fig(format="eps")
+            save_or_plot_fig(format="pdf")
 
             # Save data as space-separated txt file for use with pgfplots
             csv_filename = f'{title.replace(" ", "_").lower()}.txt'
