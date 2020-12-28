@@ -137,7 +137,7 @@ class TipSelector:
         #
         # return None
 
-    def normalize_ratings(self, ratings, dynamic=False):
+    def normalize_ratings(self, ratings, dynamic=True):
         # with dynamic = True, the ratings are linearly mapped to a scale between -1 and 0
         highest_rating = max(ratings)
         lowest_rating = min(ratings)
@@ -150,7 +150,7 @@ class TipSelector:
 
         return normalized_ratings
 
-    def ratings_to_weight(self, ratings, alpha=DEFAULT_ALPHA, dynamic=False):
+    def ratings_to_weight(self, ratings, alpha=DEFAULT_ALPHA, dynamic=True):
         normalized_ratings = self.normalize_ratings(ratings, dynamic)
         return [np.exp(r * alpha) for r in normalized_ratings]
 
