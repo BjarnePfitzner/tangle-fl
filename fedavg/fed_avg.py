@@ -144,6 +144,11 @@ def plot_accuracy_boxplot(data, cids, print_avg_acc=False):
 
     # print for all clusters
     all_cluster_data = [sum(epoch.values(), []) for epoch in data]
+    print(all_cluster_data)
+    with open('fed_avg_accuracy_per_round_all.txt', 'w') as f:
+        for round_number, round_data in enumerate(all_cluster_data):
+            f.write(f'{round_number+1} {" ".join(map(str,round_data))}\n')
+
     _plot_accuracy_boxplot(all_cluster_data, "all", print_avg_acc)
 
 def _plot_accuracy_boxplot(data, cid, print_avg_acc):
@@ -157,13 +162,15 @@ def _plot_accuracy_boxplot(data, cid, print_avg_acc):
     # Settings for plot
     plt.title("Accuracy per round (cluster: %s)" % cid)
     
-    plt.xlabel("Round")
+    plt.xlabel("")
     plt.xticks([i for i in range(last_generation)], [i if i % 5 == 0 else '' for i in range(last_generation)])
     
     plt.ylabel("")
     
-    analysis_filepath = ("fed_avg_accuracy_per_round_cluster_%s.png" % cid)
-    plt.savefig(analysis_filepath)
+    analysis_filepath = ("fed_avg_accuracy_per_round_cluster_%s" % cid)
+    plt.savefig(analysis_filepath+".png")
+
+    plt.title("")
+    plt.savefig(analysis_filepath+".pdf")
     
     plt.clf()
-
