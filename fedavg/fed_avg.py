@@ -156,6 +156,9 @@ def _plot_accuracy_boxplot(data, cid, print_avg_acc):
 
     plt.boxplot(data)
 
+    # Fix y axis data range to [0, 1]
+    plt.ylim([0, 1])
+
     if print_avg_acc:
         plt.plot([i for i in range(last_generation)], [np.mean(x) for x in data])
     
@@ -163,7 +166,7 @@ def _plot_accuracy_boxplot(data, cid, print_avg_acc):
     plt.title("Accuracy per round (cluster: %s)" % cid)
     
     plt.xlabel("")
-    plt.xticks([i for i in range(last_generation)], [i if i % 5 == 0 else '' for i in range(last_generation)])
+    plt.xticks([i for i in range(last_generation)], [i if i % 10 == 0 else '' for i in range(last_generation)])
     
     plt.ylabel("")
     

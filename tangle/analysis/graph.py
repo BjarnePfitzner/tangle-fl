@@ -101,7 +101,7 @@ class Graph:
         if plot_axis_labels:
             plt.xlabel("Round")
             plt.xticks([i for i in range(1, self.generation + 1)],
-                    [i if i % 5 == 0 else '' for i in range(1, self.generation + 1)])
+                    [i if i % 10 == 0 else '' for i in range(1, self.generation + 1)])
 
             plt.ylabel("")
 
@@ -348,7 +348,7 @@ class Graph:
         if plot_axis_labels:
             plt.xlabel(x_label)
             plt.xticks([i for i in range(start_index, end_index)],
-                    [i if i % 5 == 0 else '' for i in range(start_index, end_index)])
+                    [i if i % 10 == 0 else '' for i in range(start_index, end_index)])
 
             plt.ylabel(y_label)
 
