@@ -1,4 +1,5 @@
 from ...core.poison_type import PoisonType
+import argparse
 
 class PoisoningConfiguration:
 
@@ -21,6 +22,10 @@ class PoisoningConfiguration:
                         type=float,
                         default=1,
                         required=False)
+        parser.add_argument('--poison-use-random-ts',
+                    help='malicious nodes always use the random tip selector',
+                    type=str2bool,
+                    default=False)
 
     def parse(self, args):
         self.poison_type = {
@@ -30,3 +35,14 @@ class PoisoningConfiguration:
         }[args.poison_type]
         self.poison_fraction = args.poison_fraction
         self.poison_from = args.poison_from
+        self.use_random_ts = args.poison_use_random_ts
+
+def str2bool(v):
+    if isinstance(v, bool):
+       return v
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')

@@ -184,14 +184,14 @@ class Graph:
 
         self._line_plot(
             title='Modularity per round',
-            data_arrays=[[x for x, _, _ in m]],
+            data_arrays=[[x for x, _, _, _ in m]],
             y_label='modularity',
             smooth_line=smooth_line,
             plot_axis_labels=plot_axis_labels,
             plot_for_paper=plot_for_paper)
 
     def plot_num_modules_per_round(self, smooth_line=False, plot_axis_labels=True, plot_for_paper=False):
-        m = [x for _, x, _ in self._prepare_modularity()]
+        m = [x for _, x, _, _ in self._prepare_modularity()]
 
         N = 10
         cumsum, moving_aves = [0], []
@@ -215,7 +215,7 @@ class Graph:
 
         self._line_plot(
             title='Misclassification per round',
-            data_arrays=[[x for _, _, x in m]],
+            data_arrays=[[x for _, _, x, _ in m]],
             y_label='misclassification fraction',
             smooth_line=smooth_line,
             plot_axis_labels=plot_axis_labels,
@@ -587,6 +587,7 @@ class Graph:
 
             nid_to_client = {}
             clients_to_clusters = {}
+            clients_poisoned = {'genesis': False}
 
             for n in nodes_until_round:
                 if 'issuer' in n.metadata:
@@ -594,6 +595,7 @@ class Graph:
 
                     if 'clusterId' in n.metadata:
                         clients_to_clusters[n.metadata['issuer']] = n.metadata['clusterId']
+                    clients_poisoned[n.metadata['issuer']] = 'poisoned' in n.metadata and n.metadata['poisoned']
                 else:
                     nid_to_client[n.id] = 'genesis'
 
@@ -627,7 +629,7 @@ class Graph:
 
             idx_to_client = clients
 
-            return approval_count, idx_to_client, clients_to_clusters
+            return approval_count, idx_to_client, clients_to_clusters, clients_poisoned
 
         def compute_clusters(approval_count):
             louvain = Louvain(modularity='newman')
@@ -649,20 +651,24 @@ class Graph:
             cluster_results = [(common[0], len(ps[i]), common[1] / len(ps[i])) for i, common in enumerate(most_common)]
             return 1 - (sum([count * correct_percent for _, count, correct_percent in cluster_results]) / sum([len(x) for x in ps]))
 
+        def compute_poisoned_clients_per_partition(clients_poisoned, ps):
+            return [(len([c for c in p if clients_poisoned[c]]), len(p)) for p in ps]
+
         ###
         # Do it
 
         for r in range(1, self.generation + 1):
             # Skip first round
             if r == 1:
-                yield None, 0, None
+                yield None, 0, None, []
                 continue
 
-            approval_count, idx_to_client, clients_to_clusters = load(r)
+            approval_count, idx_to_client, clients_to_clusters, clients_poisoned = load(r)
             clusters, m = compute_clusters(approval_count)
             ps = partitions(clusters, idx_to_client)
             misclassification = compute_misclassification(clients_to_clusters, ps)
-            yield m, len(ps), misclassification
+            poisoned = compute_poisoned_clients_per_partition(clients_poisoned, ps)
+            yield m, len(ps), misclassification, poisoned
 
     def _prepare_total_participating_clients(self):
         for r in range(1, self.generation + 1):
