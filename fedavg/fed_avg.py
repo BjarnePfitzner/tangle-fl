@@ -151,13 +151,13 @@ def plot_accuracy_boxplot(data, cids, print_avg_acc=False):
 
     _plot_accuracy_boxplot(all_cluster_data, "all", print_avg_acc)
 
-def _plot_accuracy_boxplot(data, cid, print_avg_acc):
+def _plot_accuracy_boxplot(data, cid, print_avg_acc, max_y=1):
     last_generation = len(data)
 
     plt.boxplot(data)
 
     # Fix y axis data range to [0, 1]
-    plt.ylim([0, 1])
+    plt.ylim([0, max_y])
 
     if print_avg_acc:
         plt.plot([i for i in range(last_generation)], [np.mean(x) for x in data])
