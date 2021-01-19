@@ -8,9 +8,9 @@ class Dataset:
     def __init__(self, lab_config, model_config):
         self.lab_config = lab_config
         self.model_config = model_config
-        self.clients, self.train_data, self.test_data = self.setup_clients()
+        self.clients, self.train_data, self.test_data = self.setup_clients(model_config.limit_clients)
 
-    def setup_clients(self):
+    def setup_clients(self, limit_clients):
         eval_set = 'test' if not self.lab_config.use_val_set else 'val'
         train_data_dir = os.path.join(self.lab_config.model_data_dir, 'train')
         test_data_dir = os.path.join(self.lab_config.model_data_dir, eval_set)
@@ -18,6 +18,12 @@ class Dataset:
         users, cluster_ids, train_data, test_data = read_data(train_data_dir, test_data_dir)
 
         clients = list(itertools.zip_longest(users, cluster_ids))
+
+        if (limit_clients > 0):
+            rng_state = np.random.get_state()
+            np.random.seed(4711)
+            clients = [clients[i] for i in np.random.choice(len(clients), limit_clients, replace=False)]
+            np.random.set_state(rng_state)
 
         return clients, train_data, test_data
 

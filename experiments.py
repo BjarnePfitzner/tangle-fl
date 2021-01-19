@@ -47,6 +47,7 @@ params = {
     'poison_type': ['disabled'],
     'poison_fraction': [0],
     'poison_from': [0],
+    'poison_use_random_ts': ['False'],
 }
 
 ##############################################################################
@@ -179,6 +180,7 @@ def run_and_document_experiments(args, experiments_dir, setup_filename, console_
             '--poison-type %s ' \
             '--poison-fraction %s ' \
             '--poison-from %s ' \
+            '--poison-use-random-ts %s ' \
             ''
         parameters = (
             p['dataset'],
@@ -211,6 +213,7 @@ def run_and_document_experiments(args, experiments_dir, setup_filename, console_
             p['poison_type'],
             p['poison_fraction'],
             p['poison_from'],
+            p['poison_use_random_ts'],
         )
         command = command.strip() % parameters
 

@@ -51,6 +51,11 @@ class ModelConfiguration:
                         type=int,
                         default=100)
 
+        parser.add_argument('--limit-num-clients-in-dataset',
+                        help='use fewer clients than contained in dataset;',
+                        type=int,
+                        default=0)
+
     def parse(self, args):
         self.dataset = args.dataset
         self.model = args.model
@@ -58,3 +63,4 @@ class ModelConfiguration:
         self.num_epochs = args.num_epochs
         self.batch_size = args.batch_size
         self.num_batches = args.num_batches
+        self.limit_clients = args.limit_num_clients_in_dataset

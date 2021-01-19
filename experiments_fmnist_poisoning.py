@@ -18,16 +18,16 @@ from sklearn.model_selection import ParameterGrid
 params = {
     'dataset': ['femnist'],   # is expected to be one value to construct default experiment name
     'model': ['cnn'],      # is expected to be one value to construct default experiment name
-    'num_rounds': [100],
+    'num_rounds': [200],
     'eval_every': [5],
     'eval_on_fraction': [0.05],
     'clients_per_round': [10],
     'model_data_dir': ['../data/fmnist'],
-    'src_tangle_dir': [''],         # Set to '' to not use --src-tangle-dir parameter
-    'start_round': [0],
+    'src_tangle_dir': ['../experiments/femnist-cnn-18/config_0/tangle_data'],         # Set to '' to not use --src-tangle-dir parameter
+    'start_round': [100],
     'tip_selector': ['lazy_accuracy'],
     'num_tips': [2],
-    'sample_size': [5],
+    'sample_size': [2],
     'batch_size': [10],
     'num_batches': [10],
     'publish_if_better_than': ['REFERENCE'], # or parents
@@ -45,7 +45,7 @@ params = {
     'particles_depth_end': [20],
     'particles_number': [10],
     'poison_type': ['labelflip'],
-    'poison_fraction': [0.1, 0.2, 0.5],
+    'poison_fraction': [0.2],
     'poison_from': [0],
     'poison_use_random_ts': ['False', 'True'],
 }

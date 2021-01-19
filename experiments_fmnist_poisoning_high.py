@@ -16,15 +16,15 @@ from sklearn.model_selection import ParameterGrid
 #############################################################################
 
 params = {
-    'dataset': ['femnistclustered'],   # is expected to be one value to construct default experiment name
+    'dataset': ['femnist'],   # is expected to be one value to construct default experiment name
     'model': ['cnn'],      # is expected to be one value to construct default experiment name
-    'num_rounds': [100],
-    'eval_every': [-1],
+    'num_rounds': [200],
+    'eval_every': [5],
     'eval_on_fraction': [0.05],
     'clients_per_round': [10],
-    'model_data_dir': ['../data/femnist-data-clustered-alt'],
-    'src_tangle_dir': [''],         # Set to '' to not use --src-tangle-dir parameter
-    'start_round': [0],
+    'model_data_dir': ['../data/fmnist'],
+    'src_tangle_dir': ['../experiments/femnist-cnn-18/config_0/tangle_data'],         # Set to '' to not use --src-tangle-dir parameter
+    'start_round': [100],
     'tip_selector': ['lazy_accuracy'],
     'num_tips': [2],
     'sample_size': [2],
@@ -35,18 +35,17 @@ params = {
     'target_accuracy': [1],
     'learning_rate': [0.05],
     'num_epochs': [1],
-    'limit_num_clients_in_dataset': [100],
     'acc_tip_selection_strategy': ['WALK'],
     'acc_cumulate_ratings': ['False'],
     'acc_ratings_to_weights': ['ALPHA'],
     'acc_select_from_weights': ['WEIGHTED_CHOICE'],
-    'acc_alpha': [1, 10, 100],
+    'acc_alpha': [10],
     'use_particles': ['False'],
     'particles_depth_start': [10],
     'particles_depth_end': [20],
     'particles_number': [10],
-    'poison_type': ['disabled'],
-    'poison_fraction': [0],
+    'poison_type': ['labelflip'],
+    'poison_fraction': [0.3],
     'poison_from': [0],
     'poison_use_random_ts': ['False'],
 }
@@ -166,7 +165,6 @@ def run_and_document_experiments(args, experiments_dir, setup_filename, console_
             '--num-batches %s ' \
             '-lr %s ' \
             '--num-epochs %s ' \
-            '--limit-num-clients-in-dataset %s ' \
             '--publish-if-better-than %s ' \
             '--reference-avg-top %s ' \
             '--tip-selector %s ' \
@@ -200,7 +198,6 @@ def run_and_document_experiments(args, experiments_dir, setup_filename, console_
             p['num_batches'],
             p['learning_rate'],
             p['num_epochs'],
-            p['limit_num_clients_in_dataset'],
             p['publish_if_better_than'],
             p['reference_avg_top'],
             p['tip_selector'],

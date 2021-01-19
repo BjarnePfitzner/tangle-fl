@@ -191,20 +191,11 @@ class Graph:
             plot_for_paper=plot_for_paper)
 
     def plot_num_modules_per_round(self, smooth_line=False, plot_axis_labels=True, plot_for_paper=False):
-        m = [x for _, x, _, _ in self._prepare_modularity()]
-
-        N = 10
-        cumsum, moving_aves = [0], []
-
-        for i, x in enumerate(m, 1):
-            cumsum.append(cumsum[i-1] + x)
-            if i>=N:
-                moving_ave = (cumsum[i] - cumsum[i-N])/N
-                moving_aves.append(moving_ave)
+        m = self._prepare_modularity()
 
         self._line_plot(
             title='Modules per round',
-            data_arrays=[moving_aves],
+            data_arrays=[[x for _, x, _, _ in m]],
             y_label='#modules',
             smooth_line=smooth_line,
             plot_axis_labels=plot_axis_labels,
@@ -242,7 +233,8 @@ class Graph:
 
         line = [None for _ in range(self.generation)]
         for row in accuracies.itertuples():
-            line[int(row[0])] = row[1]
+            if len(line) > int(row[0]):
+                line[int(row[0])] = row[1]
 
         self._line_plot(
             title='Average consensus accuracy per round',
@@ -263,7 +255,8 @@ class Graph:
 
         line = [None for _ in range(self.generation)]
         for row in approved_txs.itertuples():
-            line[int(row[0])] = row[1]
+            if len(line) > int(row[0]):
+                line[int(row[0])] = row[1]
 
         self._line_plot(
             title='Average num approved poisoned transactions in consensus per round',
@@ -283,7 +276,7 @@ class Graph:
         # Specific to femnist.
         FLIP_FROM_CLASS = 3
         FLIP_TO_CLASS = 8
-        labels = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+        labels = "0123456789"
         FLIP_FROM_CLASS = labels.index(str(FLIP_FROM_CLASS))
         FLIP_TO_CLASS = labels.index(str(FLIP_TO_CLASS))
 
@@ -298,7 +291,8 @@ class Graph:
 
         line = [None for _ in range(self.generation)]
         for row in mcs.itertuples():
-            line[int(row[0])] = row[1]
+            if len(line) > int(row[0]):
+                line[int(row[0])] = row[1]
 
         self._line_plot(
             title='Average label flip misclassification per round',
