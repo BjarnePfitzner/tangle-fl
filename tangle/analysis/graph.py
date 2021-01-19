@@ -85,7 +85,7 @@ class Graph:
             plot_axis_labels=plot_axis_labels,
             plot_for_paper=plot_for_paper)
 
-    def plot_accuracy_boxplot(self, print_avg_acc=False, plot_axis_labels=True, plot_for_paper=False):
+    def plot_accuracy_boxplot(self, print_avg_acc=False, plot_axis_labels=True, plot_for_paper=False, ymax=1.0, ylabel=""):
         data = self._prepare_acc_data()
         plt.boxplot(data)
 
@@ -96,14 +96,14 @@ class Graph:
         plt.title('Accuracy per round')
 
         # Fix y axis data range to [0, 1]
-        plt.ylim([0, 1])
+        plt.ylim([0, ymax])
 
         if plot_axis_labels:
             plt.xlabel("Round")
             plt.xticks([i for i in range(1, self.generation + 1)],
-                    [i if i % 5 == 0 else '' for i in range(1, self.generation + 1)])
+                    [i if i % 10 == 0 else '' for i in range(1, self.generation + 1)])
 
-            plt.ylabel("")
+            plt.ylabel(ylabel)
 
         def save_or_plot_fig(format="png"):
             if self.analysis_output_dir:
@@ -342,7 +342,7 @@ class Graph:
         if plot_axis_labels:
             plt.xlabel(x_label)
             plt.xticks([i for i in range(start_index, end_index)],
-                    [i if i % 5 == 0 else '' for i in range(start_index, end_index)])
+                    [i if i % 10 == 0 else '' for i in range(start_index, end_index)])
 
             plt.ylabel(y_label)
 
