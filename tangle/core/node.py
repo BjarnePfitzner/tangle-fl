@@ -119,7 +119,7 @@ class Node:
     def model(self, model):
         self._model = model
 
-    def choose_tips(self, num_tips=2, sample_size=2):
+    async def choose_tips(self, num_tips=2, sample_size=2):
         if len(self.tangle.transactions) < num_tips:
             return [self.tangle.transactions[self.tangle.genesis] for i in range(2)]
 
@@ -140,7 +140,7 @@ class Node:
                 if tip.id in loss_cache.keys():
                     tip_losses.append((tip, loss_cache[tip.id]))
                 else:
-                    loss = self.test(self.tx_store.load_transaction_weights(tip.id), 'test')['loss']
+                    loss = self.test(await self.tx_store.load_transaction_weights(tip.id), 'test')['loss']
                     tip_losses.append((tip, loss))
                     loss_cache[tip.id] = loss
             best_tips = sorted(tip_losses, key=lambda tup: tup[1], reverse=False)[:num_tips]
@@ -148,7 +148,7 @@ class Node:
 
         return tip_txs
 
-    def compute_confidence(self, approved_transactions_cache={}):
+    async def compute_confidence(self, approved_transactions_cache={}):
         num_sampling_rounds = 5
 
         transaction_confidence = {x: 0 for x in self.tangle.transactions}
@@ -161,7 +161,7 @@ class Node:
             return approved_transactions_cache[transaction]
 
         for i in range(num_sampling_rounds):
-            tips = self.choose_tips()
+            tips = await self.choose_tips()
             for tip in tips:
                 for tx in approved_transactions(tip.id):
                     transaction_confidence[tx] += 1
@@ -178,14 +178,14 @@ class Node:
 
         return {tx: len(compute_approved_transactions(tx)) for tx in transactions}
 
-    def obtain_reference_params(self, avg_top=1):
+    async def obtain_reference_params(self, avg_top=1):
         # Establish the 'current best'/'reference' weights from the tangle
 
         approved_transactions_cache = {}
 
         # 1. Perform tip selection n times, establish confidence for each transaction
         # (i.e. which transactions were already approved by most of the current tips?)
-        transaction_confidence = self.compute_confidence(approved_transactions_cache=approved_transactions_cache)
+        transaction_confidence = await self.compute_confidence(approved_transactions_cache=approved_transactions_cache)
 
         # 2. Compute cumulative score for transactions
         # (i.e. how many other transactions does a given transaction indirectly approve?)
@@ -198,13 +198,13 @@ class Node:
             key=lambda kv: kv[1], reverse=True
         )[:avg_top]
         reference_txs = [elem[0] for elem in best]
-        reference_params = Node.average_model_params(*[self.tx_store.load_transaction_weights(elem) for elem in reference_txs])
+        reference_params = Node.average_model_params(*[await self.tx_store.load_transaction_weights(elem) for elem in reference_txs])
         return reference_txs, reference_params
 
-    def create_transaction(self):
+    async def create_transaction(self):
 
         # Obtain number of tips from the tangle
-        tips = self.choose_tips(num_tips=self.config.num_tips, sample_size=self.config.sample_size)
+        tips = await self.choose_tips(num_tips=self.config.num_tips, sample_size=self.config.sample_size)
 
         # Perform averaging
 
@@ -218,7 +218,7 @@ class Node:
         # in order to prevent over-fitting.
 
         # Here: simple unweighted average
-        tx_weights = [self.tx_store.load_transaction_weights(tip.id) for tip in tips]
+        tx_weights = [await self.tx_store.load_transaction_weights(tip.id) for tip in tips]
 
         averaged_params = Node.average_model_params(*tx_weights)
         averaged_model_metrics = self.test(averaged_params, 'test')
@@ -229,10 +229,10 @@ class Node:
         transaction = None
 
         assert self.config.publish_if_better_than in ['PARENTS', 'REFERENCE']
-        if(self.config.publish_if_better_than == 'REFERENCE'):
+        if (self.config.publish_if_better_than == 'REFERENCE'):
             print("publish if better than reference")
             # Compute reference metrics
-            reference_txs, reference_params = self.obtain_reference_params(avg_top=self.config.reference_avg_top)
+            reference_txs, reference_params = await self.obtain_reference_params(avg_top=self.config.reference_avg_top)
             reference_metrics = self.test(reference_params, 'test')
             if trained_model_metrics['loss'] < reference_metrics['loss']:
                 print("i'll publish!")

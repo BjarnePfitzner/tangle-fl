@@ -8,8 +8,6 @@ class PeerConfiguration:
 
     def __init__(self):
         self.create_genesis = None
-        self.storage = None
-        self.broker = None
         self.timeout = None
         self.training_interval = None
         self.active_quota = None
@@ -20,18 +18,14 @@ class PeerConfiguration:
         parser.add_argument('--create-genesis',
                             help='create a genesis transaction at /data/genesis.npy',
                             action='store_true')
-        parser.add_argument('--storage', default='ipfs', help='sets the used storage')
-        parser.add_argument('--broker', default='ipfs', help='sets the used message broker')
         parser.add_argument('--timeout', default=None, type=int_or_none, help='timeout for ipfs')
         parser.add_argument('--training_interval', default=20, type=int, help='training interval')
-        parser.add_argument('--active_quota', type=float, default=0.01,
-                            help='sets the quota of active pears, must be valid percentage (0.00, 0.01, ..., 0.99, 1.00')
+        parser.add_argument('--active_quota', type=float, default=1.00,
+                            help='sets the quota of active peers, must be valid percentage (0.00, 0.01, ..., 0.99, 1.00')
         parser.add_argument('--mock-model', action='store_true', help='mock the model training and validation instead of using a TF model')
 
     def parse(self, args):
         self.create_genesis = args.create_genesis
-        self.storage = args.storage
-        self.broker = args.broker
         self.timeout = args.timeout
         self.training_interval = args.training_interval
         self.active_quota = args.active_quota

@@ -3,9 +3,8 @@ import json
 
 import aiohttp
 
-from .message_broker import MessageBroker
-from .. import logger
-from ..metrics.counter_metrics import increment_counter_subscriber, increment_counter_subscriber_exit
+from . import logger
+from .metrics.counter_metrics import increment_counter_subscriber, increment_counter_subscriber_exit
 
 
 class Event:
@@ -14,7 +13,7 @@ class Event:
         self.transaction = transaction
 
 
-class IPFSMessageBroker(MessageBroker):
+class PubsubClient():
 
     def __init__(self, ipfs_client, genesis):
         super().__init__()
@@ -45,14 +44,16 @@ class IPFSMessageBroker(MessageBroker):
                 if retry_counter == 0:
                     increment_counter_subscriber_exit()
 
-    def publish(self, tx):
-        try:
-            envelope = {
-                'parents': sorted(tx.parents),
-                'weights': tx.metadata['weights_ref'],
-                'peer': tx.metadata['peer']
-            }
-            self._ipfsclient.pubsub.publish(self._tangle_id, json.dumps(envelope).encode())
-            return True
-        except:
-            return False
+    async def publish(self, tx):
+        envelope = {
+            'parents': sorted(tx.parents),
+            'weights': tx.metadata['weights_ref'],
+            'peer': tx.metadata['peer']
+        }
+        async with aiohttp.ClientSession() as session:
+            timeout = aiohttp.ClientTimeout(total=None, connect=1, sock_connect=1, sock_read=None)
+            async with session.post(f'http://127.0.0.1:5001/api/v0/pubsub/pub?arg={self._tangle_id}&arg={json.dumps(envelope)}',
+                                    timeout=timeout) as response:
+                if response.status != 200:
+                    response_text = await response.text()
+                    raise IpfsError(response_text)

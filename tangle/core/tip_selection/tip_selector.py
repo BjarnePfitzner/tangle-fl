@@ -73,7 +73,7 @@ class TipSelector:
                 tips.append(self.walk(self.trunk, node, self.approving_transactions))
 
         return tips
-    
+
     def _select_particle(self, particles, node):
         return random.choice(particles)
 
@@ -112,8 +112,8 @@ class TipSelector:
         approver = self.weighted_choice(approvers, weights)
 
 
-        trace_of_this_step = zip(approvers, [self.tangle.transactions[approver_id].metadata['issuer'] for approver_id in approvers], approvers_ratings, weights)
-        self.trace.append((list(trace_of_this_step), approver, self.tangle.transactions[approver].metadata['issuer']))
+        # trace_of_this_step = zip(approvers, [self.tangle.transactions[approver_id].metadata['issuer'] for approver_id in approvers], approvers_ratings, weights)
+        # self.trace.append((list(trace_of_this_step), approver, self.tangle.transactions[approver].metadata['issuer']))
         # print("Approvers: ")
         # print([self.tangle.transactions[approver_id].metadata['issuer'] for approver_id in approvers])
         # print(approvers_ratings)

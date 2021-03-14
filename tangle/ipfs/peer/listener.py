@@ -54,21 +54,21 @@ class Listener:
 
         final = rx.merge(received_transactions, scheduled_trainings)
 
-        with final.pipe(ops.do_action(lambda x: self.dispatch(x))).subscribe(
+        with final.pipe(ops.flat_map(lambda x: rx.from_future(self._loop.create_task(self.dispatch(x))))).subscribe(
                 on_completed=lambda: done.set_result(),
                 on_error=lambda e: done.set_exception(e)):
             await done
 
-    def dispatch(self, event):
+    async def dispatch(self, event):
         if event.type == 'train' and self._ready:
             dice = round(random.uniform(0, 1), 2)
             if dice <= self._config.active_quota:
                 logger.info('Dice roll successful, this peer is active')
-                self._tangle_builder.train_and_publish(self._train_data, self._test_data)
+                await self._tangle_builder.train_and_publish(self._train_data, self._test_data)
             else:
                 logger.info('Dice roll unsuccessful, this peer is inactive')
         elif event.type == 'transaction':
-            self._tangle_builder.handle_transaction(event.transaction)
+            await self._tangle_builder.handle_transaction(event.transaction)
 
     def training_interval(self):
         scheduler = AsyncIOScheduler(self._loop)
@@ -77,4 +77,3 @@ class Listener:
 
     def on_ready(self):
         self._ready = True
-    # async def subscribe(self, tangle):
