@@ -13,7 +13,7 @@ class ModelConfiguration:
         self.batch_size = None
 
     def define_args(self, parser):
-        DATASETS = ['sent140', 'cifar100', 'femnist', 'femnistclustered', 'shakespeare', 'celeba', 'synthetic', 'reddit', 'nextcharacter', 'poets', 'fake']
+        DATASETS = ['sent140', 'cifar100', 'femnist', 'femnistclustered', 'shakespeare', 'celeba', 'synthetic', 'reddit', 'nextcharacter', 'poets', 'fake', 'synthetic_fedprox']
 
         parser.add_argument('-dataset',
                         help='name of dataset;',

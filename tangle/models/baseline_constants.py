@@ -68,6 +68,7 @@ MODEL_PARAMS = {
     'nextcharacter.stacked_lstm': (0.0003, 80, 81, 256), # lr, seq_len, num_classes, num_hidden
     'poets.stacked_lstm': (0.8, 80, 89, 256), # lr, seq_len, num_classes, num_hidden
     'fake.fake': (),
+    'synthetic_fedprox.mclr': (0.01, 10), # lr, num_classes
 }
 """dict: Model specific parameter specification"""
 
