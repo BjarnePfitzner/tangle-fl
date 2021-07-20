@@ -6,19 +6,13 @@ import aiohttp
 from . import logger
 from .metrics.counter_metrics import increment_counter_subscriber, increment_counter_subscriber_exit
 
-
-class Event:
-    def __init__(self, type, transaction=None):
-        self.type = type
-        self.transaction = transaction
-
-
 class PubsubClient():
 
-    def __init__(self, ipfs_client, genesis):
+    def __init__(self, ipfs_client, genesis, tx_store):
         super().__init__()
         self._ipfsclient = ipfs_client
-        self._tangle_id = genesis
+        self._tangle_id = genesis.id
+        self._tx_store = tx_store
 
     async def subscribe(self, on_ready=None):
         retry_counter = 10
@@ -36,7 +30,13 @@ class PubsubClient():
                         async for line in resp.content:
                             message = json.loads(line)
                             payload_bytes = base64.b64decode(message['data'])
-                            yield Event('transaction', json.loads(payload_bytes))
+                            tx_data = json.loads(payload_bytes)
+                            tx = Transaction(tx_data['parents'])
+                            tx.add_metadata('peer', tx_data['peer'])
+                            tx.add_metadata('weights_ref', tx_data['weights'])
+                            tx.add_metadata('time', 0)
+                            tx.id = await self._tx_store.compute_transaction_id(tx, only_hash=True)
+                            yield tx
             except Exception as e:
                 retry_counter = retry_counter - 1
                 logger.error("Tangle subscription died, session was teared down and will be restarted another " + str(

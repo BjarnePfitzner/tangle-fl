@@ -123,14 +123,13 @@ async def main(loop):
 
     tx_store = IpfsTransactionStore(ipfs_client)
     genesis = await load_genesis('/data/genesis.npy', tx_store)
-    tangle = Tangle({genesis.id: genesis}, genesis.id)
-    message_broker = PubsubClient(ipfs_client, tangle.genesis)
+    message_broker = PubsubClient(ipfs_client, genesis, tx_store)
 
     peer_information = {'client_id': client_id}
-    tangle_builder = TangleBuilder(tangle, tx_store, message_broker, peer_information, train_data, test_data, tip_selector_config, model)
-    threading.Thread(target=PeerHttpServer(tangle_builder.tangle, peer_information).start).start()
-    listener = Listener(loop, tangle_builder, message_broker, train_data, test_data, peer_config)
-    await listener.listen()
+    tangle_builder = TangleBuilder(loop, tx_store, message_broker, peer_information, train_data, test_data, tip_selector_config, model)
+    # threading.Thread(target=PeerHttpServer(tangle_builder.tangle, peer_information).start).start()
+    # listener = Listener(loop, tangle_builder, message_broker, train_data, test_data, peer_config)
+    await tangle_builder.listen(genesis)
 
     # Stay alive
     d.communicate()

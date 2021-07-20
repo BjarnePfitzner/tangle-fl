@@ -45,35 +45,22 @@ class Listener:
         self._message_broker = message_broker
         self._config = config
 
-    async def listen(self):
+    async def listen(self, genesis):
         done = asyncio.Future()
 
         received_transactions = from_aiter(
             self._message_broker.subscribe(self.on_ready), self._loop)
-        scheduled_trainings = self.training_interval()
 
-        final = rx.merge(received_transactions, scheduled_trainings)
-
-        with final.pipe(ops.flat_map(lambda x: rx.from_future(self._loop.create_task(self.dispatch(x))))).subscribe(
+        with rx.just(genesis) \
+            .pipe(ops.concat(received_transactions)) \
+            .pipe(ops.map(lambda x: self.dispatch(x))) \
+            .subscribe(
                 on_completed=lambda: done.set_result(),
                 on_error=lambda e: done.set_exception(e)):
             await done
 
-    async def dispatch(self, event):
-        if event.type == 'train' and self._ready:
-            dice = round(random.uniform(0, 1), 2)
-            if dice <= self._config.active_quota:
-                logger.info('Dice roll successful, this peer is active')
-                await self._tangle_builder.train_and_publish(self._train_data, self._test_data)
-            else:
-                logger.info('Dice roll unsuccessful, this peer is inactive')
-        elif event.type == 'transaction':
-            await self._tangle_builder.handle_transaction(event.transaction)
-
-    def training_interval(self):
-        scheduler = AsyncIOScheduler(self._loop)
-
-        return rx.timer(0, self._config.training_interval, scheduler).pipe(ops.map(lambda _: Event('train')))
+    def dispatch(self, tx):
+        self._tangle_builder.handle_transaction(tx)
 
     def on_ready(self):
         self._ready = True

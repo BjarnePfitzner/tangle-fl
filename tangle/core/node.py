@@ -220,6 +220,9 @@ class Node:
         # Here: simple unweighted average
         tx_weights = [await self.tx_store.load_transaction_weights(tip.id) for tip in tips]
 
+        return await _create_transaction(self, tips, tx_weights)
+
+    async def _create_transaction(self, tips, tx_weights):
         averaged_params = Node.average_model_params(*tx_weights)
         averaged_model_metrics = self.test(averaged_params, 'test')
 
