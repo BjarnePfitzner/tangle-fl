@@ -18,7 +18,7 @@ else
   ipfs config Addresses.Announce --json "[\"/ip4/${PEER_IP}/tcp/4001\", \"/ip6/::/tcp/4001\", \"/ip4/${PEER_IP}/udp/4001/quic\", \"/ip6/::/udp/4001/quic\"]"
   ipfs config --json Swarm.ConnMgr "{\"HighWater\": ${CONNECTION_PRUNING_HIGH:-"900"}, \"LowWater\": ${CONNECTION_PRUNING_LOW:-"600"}, \"Type\": \"basic\", \"GracePeriod\": \"${CONNECTION_PRUNING_GRACE_PERIOD:-"20s"}\"}"
   ipfs config Swarm.DisableBandwidthMetrics --bool true
-  ipfs config --json Swarm.Transports.Security "{\"TLS\": 100, \"SECIO\": 900, \"Noise\": 50}"
+  ipfs config --json Swarm.Transports.Security "{\"TLS\": 100, \"Noise\": 50}"
   ipfs config Swarm.Transports.Network.Websocket --bool false
   ipfs config Swarm.Transports.Network.Relay --bool false
   ipfs config Reprovider.Interval ${IPFS_REPROVIDER_INTERVAL:-"12h"}

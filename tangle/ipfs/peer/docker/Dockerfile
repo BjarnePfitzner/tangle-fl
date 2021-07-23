@@ -1,5 +1,5 @@
 FROM python:3.7
-ARG IPFS_VERSION=0.8.0
+ARG IPFS_VERSION=0.9.0
 
 WORKDIR /
 RUN mkdir logs

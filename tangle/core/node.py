@@ -121,13 +121,9 @@ class Node:
 
     async def choose_tips(self, num_tips=2, sample_size=2):
         if len(self.tangle.transactions) < num_tips:
-            return [self.tangle.transactions[self.tangle.genesis] for i in range(2)]
+            return [self.tangle.transactions[self.tangle.genesis] for i in range(num_tips)]
 
-        tips = self.tip_selector.tip_selection(sample_size, self)
-
-        no_dups = set(tips)
-        if len(no_dups) >= num_tips:
-            tips = no_dups
+        tips = set(self.tip_selector.tip_selection(sample_size, self))
 
         tip_txs = [self.tangle.transactions[tip] for tip in tips]
 

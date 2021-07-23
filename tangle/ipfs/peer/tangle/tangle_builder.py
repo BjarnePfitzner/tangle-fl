@@ -47,41 +47,48 @@ class TangleBuilder:
         self._test_data = test_data
         self._tip_selector_config = tip_selector_config
         self._model = model
+        self.current_tangle = None
+        self.current_tips = None
+        self.current_tx_weights = None
 
         os.makedirs(f'iota_visualization/tangle_data', exist_ok=True)
         self.last_training = None
 
     async def listen(self, genesis):
         done = asyncio.Future()
+        scheduler = AsyncIOScheduler(self._loop)
 
         received_transactions = from_aiter(
-            self._message_broker.subscribe(self.on_ready), self._loop)
+            self._message_broker.subscribe(), self._loop)
 
         incoming_transactions = rx.just(genesis) \
             .pipe(ops.concat(received_transactions))
 
         current_tip_updates = incoming_transactions \
-            .pipe(ops.map(lambda x: self.update_tangles(x))) \
-            .pipe(ops.throttle_first(datetime.timedelta(seconds=5))) \
-            .pipe(ops.flat_map(lambda _: rx.from_future(self._loop.create_task(self.tip_selection())))) \
-            .pipe(ops.flat_map(lambda tangle, tips: rx.from_future(self._loop.create_task(self.resolve_weights(tangle, tips))))) \
-            .pipe(ops.map(lambda tangle, tips, tx_weights: self.update_current_tips(tips)))
+            .pipe(ops.map(lambda x: self.update_tangles(x, genesis.id))) \
+            .pipe(ops.throttle_first(datetime.timedelta(seconds=5), scheduler=scheduler)) \
+            .pipe(ops.flat_map(lambda _: self.tip_selection())) \
+            .pipe(ops.flat_map(lambda tangle_and_tips: self.resolve_weights(*tangle_and_tips))) \
+            .pipe(ops.map(lambda tangle_and_tips_and_tx_weights: self.update_current_tips(*tangle_and_tips_and_tx_weights)))
 
-        scheduler = AsyncIOScheduler(self._loop)
-        scheduled_trainings = rx.timer(0, 5 * 60 * 1000, scheduler)
-        training = current_tip_updates.pipe(ops.merge(scheduled_trainings)) \
-            .pipe(ops.throttle_first(datetime.timedelta(seconds=60))) \
-            .pipe(ops.flat_map(lambda _: rx.from_future(self._loop.create_task(self.train()))))
+        scheduled_trainings = rx.timer(0, datetime.timedelta(minutes=1), scheduler)
+        training = current_tip_updates \
+            .pipe(ops.merge(scheduled_trainings)) \
+            .pipe(ops.filter(lambda _: self.current_tangle is not None)) \
+            .pipe(ops.throttle_first(datetime.timedelta(minutes=1), scheduler=scheduler)) \
+            .pipe(ops.flat_map(lambda _: self.train())) \
+            .pipe(ops.flat_map(lambda tx_and_tx_weights: self.publish(*tx_and_tx_weights)))
 
         with training.subscribe(
                 on_completed=lambda: done.set_result(),
-                on_error=lambda e: done.set_exception(e)):
+                on_error=lambda e: done.set_exception(e),
+                scheduler=scheduler):
             await done
 
-    def on_ready(self):
-        self._ready = True
+    def update_tangles(self, tx, genesis):
+        logger.info(f'Importing transaction {tx.id}')
+        self._tx_store.register_transaction(tx.id, tx.metadata['weights_ref'])
 
-    def update_tangles(self, tx):
         merge_tangles = set()
 
         for tangle in self.tangles:
@@ -113,13 +120,20 @@ class TangleBuilder:
                 self.tangles.remove(other_tangle)
         else:
             # Create a new tangle
-            tangle = Tangle({tx.id: tx}, None, unresolved_parents=[tx.id])
+            g = None
+            if tx.id == genesis:
+                g = genesis
+            tangle = Tangle({tx.id: tx}, g, unresolved_parents=[tx.id])
             self.tangles.add(tangle)
 
         return 1
 
-    async def tip_selection(self):
+    def tip_selection(self):
+        return rx.from_future(self._loop.create_task(self._tip_selection()))
+
+    async def _tip_selection(self):
         #  Choose tangle
+        # TODO: Improve selection criteria
         tangle = random.choice(list(self.tangles))
 
         # Choose pair of tips
@@ -129,10 +143,12 @@ class TangleBuilder:
             None, self._train_data, self._test_data, self._model)
 
         tips = await node.choose_tips()
-
         return tangle, tips
 
-    async def resolve_weights(self, tangle, tips):
+    def resolve_weights(self, tangle, tips):
+        return rx.from_future(self._loop.create_task(self._resolve_weights(tangle, tips)))
+
+    async def _resolve_weights(self, tangle, tips):
         tx_weights = [await self._tx_store.load_transaction_weights(tip.id) for tip in tips]
         return tangle, tips, tx_weights
 
@@ -140,13 +156,39 @@ class TangleBuilder:
         self.current_tangle = tangle
         self.current_tips = tips
         self.current_tx_weights = tx_weights
+        return 1
 
-    async def train(self):
+    def train(self):
+        return rx.from_future(self._loop.create_task(self._train()))
+
+    async def _train(self):
+        tip_selector_factory = TipSelectorFactory(self._tip_selector_config)
+        tip_selector = tip_selector_factory.create(self.current_tangle)
         node = Node(self.current_tangle, self._tx_store, tip_selector, self.peer_information['client_id'],
                         None, self._train_data, self._test_data, self._model)
 
         tx, tx_weights = await node._create_transaction(self.current_tips, self.current_tx_weights)
-        logger.info(f'Done training.')
+        return tx, tx_weights
+
+    def publish(self, tx, tx_weights):
+        return rx.from_future(self._loop.create_task(self._publish(tx, tx_weights)))
+
+    async def _publish(self, tx, tx_weights):
+        if tx is not None:
+            tx.add_metadata('peer', self.peer_information)
+            tx.add_metadata('time', 0)
+            tx.add_metadata('timeCreated', str(datetime.datetime.now()))
+            await self._tx_store.save(tx, tx_weights)
+
+            if tx.id is None:
+                logger.warn('Publishing Error: Adding transactions failed')
+            else:
+                try:
+                    await self._message_broker.publish(tx)
+                    logger.info(f'Published transaction {tx.id}')
+                except:
+                    logger.warn(f'Failed to publish transaction {tx.id}')
+        return 1
 
     # async def train_and_publish(self, train_data, eval_data):
     #     start = time.time()

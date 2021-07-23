@@ -5,6 +5,7 @@ import aiohttp
 
 from . import logger
 from .metrics.counter_metrics import increment_counter_subscriber, increment_counter_subscriber_exit
+from ...core import Transaction
 
 class PubsubClient():
 
@@ -14,19 +15,17 @@ class PubsubClient():
         self._tangle_id = genesis.id
         self._tx_store = tx_store
 
-    async def subscribe(self, on_ready=None):
-        retry_counter = 10
-        while retry_counter > 0:
+    async def subscribe(self):
+        while True:
             try:
                 async with aiohttp.ClientSession() as session:
                     timeout = aiohttp.ClientTimeout(total=None, connect=1, sock_connect=1, sock_read=None)
+                    logger.info(f'Subscribing to tangle {self._tangle_id}')
                     # Abstraction 1 -> PubSub
                     async with session.post(f'http://127.0.0.1:5001/api/v0/pubsub/sub?arg={self._tangle_id}&arg=True',
                                             timeout=timeout) as resp:
                         increment_counter_subscriber()
                         logger.info(f'Subscribed to tangle {self._tangle_id}')
-                        if on_ready:
-                            on_ready()
                         async for line in resp.content:
                             message = json.loads(line)
                             payload_bytes = base64.b64decode(message['data'])
@@ -38,11 +37,7 @@ class PubsubClient():
                             tx.id = await self._tx_store.compute_transaction_id(tx, only_hash=True)
                             yield tx
             except Exception as e:
-                retry_counter = retry_counter - 1
-                logger.error("Tangle subscription died, session was teared down and will be restarted another " + str(
-                        retry_counter) + " times\n" + repr(e))
-                if retry_counter == 0:
-                    increment_counter_subscriber_exit()
+                logger.error("Tangle subscription died, session was teared down and will be restarted\n" + repr(e))
 
     async def publish(self, tx):
         envelope = {

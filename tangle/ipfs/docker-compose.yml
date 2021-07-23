@@ -83,7 +83,7 @@ services:
       context: ../..
       dockerfile: tangle/ipfs/peer/docker/Dockerfile
     networks:
-      - peers_2
+      - peers_1
     init: true
     cap_add:
       - SYS_PTRACE
@@ -112,7 +112,7 @@ services:
       context: ../..
       dockerfile: tangle/ipfs/peer/docker/Dockerfile
     networks:
-      - peers_3
+      - peers_1
     init: true
     cap_add:
       - SYS_PTRACE
@@ -141,7 +141,7 @@ services:
       context: ../..
       dockerfile: tangle/ipfs/peer/docker/Dockerfile
     networks:
-      - peers_4
+      - peers_1
     init: true
     cap_add:
       - SYS_PTRACE
