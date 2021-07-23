@@ -25,7 +25,8 @@ class Node:
         self.config = config
 
         # Initialize tip selector
-        tip_selector.compute_ratings(self)
+        if tip_selector is not None:
+            tip_selector.compute_ratings(self)
 
     @staticmethod
     def average_model_params(*params):
@@ -120,7 +121,7 @@ class Node:
         self._model = model
 
     async def choose_tips(self, num_tips=2, sample_size=2):
-        if len(self.tangle.transactions) < num_tips:
+        if len(self.tangle.transactions) < num_tips and self.tangle.genesis is not None:
             return [self.tangle.transactions[self.tangle.genesis] for i in range(num_tips)]
 
         tips = set(self.tip_selector.tip_selection(sample_size, self))
@@ -229,20 +230,16 @@ class Node:
 
         assert self.config.publish_if_better_than in ['PARENTS', 'REFERENCE']
         if (self.config.publish_if_better_than == 'REFERENCE'):
-            print("publish if better than reference")
             # Compute reference metrics
             reference_txs, reference_params = await self.obtain_reference_params(avg_top=self.config.reference_avg_top)
             reference_metrics = self.test(reference_params, 'test')
             if trained_model_metrics['loss'] < reference_metrics['loss']:
-                print("i'll publish!")
                 transaction = Transaction(parents=set([tip.id for tip in tips]))
                 transaction.add_metadata('reference_tx', reference_txs[0])
                 transaction.add_metadata('reference_tx_loss', float(reference_metrics['loss']))
                 transaction.add_metadata('reference_tx_accuracy', reference_metrics['accuracy'])
         else:
-            print("publish if better than parents")
             if trained_model_metrics['loss'] < averaged_model_metrics['loss']:
-                print("i'll publish!")
                 transaction = Transaction(parents=set([tip.id for tip in tips]))
 
         if transaction is not None:
@@ -253,6 +250,7 @@ class Node:
             transaction.add_metadata('accuracy', trained_model_metrics['accuracy'])
             transaction.add_metadata('averaged_loss', float(averaged_model_metrics['loss']))
             transaction.add_metadata('averaged_accuracy', averaged_model_metrics['accuracy'])
-            transaction.add_metadata('trace', self.tip_selector.trace)
+            if self.tip_selector is not None:
+                transaction.add_metadata('trace', self.tip_selector.trace)
 
         return transaction, trained_params

@@ -6,7 +6,7 @@ from ..core.tip_selection.lazy_accuracy_tip_selector import LazyAccuracyTipSelec
 class TipSelectorFactory:
     def __init__(self, config):
         self.config = config
-        
+
         self.particle_settings = {}
         self.particle_settings[TipSelectorSettings.USE_PARTICLES] = self.config.use_particles
         self.particle_settings[TipSelectorSettings.PARTICLES_DEPTH_START] = self.config.particles_depth_start

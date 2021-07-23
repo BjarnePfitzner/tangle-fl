@@ -64,6 +64,9 @@ class TangleBuilder:
         incoming_transactions = rx.just(genesis) \
             .pipe(ops.concat(received_transactions))
 
+        # TODO: Resolve 'unresolved parents' and redirect them into 'incoming transactions'
+        # TODO: Centrally maintain 'reference params' and pass them into node.train
+
         current_tip_updates = incoming_transactions \
             .pipe(ops.map(lambda x: self.update_tangles(x, genesis.id))) \
             .pipe(ops.throttle_first(datetime.timedelta(seconds=5), scheduler=scheduler)) \
@@ -121,9 +124,12 @@ class TangleBuilder:
         else:
             # Create a new tangle
             g = None
+            unresolved_parents = []
             if tx.id == genesis:
                 g = genesis
-            tangle = Tangle({tx.id: tx}, g, unresolved_parents=[tx.id])
+            else:
+                unresolved_parents = [tx.id]
+            tangle = Tangle({tx.id: tx}, g, unresolved_parents=unresolved_parents)
             self.tangles.add(tangle)
 
         return 1
@@ -137,8 +143,8 @@ class TangleBuilder:
         tangle = random.choice(list(self.tangles))
 
         # Choose pair of tips
-        tip_selector_factory = TipSelectorFactory(self._tip_selector_config)
-        tip_selector = tip_selector_factory.create(tangle)
+        trunk, branch = tangle.choose_trunk_branch()
+        tip_selector = TipSelector(tangle, trunk=trunk, branch=branch)
         node = Node(tangle, self._tx_store, tip_selector, self.peer_information['client_id'],
             None, self._train_data, self._test_data, self._model)
 
@@ -162,9 +168,10 @@ class TangleBuilder:
         return rx.from_future(self._loop.create_task(self._train()))
 
     async def _train(self):
-        tip_selector_factory = TipSelectorFactory(self._tip_selector_config)
-        tip_selector = tip_selector_factory.create(self.current_tangle)
-        node = Node(self.current_tangle, self._tx_store, tip_selector, self.peer_information['client_id'],
+        # trunk, branch = self.current_tangle.choose_trunk_branch()
+        # tip_selector = TipSelector(self.current_tangle, trunk=trunk, branch=branch)
+
+        node = Node(self.current_tangle, self._tx_store, None, self.peer_information['client_id'],
                         None, self._train_data, self._test_data, self._model)
 
         tx, tx_weights = await node._create_transaction(self.current_tips, self.current_tx_weights)

@@ -1,4 +1,6 @@
 import itertools
+import random
+import numpy as np
 
 class Tangle:
     def __init__(self, transactions, genesis, unresolved_parents = []):
@@ -77,3 +79,40 @@ class Tangle:
             gathered_transaction_ids.append(self.genesis)
 
         return gathered_transaction_ids
+
+    def choose_trunk_branch(self):
+        sample_size = 30
+        sample_depth = 20
+
+        sampled_tips = set()
+        sample_depths = {}
+        sample_hits = {}
+
+        tips = list(self.tips)
+
+        for i in range(sample_size):
+            current_tx = random.choice(tips)
+            for d in range(sample_depth):
+                if current_tx not in sampled_tips:
+                    sampled_tips.add(current_tx)
+                    sample_depths[current_tx] = d
+                    sample_hits[current_tx] = 1
+                else:
+                    sample_depths[current_tx] = max(sample_depths[current_tx], d)
+                    sample_hits[current_tx] = sample_hits[current_tx] + 1
+
+                parents = [p for p in self.transactions[current_tx].parents if p in self.transactions]
+                if len(parents) == 0:
+                    break
+
+                current_tx = random.choice(parents)
+
+        b = sum(map(lambda r: np.exp(0.001 * sample_depths[r]), sampled_tips))
+        # Normalizing depth is a little nonsense since it's limit to sample_depth. Rather normalize sample_hits then (max: 50)
+        trunk_scores  = {t: (np.exp(sample_depths[t] * 0.001) / b) * sample_hits[t] for t in sampled_tips}
+        branch_scores = {t: (np.exp(sample_depths[t] * 0.001) / b) * sample_hits[t] for t in sampled_tips}
+
+        trunk = max(trunk_scores, key=lambda key: trunk_scores[key])
+        branch = max(branch_scores, key=lambda key: branch_scores[key])
+
+        return trunk, branch
