@@ -1,6 +1,6 @@
 import io
 import numpy as np
-from ....core import TransactionStore
+from ....core import TransactionStore, Transaction
 
 class IpfsTransactionStore(TransactionStore):
 
@@ -20,6 +20,17 @@ class IpfsTransactionStore(TransactionStore):
 
         tx.id = await self.compute_transaction_id(tx)
         self._tx_id_to_weights[tx.id] = weights_key
+
+    async def load(self, tx_id):
+        tx_data = await self.get_json(tx_id)
+
+        tx = Transaction(tx_data['parents'])
+        tx.add_metadata('peer', tx_data['peer'])
+        tx.add_metadata('weights_ref', tx_data['weights'])
+        tx.add_metadata('time', 0)
+        tx.id = tx_id
+
+        return tx
 
     def register_transaction(self, tx_id, tx_weight_id):
         self._tx_id_to_weights[tx_id] = tx_weight_id

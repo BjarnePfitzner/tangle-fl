@@ -79,16 +79,22 @@ class TangleBuilder:
         incoming_transactions = rx.just(genesis) \
             .pipe(ops.concat(received_transactions))
 
-        # TODO: Resolve 'unresolved parents' and redirect them into 'incoming transactions'
+        resolve_parents_subject = Subject()
+        resolved_parents = resolve_parents_subject \
+            .pipe(ops.flat_map(lambda x: self.resolve_transaction(x)))
 
         current_tip_updates = incoming_transactions \
-            .pipe(ops.map(lambda x: self.update_tangles(x, genesis.id))) \
+            .pipe(ops.merge(resolved_parents)) \
+            .pipe(ops.map(lambda x: self.update_tangles(x, genesis.id, resolve_parents_subject))) \
+            .pipe(ops.filter(lambda new_transaction: new_transaction == True)) \
             .pipe(ops.throttle_first(datetime.timedelta(seconds=5), scheduler=scheduler)) \
             .pipe(ops.flat_map(lambda _: self.tip_selection())) \
             .pipe(ops.flat_map(lambda tangle_and_tips: self.resolve_weights(*tangle_and_tips))) \
             .pipe(ops.map(lambda tangle_and_tips_and_tx_weights: self.update_current_tips(*tangle_and_tips_and_tx_weights)))
 
-        scheduled_trainings = rx.timer(0, datetime.timedelta(minutes=1), scheduler)
+        scheduled_trainings = rx.timer(0, datetime.timedelta(minutes=1), scheduler) \
+            .pipe(ops.delay_with_mapper(lambda _: rx.timer(datetime.timedelta(seconds=random.randint(0, 20)), scheduler=scheduler)))
+
         training = current_tip_updates \
             .pipe(ops.merge(scheduled_trainings)) \
             .pipe(ops.filter(lambda _: self.current_tangle is not None)) \
@@ -102,7 +108,7 @@ class TangleBuilder:
                 scheduler=scheduler):
             await done
 
-    def update_tangles(self, tx, genesis):
+    def update_tangles(self, tx, genesis, resolve_parents):
         logger.info(f'Importing transaction {tx.id}')
         self._tx_store.register_transaction(tx.id, tx.metadata['weights_ref'])
 
@@ -110,8 +116,9 @@ class TangleBuilder:
 
         for tangle in self.tangles:
             if tx.id in tangle.transactions.keys():
+                # We already know this transaction
                 assert len(merge_tangles) == 0
-                return 1
+                return False
 
             if tx.id in tangle.unresolved_parents:
                 tangle.add_transaction(tx)
@@ -123,6 +130,7 @@ class TangleBuilder:
                     merge_tangles.add(tangle)
 
         if len(merge_tangles) == 1:
+            target_tangle = merge_tangles.pop()
             # Nothing more to do
             pass
         elif len(merge_tangles) > 1:
@@ -138,15 +146,23 @@ class TangleBuilder:
         else:
             # Create a new tangle
             g = None
-            unresolved_parents = []
             if tx.id == genesis:
                 g = genesis
-            else:
-                unresolved_parents = [tx.id]
-            tangle = Tangle({tx.id: tx}, g, unresolved_parents=unresolved_parents)
-            self.tangles.add(tangle)
+            target_tangle = Tangle({tx.id: tx}, g)
+            self.tangles.add(target_tangle)
 
-        return 1
+        for parent in tx.parents:
+            if parent not in target_tangle.transactions:
+                target_tangle.unresolved_parents.add(parent)
+                resolve_parents.on_next(parent)
+
+        return True
+
+    def resolve_transaction(self, tx):
+        return rx.from_future(self._loop.create_task(self._resolve_transaction(tx)))
+
+    async def _resolve_transaction(self, tx):
+        return await self._tx_store.load(tx)
 
     def tip_selection(self):
         return rx.from_future(self._loop.create_task(self._tip_selection()))
@@ -182,13 +198,11 @@ class TangleBuilder:
         return rx.from_future(self._loop.create_task(self._train()))
 
     async def _train(self):
-        # trunk, branch = self.current_tangle.choose_trunk_branch()
-        # tip_selector = TipSelector(self.current_tangle, trunk=trunk, branch=branch)
-
         node = Node(self.current_tangle, self._tx_store, None, self.peer_information['client_id'],
                         None, self._train_data, self._test_data, self._model)
 
-        tx, tx_weights = await node._create_transaction(self.current_tips, self.current_tx_weights, reference_tx=self.reference_tx, reference_tx_weights=self.reference_tx_weights)
+        tx, tx_weights = await node._create_transaction(self.current_tips, self.current_tx_weights,
+            reference_tx=self.reference_tx, reference_tx_weights=self.reference_tx_weights, reference_tx_loss=self.reference_tx_loss)
         return tx, tx_weights
 
     def publish(self, tx, tx_weights):

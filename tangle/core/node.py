@@ -233,7 +233,7 @@ class Node:
             # Compute reference metrics
             if reference_tx is not None and reference_tx_weights is not None and reference_tx_loss is not None:
                 reference_txs, reference_params = [reference_tx], reference_tx_weights
-                reference_metrics = {'loss': reference_tx_loss}
+                reference_metrics = {'loss': reference_tx_loss, 'accuracy': None}
             else:
                 reference_txs, reference_params = await self.obtain_reference_params(avg_top=self.config.reference_avg_top)
                 reference_metrics = self.test(reference_params, 'test')
