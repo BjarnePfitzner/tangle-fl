@@ -50,13 +50,28 @@ class TangleBuilder:
         self.current_tangle = None
         self.current_tips = None
         self.current_tx_weights = None
+        self.reference_tx = None
+        self.reference_tx_weights = None
+        self.reference_tx_loss = None
 
         os.makedirs(f'iota_visualization/tangle_data', exist_ok=True)
         self.last_training = None
 
+    async def initialize_reference_tx(self, tx):
+        self.reference_tx = tx.id
+        self.reference_tx_weights = await self._tx_store.load_transaction_weights(tx.id)
+        node = Node(None, self._tx_store, None, self.peer_information['client_id'],
+            None, self._train_data, self._test_data, self._model)
+        metrics = node.test(self.reference_tx_weights, 'test')
+        self.reference_tx_loss = metrics['loss']
+
+
     async def listen(self, genesis):
         done = asyncio.Future()
         scheduler = AsyncIOScheduler(self._loop)
+
+        # TODO: If this peer was alive before, it should rather remember the best tx from last time
+        await self.initialize_reference_tx(genesis)
 
         received_transactions = from_aiter(
             self._message_broker.subscribe(), self._loop)
@@ -65,7 +80,6 @@ class TangleBuilder:
             .pipe(ops.concat(received_transactions))
 
         # TODO: Resolve 'unresolved parents' and redirect them into 'incoming transactions'
-        # TODO: Centrally maintain 'reference params' and pass them into node.train
 
         current_tip_updates = incoming_transactions \
             .pipe(ops.map(lambda x: self.update_tangles(x, genesis.id))) \
@@ -174,7 +188,7 @@ class TangleBuilder:
         node = Node(self.current_tangle, self._tx_store, None, self.peer_information['client_id'],
                         None, self._train_data, self._test_data, self._model)
 
-        tx, tx_weights = await node._create_transaction(self.current_tips, self.current_tx_weights)
+        tx, tx_weights = await node._create_transaction(self.current_tips, self.current_tx_weights, reference_tx=self.reference_tx, reference_tx_weights=self.reference_tx_weights)
         return tx, tx_weights
 
     def publish(self, tx, tx_weights):
@@ -186,6 +200,10 @@ class TangleBuilder:
             tx.add_metadata('time', 0)
             tx.add_metadata('timeCreated', str(datetime.datetime.now()))
             await self._tx_store.save(tx, tx_weights)
+
+            self.reference_tx = tx.id
+            self.reference_tx_weights = tx_weights
+            self.reference_tx_loss = tx.metadata['loss']
 
             if tx.id is None:
                 logger.warn('Publishing Error: Adding transactions failed')

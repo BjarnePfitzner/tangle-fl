@@ -219,7 +219,7 @@ class Node:
 
         return await _create_transaction(self, tips, tx_weights)
 
-    async def _create_transaction(self, tips, tx_weights):
+    async def _create_transaction(self, tips, tx_weights, reference_tx=None, reference_tx_weights=None, reference_tx_loss=None):
         averaged_params = Node.average_model_params(*tx_weights)
         averaged_model_metrics = self.test(averaged_params, 'test')
 
@@ -231,8 +231,13 @@ class Node:
         assert self.config.publish_if_better_than in ['PARENTS', 'REFERENCE']
         if (self.config.publish_if_better_than == 'REFERENCE'):
             # Compute reference metrics
-            reference_txs, reference_params = await self.obtain_reference_params(avg_top=self.config.reference_avg_top)
-            reference_metrics = self.test(reference_params, 'test')
+            if reference_tx is not None and reference_tx_weights is not None and reference_tx_loss is not None:
+                reference_txs, reference_params = [reference_tx], reference_tx_weights
+                reference_metrics = {'loss': reference_tx_loss}
+            else:
+                reference_txs, reference_params = await self.obtain_reference_params(avg_top=self.config.reference_avg_top)
+                reference_metrics = self.test(reference_params, 'test')
+
             if trained_model_metrics['loss'] < reference_metrics['loss']:
                 transaction = Transaction(parents=set([tip.id for tip in tips]))
                 transaction.add_metadata('reference_tx', reference_txs[0])
