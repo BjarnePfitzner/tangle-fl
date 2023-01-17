@@ -7,7 +7,7 @@ params = {
     'eval_every': 99,
     'eval_on_fraction': 0.05,
     'clients_per_round': 10,
-    'model_data_dir': '../data/femnist-data-clustered-alt/',
+    'model_data_dir': './data/femnist-data-clustered-alt/',
     'batch_size': 10,
     'num_batches': 10,
     'learning_rate': 0.05

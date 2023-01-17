@@ -56,8 +56,8 @@ def clean_and_split(data, test_split=0.1):
         cluster_ids[user_index] = user_index % 5
     return cleaned, cleaned_test, cluster_ids
 
-users, _, data,  = read_dir('../../../../data/femnist-data/large/train')
-_, _, data_test,  = read_dir('../../../../data/femnist-data/large/test')
+users, _, data,  = read_dir('../../.././data/femnist-data/large/train')
+_, _, data_test,  = read_dir('../../.././data/femnist-data/large/test')
 
 complete_data = data.copy()
 for username in users:

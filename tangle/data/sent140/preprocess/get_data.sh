@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-cd ../data/raw_data
+cd ./data/raw_data
 
 if [ ! -f trainingandtestdata.zip ]; then
     wget --no-check-certificate http://cs.stanford.edu/people/alecmgo/trainingandtestdata.zip

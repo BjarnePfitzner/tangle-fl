@@ -6,7 +6,7 @@ from tangle.lab.config.lab_configuration import LabConfiguration
 
 def main(data_dir, num_clusters, num_classes=10):
     labConfig = LabConfiguration()
-    labConfig.model_data_dir = '../data/' + data_dir
+    labConfig.model_data_dir = './data/' + data_dir
 
     dataset = Dataset(labConfig, None)
 
@@ -44,7 +44,7 @@ def main(data_dir, num_clusters, num_classes=10):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--data-dir',
-                        help='dir for data ../data/x',
+                        help='dir for data ./data/x',
                         type=str,
                         required=True)
     parser.add_argument('--num-clusters',

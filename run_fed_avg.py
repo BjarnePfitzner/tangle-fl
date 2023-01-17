@@ -7,7 +7,7 @@ params = {
     'eval_every': 25,
     'eval_on_fraction': 0.05,
     'clients_per_round': 10,
-    'model_data_dir': '../data/cifar100',
+    'model_data_dir': './data/cifar100',
     'batch_size': 10,
     'num_batches': 90,
     'learning_rate': 0.01
