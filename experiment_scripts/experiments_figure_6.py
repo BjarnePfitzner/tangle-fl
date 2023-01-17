@@ -16,13 +16,13 @@ from sklearn.model_selection import ParameterGrid
 #############################################################################
 
 params = {
-    'dataset': ['femnist'],   # is expected to be one value to construct default experiment name
+    'dataset': ['femnistclustered'],   # is expected to be one value to construct default experiment name
     'model': ['cnn'],      # is expected to be one value to construct default experiment name
     'num_rounds': [100],
-    'eval_every': [10],
+    'eval_every': [-1],
     'eval_on_fraction': [0.05],
     'clients_per_round': [10],
-    'model_data_dir': ['./data/fmnist'],
+    'model_data_dir': ['./data/femnist-data-clustered-alt/'],
     'src_tangle_dir': [''],         # Set to '' to not use --src-tangle-dir parameter
     'start_round': [0],
     'tip_selector': ['lazy_accuracy'],
@@ -30,25 +30,23 @@ params = {
     'sample_size': [2],
     'batch_size': [10],
     'num_batches': [10],
-    'publish_if_better_than': ['REFERENCE'], # or parents
+    'publish_if_better_than': ['REFERENCE'], # or PARENTS
     'reference_avg_top': [1],
     'target_accuracy': [1],
     'learning_rate': [0.05],
     'num_epochs': [1],
-    'limit_num_clients_in_dataset': [100],
     'acc_tip_selection_strategy': ['WALK'],
     'acc_cumulate_ratings': ['False'],
     'acc_ratings_to_weights': ['ALPHA'],
     'acc_select_from_weights': ['WEIGHTED_CHOICE'],
-    'acc_alpha': [30],
-    'use_particles': ['False'],
+    'acc_alpha': [10000,1000,100,10,1,0.1,0.01,0.001],
+    'use_particles': ['True'],
     'particles_depth_start': [10],
     'particles_depth_end': [20],
     'particles_number': [10],
     'poison_type': ['disabled'],
     'poison_fraction': [0],
     'poison_from': [0],
-    'poison_use_random_ts': ['False'],
 }
 
 ##############################################################################
@@ -66,8 +64,23 @@ def main():
 
     print("[Info]: Experiment results and log data will be stored at %s" % experiment_folder)
 
-    #git_hash = get_git_hash()
+    git_hash = get_git_hash()
     run_and_document_experiments(args, experiment_folder, setup_filename, console_output_filename, git_hash)
+
+def exit_if_repo_not_clean():
+    proc = subprocess.Popen(['git', 'status', '--porcelain'], stdout=subprocess.PIPE)
+
+    try:
+        dirty_files, errs = proc.communicate(timeout=3)
+    except subprocess.TimeoutExpired:
+        proc.kill()
+        _, errs = proc.communicate()
+        print('[Error]: Could not check git status!: %s' % errs, file=sys.stderr)
+        exit(1)
+
+    if dirty_files:
+        print('[Error]: You have uncommited changes. Please commit them before continuing. No experiments will be executed.', file=sys.stderr)
+        exit(1)
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Run and document an experiment.')
@@ -135,7 +148,7 @@ def run_and_document_experiments(args, experiments_dir, setup_filename, console_
         os.makedirs(experiment_folder, exist_ok=True)
 
         # Prepare execution command
-        command = '/dhc/home/bjarne.pfitzner/conda3/envs/tangle/bin/python -m tangle.ray ' \
+        command = 'python -m tangle.ray ' \
             '-dataset %s ' \
             '-model %s ' \
             '--num-rounds %s ' \
@@ -151,7 +164,6 @@ def run_and_document_experiments(args, experiments_dir, setup_filename, console_
             '--num-batches %s ' \
             '-lr %s ' \
             '--num-epochs %s ' \
-            '--limit-num-clients-in-dataset %s ' \
             '--publish-if-better-than %s ' \
             '--reference-avg-top %s ' \
             '--tip-selector %s ' \
@@ -167,7 +179,6 @@ def run_and_document_experiments(args, experiments_dir, setup_filename, console_
             '--poison-type %s ' \
             '--poison-fraction %s ' \
             '--poison-from %s ' \
-            '--poison-use-random-ts %s ' \
             ''
         parameters = (
             p['dataset'],
@@ -185,7 +196,6 @@ def run_and_document_experiments(args, experiments_dir, setup_filename, console_
             p['num_batches'],
             p['learning_rate'],
             p['num_epochs'],
-            p['limit_num_clients_in_dataset'],
             p['publish_if_better_than'],
             p['reference_avg_top'],
             p['tip_selector'],
@@ -201,7 +211,6 @@ def run_and_document_experiments(args, experiments_dir, setup_filename, console_
             p['poison_type'],
             p['poison_fraction'],
             p['poison_from'],
-            p['poison_use_random_ts'],
         )
         command = command.strip() % parameters
 
@@ -227,7 +236,7 @@ def run_and_document_experiments(args, experiments_dir, setup_filename, console_
             command.append("--start-from-round")
             command.append("") # Placeholder to be set to the round below
 
-            step = 10
+            step = 100
             start = p['start_round']
             for i in range(start, p['num_rounds'], step):
                 end = min(i+step, p['num_rounds'])
