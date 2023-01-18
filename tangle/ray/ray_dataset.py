@@ -3,6 +3,7 @@ import numpy as np
 
 from ..lab import Dataset
 
+
 class RayDataset(Dataset):
     def __init__(self, lab_config, model_config):
         super().__init__(lab_config, model_config)

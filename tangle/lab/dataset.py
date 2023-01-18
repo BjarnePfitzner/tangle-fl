@@ -2,6 +2,7 @@ import os
 import itertools
 import json
 import numpy as np
+import tensorflow as tf
 from collections import defaultdict
 
 class Dataset:
@@ -51,7 +52,7 @@ def batch_data(data, batch_size, num_batches, seed):
     returns x, y, which are both numpy array of length: batch_size
     '''
 
-    data_repetitions = (batch_size / len(data['x'])) * num_batches
+    data_repetitions = (batch_size / data['x'].shape[0]) * num_batches
     print(f'batch_data will return {data_repetitions} times the data')
     data_repetitions = np.ceil(data_repetitions)
     data_repetitions = max(data_repetitions, 1)

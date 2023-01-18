@@ -7,9 +7,10 @@ import shutil
 import subprocess
 import sys
 
-from tangle.analysis import TangleAnalysator
-
 from sklearn.model_selection import ParameterGrid
+import wandb
+
+from tangle.analysis import TangleAnalysator
 
 #############################################################################
 ############################# Parameter section #############################
@@ -67,7 +68,7 @@ def main():
     print("[Info]: Experiment results and log data will be stored at %s" % experiment_folder)
 
     #git_hash = get_git_hash()
-    run_and_document_experiments(args, experiment_folder, setup_filename, console_output_filename, git_hash)
+    run_and_document_experiments(args, experiment_folder, setup_filename, console_output_filename)
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Run and document an experiment.')
@@ -111,31 +112,37 @@ def prepare_exp_folder(args):
 
     return experiment_folder
 
-def get_git_hash():
-    proc = subprocess.Popen(['git', 'rev-parse', '--verify', 'HEAD'], stdout=subprocess.PIPE)
-    try:
-        git_hash, errs = proc.communicate(timeout=3)
-        git_hash = git_hash.decode("utf-8")
-    except subprocess.TimeoutExpired:
-        proc.kill()
-        _, errs = proc.communicate()
-        git_hash = 'Could not get Githash!: %s' % errs
+# def get_git_hash():
+#     proc = subprocess.Popen(['git', 'rev-parse', '--verify', 'HEAD'], stdout=subprocess.PIPE)
+#     try:
+#         git_hash, errs = proc.communicate(timeout=3)
+#         git_hash = git_hash.decode("utf-8")
+#     except subprocess.TimeoutExpired:
+#         proc.kill()
+#         _, errs = proc.communicate()
+#         git_hash = 'Could not get Githash!: %s' % errs
+#
+#     return git_hash
 
-    return git_hash
-
-def run_and_document_experiments(args, experiments_dir, setup_filename, console_output_filename, git_hash):
-
+def run_and_document_experiments(args, experiments_dir, setup_filename, console_output_filename):
     shutil.copy(__file__, experiments_dir)
 
     parameter_grid = ParameterGrid(params)
     print(f'Starting experiments for {len(parameter_grid)} parameter combinations...')
+
+    wandb_params = []
+    wandb_params.extend(['--group', args.name])
+
     for idx, p in enumerate(parameter_grid):
         # Create folder for that run
         experiment_folder = experiments_dir + '/config_%s' % idx
         os.makedirs(experiment_folder, exist_ok=True)
 
+        wandb_params.extend(['-run-id', wandb.util.generate_id()])
+        wandb_params.extend(['--name', f'{args.name}_{idx}'])
+
         # Prepare execution command
-        command = '/dhc/home/bjarne.pfitzner/conda3/envs/tangle/bin/python -m tangle.ray ' \
+        command = '/dhc/home/bjarne.pfitzner/conda3/envs/tangle_tf2/bin/python -m tangle.ray ' \
             '-dataset %s ' \
             '-model %s ' \
             '--num-rounds %s ' \
@@ -214,7 +221,6 @@ def run_and_document_experiments(args, experiments_dir, setup_filename, console_
         with open(experiment_folder + '/' + setup_filename, 'w+') as file:
             print('', file=file)
             print('StartTime: %s' % start_time, file=file)
-            print('Githash: %s' % git_hash, file=file)
             print('Parameters:', file=file)
             print(json.dumps(p, indent=4), file=file)
             print('Command: %s' % command, file=file)
@@ -224,6 +230,7 @@ def run_and_document_experiments(args, experiments_dir, setup_filename, console_
         with open(experiment_folder + '/' + console_output_filename, 'w+') as file:
 
             command = command.split(" ")
+            command.extend(wandb_params)
             command.append("--start-from-round")
             command.append("") # Placeholder to be set to the round below
 
@@ -254,7 +261,8 @@ def run_and_document_experiments(args, experiments_dir, setup_filename, console_
         print('Analysing tangle...')
         os.makedirs(experiment_folder + '/tangle_analysis', exist_ok=True)
         analysator = TangleAnalysator(experiment_folder + '/tangle_data', p['num_rounds'] - 1, experiment_folder + '/tangle_analysis')
-        analysator.save_statistics(include_reference_statistics=(params['publish_if_better_than'] is 'REFERENCE'))
+        analysator.save_statistics(include_reference_statistics=(params['publish_if_better_than'] == 'REFERENCE'))
+
 
 if __name__ == "__main__":
     main()

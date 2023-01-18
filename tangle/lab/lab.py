@@ -1,8 +1,8 @@
-import os
 import random
 import sys
 import time
 
+import wandb
 import numpy as np
 import importlib
 import itertools
@@ -128,7 +128,7 @@ class Lab:
                     if tx is not None:
                         tangle.add_transaction(tx)
 
-            print(f'This round took: {time.time() - begin}s')
+            print(f'This round took: {time.time() - begin:.2f}s')
             sys.stdout.flush()
 
             self.tx_store.save_tangle(tangle, round)
@@ -208,6 +208,11 @@ class Lab:
         avg_acc = np.average([r[ACCURACY_KEY] for r in results])
         avg_loss = np.average([r['loss'] for r in results])
 
+        wandb.log({
+            'val_acc': avg_acc,
+            'val_loss': avg_loss
+        }, step=rnd)
+
         avg_message = 'Average %s: %s\nAverage loss: %s' % (ACCURACY_KEY, avg_acc, avg_loss)
         print(avg_message)
 
@@ -224,8 +229,8 @@ class Lab:
         with open(os.path.join(os.path.dirname(self.config.tangle_dir), 'acc_and_loss_all.csv'), 'a', newline='') as f:
             for r in results:
                 r['round'] = rnd
-
-                r['conf_matrix'] = r['conf_matrix'].tolist()
+                r['loss'] = r['loss'].numpy()
+                r['conf_matrix'] = r['conf_matrix'].numpy().tolist()
 
                 w = csv.DictWriter(f, r.keys())
                 if write_header:
