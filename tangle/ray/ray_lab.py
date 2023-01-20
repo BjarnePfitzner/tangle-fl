@@ -1,5 +1,6 @@
 import random
 import ray
+import wandb
 
 from ..lab import Lab
 
@@ -44,6 +45,14 @@ class RayLab(Lab):
         for tx, tx_weights in result:
             if tx is not None:
                 self.tx_store.save(tx, tx_weights)
+
+        # wandb reporting
+        for key in ['accuracy', 'loss',
+                    'averaged_accuracy', 'averaged_loss',
+                    'reference_tx_accuracy', 'reference_tx_loss']:
+            wandb.log({
+                f'train/{key}': wandb.Histogram([tx.metadata[key] for tx, _ in result if tx is not None])
+            }, step=round)
 
         return [tx for tx, _ in result]
 

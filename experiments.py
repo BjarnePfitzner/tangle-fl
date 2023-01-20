@@ -19,7 +19,7 @@ from tangle.analysis import TangleAnalysator
 params = {
     'dataset': ['femnist'],   # is expected to be one value to construct default experiment name
     'model': ['cnn'],      # is expected to be one value to construct default experiment name
-    'num_rounds': [100],
+    'num_rounds': [10],
     'eval_every': [10],
     'eval_on_fraction': [0.05],
     'clients_per_round': [10],
@@ -138,7 +138,8 @@ def run_and_document_experiments(args, experiments_dir, setup_filename, console_
         experiment_folder = experiments_dir + '/config_%s' % idx
         os.makedirs(experiment_folder, exist_ok=True)
 
-        wandb_params.extend(['-run-id', wandb.util.generate_id()])
+        wandb_id = wandb.util.generate_id()
+        wandb_params.extend(['-run-id', wandb_id])
         wandb_params.extend(['--name', f'{args.name}_{idx}'])
 
         # Prepare execution command
@@ -234,7 +235,7 @@ def run_and_document_experiments(args, experiments_dir, setup_filename, console_
             command.append("--start-from-round")
             command.append("") # Placeholder to be set to the round below
 
-            step = 10
+            step = 100
             start = p['start_round']
             for i in range(start, p['num_rounds'], step):
                 end = min(i+step, p['num_rounds'])
@@ -260,7 +261,7 @@ def run_and_document_experiments(args, experiments_dir, setup_filename, console_
 
         print('Analysing tangle...')
         os.makedirs(experiment_folder + '/tangle_analysis', exist_ok=True)
-        analysator = TangleAnalysator(experiment_folder + '/tangle_data', p['num_rounds'] - 1, experiment_folder + '/tangle_analysis')
+        analysator = TangleAnalysator(experiment_folder + '/tangle_data', p['num_rounds'] - 1, experiment_folder + '/tangle_analysis', wandb_id)
         analysator.save_statistics(include_reference_statistics=(params['publish_if_better_than'] == 'REFERENCE'))
 
 

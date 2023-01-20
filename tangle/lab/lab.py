@@ -209,8 +209,8 @@ class Lab:
         avg_loss = np.average([r['loss'] for r in results])
 
         wandb.log({
-            'val_acc': avg_acc,
-            'val_loss': avg_loss
+            'validation/accuracy': avg_acc,
+            'validation/loss': avg_loss
         }, step=rnd)
 
         avg_message = 'Average %s: %s\nAverage loss: %s' % (ACCURACY_KEY, avg_acc, avg_loss)

@@ -6,6 +6,7 @@ import wandb
 
 from ..lab import parse_args
 from ..lab.config import LabConfiguration, ModelConfiguration, RunConfiguration, NodeConfiguration, TipSelectorConfiguration, PoisoningConfiguration, WandBConfiguration
+from ..core.poison_type import PoisonType
 
 from . import RayDataset, RayTipSelectorFactory, RayLab
 
@@ -15,7 +16,7 @@ def main():
         PoisoningConfiguration, WandBConfiguration)
 
     wandb_tags = [model_config.dataset, tip_selector_config.tip_selector]
-    if  poisoning_config.poison_type != 'disabled':
+    if poisoning_config.poison_type != PoisonType.Disabled:
         wandb_tags.append(f'{poisoning_config.poison_type}_poisoning')
     complete_config = {
         'run': run_config.__dict__,

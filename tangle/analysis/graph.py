@@ -7,6 +7,7 @@ from collections import Counter
 import csv
 from scipy.interpolate import make_interp_spline, BSpline
 from sknetwork.clustering import Louvain, modularity
+import wandb
 
 from .node import Node
 
@@ -43,25 +44,44 @@ class Graph:
         _print("Average parents per round (not including round 1): %f" % statistics["average_parents_per_round"])
         _print("")
 
+        wandb.log({
+            'analysis/average_acc_last_5_rounds': statistics['average_accuracy_last_5_rounds'],
+            'analysis/average_clients_per_round': statistics["average_clients_per_round"],
+            'analysis/average_parents_per_round': statistics["average_parents_per_round"]
+        }, commit=False)
+
         # Pureness
         _print_multiple_statistics_lines(
             *statistics["average_pureness_per_round_approvals"],
             "Average pureness (approvals) for %s per round: %f")
+        table = wandb.Table(data=[[l, d] for l, d in zip(*statistics["average_pureness_per_round_approvals"])],
+                            columns=['Cluster', 'Pureness'])
+        wandb.log({'analysis/average_pureness_per_round_approvals': wandb.plot.bar(table, 'Cluster', 'Pureness', title="Avg. Pureness (Approvals) per Round")}, commit=False)
 
         if (include_reference_statistics):
             _print_multiple_statistics_lines(
                 *statistics["average_pureness_per_round_ref_tx"],
                 "Average pureness (ref_tx) for %s per round: %f")
+            table = wandb.Table(data=[[l, d] for l, d in zip(*statistics["average_pureness_per_round_ref_tx"])],
+                                columns=['Cluster', 'Pureness'])
+            wandb.log({'analysis/average_pureness_per_round_ref_tx': wandb.plot.bar(table, 'Cluster', 'Pureness', title="Avg. Pureness (Ref. TX) per Round")}, commit=False)
 
         # Information gain
         _print_multiple_statistics_lines(
             *statistics["information_gain_per_round_approvals"],
             "Average information gain (approvals) for %s per round: %f")
+        table = wandb.Table(data=[[l, d] for l, d in zip(*statistics["information_gain_per_round_approvals"])],
+                            columns=['Source', 'Information Gain'])
+        wandb.log({'analysis/information_gain_per_round_approvals': wandb.plot.bar(table, 'Source', 'Information Gain', title="Avg. Information Gain (Approvals) per Round")}, commit=False)
 
         if (include_reference_statistics):
             _print_multiple_statistics_lines(
                 *statistics["information_gain_per_round_ref_tx"],
                 "Average information gain (ref_tx) for %s per round: %f")
+            table = wandb.Table(data=[[l, d] for l, d in zip(*statistics["information_gain_per_round_ref_tx"])],
+                                columns=['Source', 'Information Gain'])
+            wandb.log({'analysis/information_gain_per_round_ref_tx': wandb.plot.bar(table, 'Source', 'Information Gain', title="Avg. Information Gain (Ref. TX) per Round")}, commit=False)
+
 
     def plot_transactions_per_round(self, smooth_line=False, plot_axis_labels=True, plot_for_paper=False):
         data = self._get_num_transactions_per_round()
@@ -101,7 +121,7 @@ class Graph:
         if plot_axis_labels:
             plt.xlabel("Round")
             plt.xticks([i for i in range(1, self.generation + 1)],
-                    [i if i % 10 == 0 else '' for i in range(1, self.generation + 1)])
+                       [i if i % 10 == 0 else '' for i in range(1, self.generation + 1)])
 
             plt.ylabel(ylabel)
 
@@ -342,7 +362,7 @@ class Graph:
         if plot_axis_labels:
             plt.xlabel(x_label)
             plt.xticks([i for i in range(start_index, end_index)],
-                    [i if i % 10 == 0 else '' for i in range(start_index, end_index)])
+                       [i if i % 10 == 0 else '' for i in range(start_index, end_index)])
 
             plt.ylabel(y_label)
 
@@ -355,6 +375,14 @@ class Graph:
                 plt.show()
 
         save_or_plot_fig()
+
+        # wandb plotting
+        if len(labels) > 0:
+            wandb.log({f'analysis/{title}': wandb.plot.line_series(xs=x_data_orig, ys=data_arrays, keys=labels, title=title, xname=x_label)}, commit=False)
+        else:
+            data = [[x, y] for (x, y) in zip(x_data_orig, data_arrays[0])]
+            table = wandb.Table(data=data, columns=[x_label, y_label])
+            wandb.log({f'analysis/{title}': wandb.plot.line(table, x_label, y_label, title=title)}, commit=False)
 
         if plot_for_paper:
             # Remove title
