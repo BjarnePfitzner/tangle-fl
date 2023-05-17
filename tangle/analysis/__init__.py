@@ -1,1 +1,1 @@
-from .tangle_analysator import TangleAnalysator
+from .tangle_analyser import TangleAnalyser

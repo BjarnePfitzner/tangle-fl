@@ -1,4 +1,7 @@
-from .transaction import Transaction
+import logging
+
+from tangle.core.transaction import Transaction
+
 
 class NodeConfiguration:
     num_tips: int
@@ -12,16 +15,16 @@ class NodeConfiguration:
         self.reference_avg_top = reference_avg_top
         self.publish_if_better_than = publish_if_better_than
 
+
 class Node:
-    def __init__(self, tangle, tx_store, tip_selector, client_id, cluster_id, train_data={'x' : [],'y' : []}, eval_data={'x' : [],'y' : []}, model=None, config=NodeConfiguration()):
+    def __init__(self, tangle, tx_store, tip_selector, client_id, cluster_id, data, model=None, config=NodeConfiguration()):
         self.tangle = tangle
         self.tx_store = tx_store
         self.tip_selector = tip_selector
         self._model = model
-        self.id = client_id
+        self.client_id = client_id
         self.cluster_id = cluster_id
-        self.train_data = train_data
-        self.eval_data = eval_data
+        self.data = data
         self.config = config
 
         # Initialize tip selector
@@ -42,73 +45,31 @@ class Node:
         """
         self.model.set_params(model_params)
 
-        data = self.train_data
-        self.model.train(data)
+        self.model.train(self.data['train'])
         # update = self.model.train(data)
         # num_train_samples = len(data['y'])
         # return num_train_samples, update
         return self.model.get_params()
 
-    def test(self, model_params, set_to_use='test', only_test_on_first_1000=False):
+    def test(self, model_params, set_to_use='test', only_test_on_first_n=-1):
         """Tests self.model on self.test_data.
 
         Args:
-            set_to_use: Set to test on. Should be in ['train', 'test'].
+            set_to_use: Set to test on. Should be in ['train', 'val', 'test'].
 
         Returns:
             dict of metrics returned by the model.
         """
         self.model.set_params(model_params)
 
-        assert set_to_use in ['train', 'test', 'val']
-        if set_to_use == 'train':
-            data = self.train_data
-        elif set_to_use == 'test' or set_to_use == 'val':
-            data = self.eval_data
-        if(only_test_on_first_1000):
-            data = {'x': data['x'][:1000], 'y': data['y'][:1000]}
+        assert set_to_use in self.data.keys()
+        data = self.data[set_to_use]
+        if only_test_on_first_n != -1:
+            data = data.take(only_test_on_first_n)
         # begin = time.time()
         metrics = self.model.test(data)
         # print(f'Testing took: {time.time()-begin}')
         return metrics
-
-    @property
-    def num_test_samples(self):
-        """Number of test samples for this client.
-
-        Returns:
-            int: Number of test samples for this client
-        """
-        if self.eval_data is None:
-            return 0
-        return len(self.eval_data['y'])
-
-    @property
-    def num_train_samples(self):
-        """Number of train samples for this client.
-
-        Returns:
-            int: Number of train samples for this client
-        """
-        if self.train_data is None:
-            return 0
-        return len(self.train_data['y'])
-
-    @property
-    def num_samples(self):
-        """Number samples for this client.
-
-        Returns:
-            int: Number of samples for this client
-        """
-        train_size = 0
-        if self.train_data is not None:
-            train_size = len(self.train_data['y'])
-
-        test_size = 0
-        if self.eval_data is not  None:
-            test_size = len(self.eval_data['y'])
-        return train_size + test_size
 
     @property
     def model(self):
@@ -221,39 +182,38 @@ class Node:
         tx_weights = [self.tx_store.load_transaction_weights(tip.id) for tip in tips]
 
         averaged_params = Node.average_model_params(*tx_weights)
-        averaged_model_metrics = self.test(averaged_params, 'test')
+        averaged_model_metrics = self.test(averaged_params, 'val')
 
         trained_params = self.train(averaged_params)
-        trained_model_metrics = self.test(trained_params, 'test')
+        trained_model_metrics = self.test(trained_params, 'val')
 
         transaction = None
 
         assert self.config.publish_if_better_than in ['PARENTS', 'REFERENCE']
         if(self.config.publish_if_better_than == 'REFERENCE'):
-            print("publish if better than reference")
+            logging.debug("publish if better than reference")
             # Compute reference metrics
             reference_txs, reference_params = self.obtain_reference_params(avg_top=self.config.reference_avg_top)
-            reference_metrics = self.test(reference_params, 'test')
+            reference_metrics = self.test(reference_params, 'val')
             if trained_model_metrics['loss'] < reference_metrics['loss']:
-                print("i'll publish!")
+                logging.debug("i'll publish!")
                 transaction = Transaction(parents=set([tip.id for tip in tips]))
                 transaction.add_metadata('reference_tx', reference_txs[0])
                 transaction.add_metadata('reference_tx_loss', float(reference_metrics['loss']))
-                transaction.add_metadata('reference_tx_accuracy', reference_metrics['accuracy'])
+                transaction.add_metadata('reference_tx_accuracy', float(reference_metrics['accuracy']))
         else:
-            print("publish if better than parents")
+            logging.debug("publish if better than parents")
             if trained_model_metrics['loss'] < averaged_model_metrics['loss']:
-                print("i'll publish!")
+                logging.debug("i'll publish!")
                 transaction = Transaction(parents=set([tip.id for tip in tips]))
 
         if transaction is not None:
-            transaction.add_metadata('issuer', self.id)
-            transaction.add_metadata('issuer_data_size', len(self.train_data))
-            transaction.add_metadata('clusterId', self.cluster_id)
+            transaction.add_metadata('client_id', self.client_id)
+            transaction.add_metadata('cluster_id', self.cluster_id)
             transaction.add_metadata('loss', float(trained_model_metrics['loss']))
-            transaction.add_metadata('accuracy', trained_model_metrics['accuracy'])
+            transaction.add_metadata('accuracy', float(trained_model_metrics['accuracy']))
             transaction.add_metadata('averaged_loss', float(averaged_model_metrics['loss']))
-            transaction.add_metadata('averaged_accuracy', averaged_model_metrics['accuracy'])
+            transaction.add_metadata('averaged_accuracy', float(averaged_model_metrics['accuracy']))
             transaction.add_metadata('trace', self.tip_selector.trace)
 
         return transaction, trained_params

@@ -1,0 +1,37 @@
+# @package _global_
+
+defaults:
+  - override /dataset: cxr
+  - override /hydra/sweeper: wandb
+
+experiment_name: cxr-cnn
+
+run:
+  lr: 0.01
+  batch_size: 16
+  eval_every: 5
+  clients_per_round: 1
+
+
+hydra:
+  sweeper:
+    params:
+      run.lr:
+        - 0.01
+        - 0.001
+      node.publish_if_better_than:
+        - REFERENCE
+        - PARENTS
+      run.clients_per_round:
+        - 3
+        - 5
+        - 8
+        - 12
+      run.local_epochs:
+        - 1
+        - 5
+        - 10
+      tip_selector.alpha:
+        - 1.0
+        - 10.0
+        - 100.0

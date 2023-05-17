@@ -1,5 +1,6 @@
 import itertools
 
+
 class Tangle:
     def __init__(self, transactions, genesis):
         self.transactions = transactions

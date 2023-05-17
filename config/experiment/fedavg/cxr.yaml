@@ -1,0 +1,16 @@
+# @package _global_
+
+defaults:
+  - override /dataset: cxr
+  - override /hydra/sweeper: wandb
+
+experiment_name: cxr-cnn-fedavg
+
+experiment_type: fedavg
+
+run:
+  lr: 0.01
+  batch_size: 16
+  eval_every: 10
+  clients_per_round: 1
+

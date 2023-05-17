@@ -1,0 +1,30 @@
+# @package _global_
+
+defaults:
+  - override /dataset: cifar
+  - override /hydra/sweeper: wandb
+
+experiment_name: cifar-cnn-centralised
+
+experiment_type: centralised
+
+run:
+  eval_every: 5
+  target_accuracy: 0.99
+  lr: 0.01
+
+
+hydra:
+  sweeper:
+    params:
+      run.lr:
+        - 0.001
+        - 0.005
+        - 0.01
+        - 0.05
+      run.batch_size:
+        - 8
+        - 16
+        - 32
+        - 64
+

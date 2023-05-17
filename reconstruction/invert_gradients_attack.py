@@ -1,4 +1,11 @@
+import os
+
+import numpy as np
+import torch
+import torchvision
+
 from reconstruction import inversefed
+
 
 # ATTACK SETTINGS
 restarts = 3
@@ -28,7 +35,7 @@ def compute_model_update(model_weights, parent_models):
 
 def reconstruct_samples(model_update, input_batch, n_reconstructions):
     # Reconstruct data!
-    rec_machine = inversefed.GradientReconstructor(model, (dm, ds), config, num_images=args.num_images,
+    rec_machine = inversefed.GradientReconstructor(model, (dm, ds), num_images=args.num_images,
                                                    loss_fn=loss_name)
     output, stats, all_outputs = rec_machine.reconstruct(input_gradient, labels=labels, img_shape=img_shape,
                                                          dryrun=args.dryrun, set_eval=set_eval)

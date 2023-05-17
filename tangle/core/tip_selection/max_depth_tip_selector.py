@@ -1,7 +1,7 @@
 from collections import Counter
 import numpy as np
 
-from . import TipSelector
+from tangle.core.tip_selection import TipSelector
 
 class MaxDepthTipSelector(TipSelector):
     """This tip selector's run time is constant with regards to the depth of the tangle"""

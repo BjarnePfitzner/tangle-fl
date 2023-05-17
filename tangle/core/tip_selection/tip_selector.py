@@ -1,21 +1,24 @@
-from enum import Enum
 import random
 
 import numpy as np
 
+from tangle.core.tip_selection.tip_selection_settings import ParticleSettings, TipSelectorSettings
+
 # https://docs.iota.org/docs/node-software/0.1/iri/references/iri-configuration-options
 DEFAULT_ALPHA = 0.001
 
-class TipSelectorSettings(Enum):
-    USE_PARTICLES = 0
-    PARTICLES_DEPTH_START = 1
-    PARTICLES_DEPTH_END = 2
-    NUM_PARTICLES = 3
 
 class TipSelector:
-    def __init__(self, tangle, trunk=None, branch=None, rated_transactions=None, particle_settings={TipSelectorSettings.USE_PARTICLES: False}):
+    def __init__(self, tangle, tip_selection_settings=None, particle_settings=None, trunk=None, branch=None, rated_transactions=None):
+        if tip_selection_settings is None:
+            tip_selection_settings = {TipSelectorSettings.ALPHA: DEFAULT_ALPHA,
+                                      TipSelectorSettings.RATINGS_TO_WEIGHT: 'ALPHA'}
+        if particle_settings is None:
+            particle_settings = {ParticleSettings.USE_PARTICLES: False}
+
         self.tangle = tangle
         self.ratings = None
+        self.settings = tip_selection_settings
         self.particle_settings = particle_settings
 
         # 'Particles' are starting points for the tip selection walk.
@@ -44,10 +47,10 @@ class TipSelector:
         # The docs say entry_point = latestSolidMilestone - depth.
         tips = []
 
-        if self.particle_settings[TipSelectorSettings.USE_PARTICLES]:
-            num_particles = self.particle_settings[TipSelectorSettings.NUM_PARTICLES]
-            depth_start = self.particle_settings[TipSelectorSettings.PARTICLES_DEPTH_START]
-            depth_end = self.particle_settings[TipSelectorSettings.PARTICLES_DEPTH_END]
+        if self.particle_settings[ParticleSettings.USE_PARTICLES]:
+            num_particles = self.particle_settings[ParticleSettings.NUM_PARTICLES]
+            depth_start = self.particle_settings[ParticleSettings.PARTICLES_DEPTH_START]
+            depth_end = self.particle_settings[ParticleSettings.PARTICLES_DEPTH_END]
 
             particles = self.tangle.get_transaction_ids_of_depth_interval(depth_start=depth_start, depth_end=depth_end)
 
@@ -111,14 +114,13 @@ class TipSelector:
         weights = self.ratings_to_weight(approvers_ratings)
         approver = self.weighted_choice(approvers, weights)
 
-
-        trace_of_this_step = zip(approvers, [self.tangle.transactions[approver_id].metadata['issuer'] for approver_id in approvers], approvers_ratings, weights)
-        self.trace.append((list(trace_of_this_step), approver, self.tangle.transactions[approver].metadata['issuer']))
+        trace_of_this_step = zip(approvers, [self.tangle.transactions[approver_id].metadata['client_id'] for approver_id in approvers], approvers_ratings, weights)
+        self.trace.append((list(trace_of_this_step), approver, self.tangle.transactions[approver].metadata['client_id']))
         # print("Approvers: ")
-        # print([self.tangle.transactions[approver_id].metadata['issuer'] for approver_id in approvers])
+        # print([self.tangle.transactions[approver_id].metadata['client_id'] for approver_id in approvers])
         # print(approvers_ratings)
         # print(weights)
-        # print(f"{self.tangle.transactions[approver].metadata['issuer'] }({approver})")
+        # print(f"{self.tangle.transactions[approver].metadata['client_id'] }({approver})")
         # Skip validation.
         # At least a validation of some PoW is necessary in a real-world implementation.
 
@@ -150,9 +152,12 @@ class TipSelector:
 
         return normalized_ratings
 
-    def ratings_to_weight(self, ratings, alpha=DEFAULT_ALPHA, dynamic=True):
-        normalized_ratings = self.normalize_ratings(ratings, dynamic)
-        return [np.exp(r * alpha) for r in normalized_ratings]
+    def ratings_to_weight(self, ratings, dynamic=True):
+        if self.settings[TipSelectorSettings.RATINGS_TO_WEIGHT] == 'LINEAR':
+            return ratings
+        else:
+            normalized_ratings = self.normalize_ratings(ratings, dynamic)
+            return [np.exp(r * self.settings[TipSelectorSettings.ALPHA]) for r in normalized_ratings]
 
     def weighted_choice(self, approvers, weights):
 

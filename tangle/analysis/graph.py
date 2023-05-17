@@ -19,7 +19,7 @@ class Graph:
         self.generation = generation
         self.analysis_output_dir = analysis_output_dir
 
-    def print_statistics(self, include_reference_statistics=True):
+    def print_statistics(self, include_reference_statistics=True, include_cluster_statistics=False, include_poisoning_statistics=False):
         #### Helper methods for printing
         def _print(text):
             if self.analysis_output_dir:
@@ -43,28 +43,38 @@ class Graph:
         _print("")
         _print("Average parents per round (not including round 1): %f" % statistics["average_parents_per_round"])
         _print("")
+        _print(f"N rounds until 90% accuracy: {statistics['n_rounds_until_90_acc']}")
+        _print("")
 
         wandb.log({
             'analysis/average_acc_last_5_rounds': statistics['average_accuracy_last_5_rounds'],
             'analysis/average_clients_per_round': statistics["average_clients_per_round"],
-            'analysis/average_parents_per_round': statistics["average_parents_per_round"]
+            'analysis/average_parents_per_round': statistics["average_parents_per_round"],
+            'analysis/n_rounds_until_90_acc': statistics["n_rounds_until_90_acc"]
         }, commit=False)
 
-        # Pureness
-        _print_multiple_statistics_lines(
-            *statistics["average_pureness_per_round_approvals"],
-            "Average pureness (approvals) for %s per round: %f")
-        table = wandb.Table(data=[[l, d] for l, d in zip(*statistics["average_pureness_per_round_approvals"])],
-                            columns=['Cluster', 'Pureness'])
-        wandb.log({'analysis/average_pureness_per_round_approvals': wandb.plot.bar(table, 'Cluster', 'Pureness', title="Avg. Pureness (Approvals) per Round")}, commit=False)
+        if include_reference_statistics:
+            _print(f"N rounds until 90% reference accuracy: {statistics['n_rounds_until_90_acc_ref_tx']}")
+            _print("")
+            wandb.log({'analysis/n_rounds_until_90_acc_ref_tx': statistics["n_rounds_until_90_acc_ref_tx"]}, commit=False)
 
-        if (include_reference_statistics):
+
+        # Pureness
+        if include_cluster_statistics:
             _print_multiple_statistics_lines(
-                *statistics["average_pureness_per_round_ref_tx"],
-                "Average pureness (ref_tx) for %s per round: %f")
-            table = wandb.Table(data=[[l, d] for l, d in zip(*statistics["average_pureness_per_round_ref_tx"])],
+                *statistics["average_pureness_per_round_approvals"],
+                "Average pureness (approvals) for %s per round: %f")
+            table = wandb.Table(data=[[l, d] for l, d in zip(*statistics["average_pureness_per_round_approvals"])],
                                 columns=['Cluster', 'Pureness'])
-            wandb.log({'analysis/average_pureness_per_round_ref_tx': wandb.plot.bar(table, 'Cluster', 'Pureness', title="Avg. Pureness (Ref. TX) per Round")}, commit=False)
+            wandb.log({'analysis/average_pureness_per_round_approvals': wandb.plot.bar(table, 'Cluster', 'Pureness', title="Avg. Pureness (Approvals) per Round")}, commit=False)
+
+            if (include_reference_statistics):
+                _print_multiple_statistics_lines(
+                    *statistics["average_pureness_per_round_ref_tx"],
+                    "Average pureness (ref_tx) for %s per round: %f")
+                table = wandb.Table(data=[[l, d] for l, d in zip(*statistics["average_pureness_per_round_ref_tx"])],
+                                    columns=['Cluster', 'Pureness'])
+                wandb.log({'analysis/average_pureness_per_round_ref_tx': wandb.plot.bar(table, 'Cluster', 'Pureness', title="Avg. Pureness (Ref. TX) per Round")}, commit=False)
 
         # Information gain
         _print_multiple_statistics_lines(
@@ -81,7 +91,6 @@ class Graph:
             table = wandb.Table(data=[[l, d] for l, d in zip(*statistics["information_gain_per_round_ref_tx"])],
                                 columns=['Source', 'Information Gain'])
             wandb.log({'analysis/information_gain_per_round_ref_tx': wandb.plot.bar(table, 'Source', 'Information Gain', title="Avg. Information Gain (Ref. TX) per Round")}, commit=False)
-
 
     def plot_transactions_per_round(self, smooth_line=False, plot_axis_labels=True, plot_for_paper=False):
         data = self._get_num_transactions_per_round()
@@ -404,12 +413,19 @@ class Graph:
 
     #### Private: Data preparation
 
-    def _get_statistics_data(self, include_reference_statistics):
+    def _get_statistics_data(self, include_reference_statistics, include_cluster_statistics=False, include_poisoning_statistics=False):
         statistics = {}
 
         acc_per_node = self._prepare_acc_data()
         avg_acc_per_round = [np.mean(x) for x in acc_per_node]
         statistics['average_accuracy_last_5_rounds'] = np.mean(avg_acc_per_round[-5:])
+
+        # Rounds until 90% accuracy
+        potential_rounds = [i for i, accs in enumerate(acc_per_node) if np.mean(accs) >= 0.9]
+        if len(potential_rounds) > 0:
+            statistics["n_rounds_until_90_acc"] = min(potential_rounds)
+        else:
+            statistics["n_rounds_until_90_acc"] = -1
 
         # Clients and parents
         statistics["average_clients_per_round"] = (len(self.nodes) - 1) / self.generation
@@ -417,19 +433,30 @@ class Graph:
         statistics["average_parents_per_round"] = sum([len(n.parents) for n in self.nodes]) / (len(self.nodes) - 1)
 
         # Reference pureness
-        labels, data = self._prepare_reference_pureness()
-        data = [np.nanmean(pureness) for pureness in data]
-        statistics["average_pureness_per_round_approvals"] = (labels, data)
+        if include_cluster_statistics:
+            labels, data = self._prepare_reference_pureness()
+            data = [np.nanmean(pureness) for pureness in data]
+            statistics["average_pureness_per_round_approvals"] = (labels, data)
 
         if (include_reference_statistics):
-            labels, data = self._prepare_reference_pureness(compare_to_ref_tx=True)
-            data = [np.nanmean(pureness) for pureness in data]
-            statistics["average_pureness_per_round_ref_tx"] = (labels, data)
+            if include_cluster_statistics:
+                labels, data = self._prepare_reference_pureness(compare_to_ref_tx=True)
+                data = [np.nanmean(pureness) for pureness in data]
+                statistics["average_pureness_per_round_ref_tx"] = (labels, data)
 
             # Information gain
             labels, data = self._get_information_gain_ref_tx()
             data = [np.nanmean(info_gain) for info_gain in data]
             statistics["information_gain_per_round_ref_tx"] = (labels, data)
+
+            # Rounds until 90% accuracy
+            ref_acc = self._prepare_ref_acc_data()
+            potential_rounds = [i for i, accs in enumerate(ref_acc) if np.mean(accs) >= 0.9]
+            if len(potential_rounds) > 0:
+                statistics["n_rounds_until_90_acc_ref_tx"] = min(potential_rounds)
+            else:
+                statistics["n_rounds_until_90_acc_ref_tx"] = -1
+
 
         labels, data = self._get_information_gain_approvals()
         data = [np.nanmean(info_gain) for info_gain in data]
@@ -519,7 +546,7 @@ class Graph:
             summed_age = 0
 
             for n in nodes_in_round:
-                cid = n.metadata["clusterId"]
+                cid = n.metadata["cluster_id"]
                 ref_tx = n.metadata["reference_tx"]
                 ref_tx = next(n for n in self.nodes if n.id == ref_tx)
 
@@ -547,7 +574,7 @@ class Graph:
             same_cluster_id_round = 0
 
             for cid in cids:
-                nodes_in_round_with_cid = [n for n in nodes_in_round if n.metadata["clusterId"] == cid]
+                nodes_in_round_with_cid = [n for n in nodes_in_round if n.metadata["cluster_id"] == cid]
 
                 # If no nodes of this cluster were used this round, skip cluster and assign np.nan as pureness
                 # np.nan => no data available
@@ -570,8 +597,8 @@ class Graph:
 
                         # In case p is the genesis transaction assign it as the same cluster
                         # (genesis transaction has no cluster id)
-                        if "clusterId" in p_tx.metadata:
-                            p_tx_cid = p_tx.metadata["clusterId"]
+                        if "cluster_id" in p_tx.metadata:
+                            p_tx_cid = p_tx.metadata["cluster_id"]
                         else:
                             p_tx_cid = cid
 
@@ -586,13 +613,19 @@ class Graph:
                 num_refs = sum([len(n.parents) for n in nodes_in_round_with_cid])
                 if compare_to_ref_tx:
                     num_refs = len(nodes_in_round_with_cid)
-                cluster_data[cid].append(parents_with_same_cid / num_refs)
+                if num_refs == 0:
+                    cluster_data[cid].append(0)
+                else:
+                    cluster_data[cid].append(parents_with_same_cid / num_refs)
 
             # Calculate combined cluster data for this round
             num_refs = sum([len(n.parents) for n in nodes_in_round])
             if compare_to_ref_tx:
                 num_refs = len(nodes_in_round)
-            cluster_data["combined"].append(same_cluster_id_round / num_refs)
+            if num_refs == 0:
+                cluster_data["combined"].append(0)
+            else:
+                cluster_data["combined"].append(same_cluster_id_round / num_refs)
 
         labels = []
         data_arrays = []
@@ -612,12 +645,12 @@ class Graph:
             clients_poisoned = {'genesis': False}
 
             for n in nodes_until_round:
-                if 'issuer' in n.metadata:
-                    nid_to_client[n.id] = n.metadata['issuer']
+                if 'client_id' in n.metadata:
+                    nid_to_client[n.id] = n.metadata['client_id']
 
-                    if 'clusterId' in n.metadata:
-                        clients_to_clusters[n.metadata['issuer']] = n.metadata['clusterId']
-                    clients_poisoned[n.metadata['issuer']] = 'poisoned' in n.metadata and n.metadata['poisoned']
+                    if 'cluster_id' in n.metadata:
+                        clients_to_clusters[n.metadata['client_id']] = n.metadata['cluster_id']
+                    clients_poisoned[n.metadata['client_id']] = 'poisoned' in n.metadata and n.metadata['poisoned']
                 else:
                     nid_to_client[n.id] = 'genesis'
 
@@ -699,8 +732,8 @@ class Graph:
             unique_clients = set()
 
             for n in nodes_until_round:
-                if 'issuer' in n.metadata:
-                    unique_clients.add(n.metadata['issuer'])
+                if 'client_id' in n.metadata:
+                    unique_clients.add(n.metadata['client_id'])
                 else:
                     unique_clients.add('genesis')
 
@@ -712,8 +745,8 @@ class Graph:
         cids = set()
 
         for n in self.nodes:
-            if "clusterId" in n.metadata:
-                cids.add(n.metadata["clusterId"])
+            if "cluster_id" in n.metadata:
+                cids.add(n.metadata["cluster_id"])
 
         return list(cids)
 

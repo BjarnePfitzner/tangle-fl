@@ -1,20 +1,18 @@
-from enum import Enum
+import logging
 
-from .tip_selector import TipSelector, TipSelectorSettings
+import numpy as np
 
-from ...models.baseline_constants import ACCURACY_KEY
+from tangle.core.tip_selection import TipSelector
+from tangle.core.tip_selection.tip_selection_settings import TipSelectorSettings
+from tangle.core.node import Node
 
 # Adopted from https://docs.iota.org/docs/node-software/0.1/iri/references/iri-configuration-options
 
-class AccuracyTipSelectorSettings(Enum):
-    SELECTION_STRATEGY = 0
-    CUMULATE_RATINGS = 1
-    RATINGS_TO_WEIGHT = 2
-    ALPHA = 3
-    SELECT_FROM_WEIGHTS = 4
 
 class AccuracyTipSelector(TipSelector):
-    def __init__(self, tangle, tip_selection_settings, particle_settings={TipSelectorSettings.USE_PARTICLES: False}):
+    def __init__(self, tangle, tip_selection_settings, particle_settings=None):
+        if particle_settings is None:
+            particle_settings = {TipSelectorSettings.USE_PARTICLES: False}
         super().__init__(tangle, particle_settings=particle_settings)
         self.settings = tip_selection_settings
 
@@ -24,7 +22,7 @@ class AccuracyTipSelector(TipSelector):
                 self.tips.append(x)
 
     def tip_selection(self, num_tips, node):
-        if self.settings[AccuracyTipSelectorSettings.SELECTION_STRATEGY] == "GLOBAL":
+        if self.settings[TipSelectorSettings.SELECTION_STRATEGY] == "GLOBAL":
             self.tips.sort(key=lambda x: self.tx_rating(x, node), reverse=True)
             return self.tips[0:num_tips]
         else:
@@ -35,13 +33,13 @@ class AccuracyTipSelector(TipSelector):
         weights = self.ratings_to_weight(particle_ratings)
         return self.weighted_choice(particles, weights)
 
-    def _compute_ratings(self, node, tx=None):
+    def _compute_ratings(self, node: Node, tx=None):
         rating = {}
 
         txs = self._get_transactions_to_compute(tx)
 
         for tx_id in txs:
-            rating[tx_id] = node.test(node.tx_store.load_transaction_weights(tx_id), 'train', True)[ACCURACY_KEY]
+            rating[tx_id] = np.float64(node.test(node.tx_store.load_transaction_weights(tx_id), 'val')['accuracy'])   # Todo maybe use test dataset instead
 
         # We (currently) do not care about the future-set-size-based rating
         # future_set_cache = {}
@@ -51,10 +49,10 @@ class AccuracyTipSelector(TipSelector):
         return rating
 
     def compute_ratings(self, node, tx=None):
-        # print(f"computing ratings for node {node.id}")
+        logging.debug(f"computing ratings for node {node.client_id}")
         rating = self._compute_ratings(node, tx)
 
-        if self.settings[AccuracyTipSelectorSettings.CUMULATE_RATINGS]:
+        if self.settings[TipSelectorSettings.CUMULATE_RATINGS]:
             def cumulate_ratings(future_set, ratings):
                 cumulated = 0
                 for tx_id in future_set:
@@ -70,33 +68,27 @@ class AccuracyTipSelector(TipSelector):
                 rating[tx_id] = cumulate_ratings(future_set, accuracies) + accuracies[tx_id]
 
         # print("done computing ratings")
-        self._update_ratings(node.id, rating)
+        self._update_ratings(node.client_id, rating)
     
     #### Provide template methods for subclasses (e.g. LazyAccuracyTipSelector)
 
     def _get_transactions_to_compute(self, tx):
-        if self.settings[AccuracyTipSelectorSettings.SELECTION_STRATEGY] == "GLOBAL" and not self.settings[AccuracyTipSelectorSettings.CUMULATE_RATINGS]:
+        if self.settings[TipSelectorSettings.SELECTION_STRATEGY] == "GLOBAL" and not self.settings[TipSelectorSettings.CUMULATE_RATINGS]:
             return self.tips
         
         return self.tangle.transactions.keys()
 
     def _update_ratings(self, node_id, rating):
+        # todo: node_id is not used
         self.ratings = rating
 
     #### Override weight functions with accuracy related settings
-
-    def ratings_to_weight(self, ratings, alpha=None):
-        if self.settings[AccuracyTipSelectorSettings.RATINGS_TO_WEIGHT] == 'LINEAR':
-            return ratings
-        else:
-            return super(AccuracyTipSelector, self).ratings_to_weight(ratings, alpha=self.settings[AccuracyTipSelectorSettings.ALPHA])
-
     def weighted_choice(self, approvers, weights):
 
-        if self.settings[AccuracyTipSelectorSettings.SELECT_FROM_WEIGHTS] == 'MAXIMUM':
+        if self.settings[TipSelectorSettings.SELECT_FROM_WEIGHTS] == 'MAXIMUM':
             # Instead of a weighted choice, always select the maximum.
             # If there is no unique maximum, choose the first one
             return approvers[weights.index(max(weights))]
 
-        if self.settings[AccuracyTipSelectorSettings.SELECT_FROM_WEIGHTS] == 'WEIGHTED_CHOICE':
+        if self.settings[TipSelectorSettings.SELECT_FROM_WEIGHTS] == 'WEIGHTED_CHOICE':
             return super(AccuracyTipSelector, self).weighted_choice(approvers, weights)

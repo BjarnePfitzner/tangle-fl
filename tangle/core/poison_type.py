@@ -4,3 +4,11 @@ class PoisonType(Enum):
     Disabled = 0
     Random = 1
     LabelFlip = 2
+
+    @staticmethod
+    def make_type_from_cfg(config_entry):
+        return {
+            'disabled': PoisonType.Disabled,
+            'random': PoisonType.Random,
+            'labelflip': PoisonType.LabelFlip
+        }[config_entry]

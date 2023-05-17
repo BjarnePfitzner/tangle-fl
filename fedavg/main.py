@@ -1,18 +1,16 @@
-import ray
-from tangle.lab.args import parse_args
-from tangle.lab.config import ModelConfiguration, RunConfiguration, LabConfiguration
-from tangle.ray.ray_dataset import RayDataset
-from .fed_avg import train
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+
+from omegaconf import DictConfig
+
+from data import get_dataset_instance
+from fedavg.fed_avg import FedAvg
 
 
-def main():
-    model_config, run_config, lab_config = parse_args(ModelConfiguration, RunConfiguration, LabConfiguration)
+def main(cfg: DictConfig):
+    dataset = get_dataset_instance(cfg.dataset, cfg.log_sample_data)
+    dataset.preprocess_datasets(cfg.run.batch_size, cfg.run.test_batch_size, cfg.run.local_epochs)
 
-    ray.init(webui_host='0.0.0.0')
+    fedavg = FedAvg(dataset, cfg)
 
-    dataset = RayDataset(lab_config, model_config)
-    train(dataset, run_config, model_config, lab_config.seed)
-
-
-if __name__ == "__main__":
-    main()
+    return fedavg.run_training()

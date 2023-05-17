@@ -1,0 +1,47 @@
+# @package _global_
+
+defaults:
+  - override /dataset: mnist_2_class_noniid
+  - override /hydra/sweeper: wandb
+
+experiment_name: mnist_2_class_noniid-cnn
+
+hydra:
+  sweeper:
+    params:
+      ray_enabled:
+        - False
+      node.num_tips:
+        - 2
+        - 3
+        - 4
+      #node.sample_size:
+      #  - 2
+      #  - 3
+      #  - 4
+      node.publish_if_better_than:
+        - REFERENCE
+        - PARENTS
+      #node.reference_avg_top:
+      #  - 1
+      #  - 2
+      #  - 3
+      run.clients_per_round:
+        - 5
+        - 10
+        - 20
+        - 50
+      run.lr:
+        - 0.001
+        - 0.01
+        - 0.05
+        - 0.1
+      run.num_epochs:
+        - 1
+        - 5
+        - 10
+      run.batch_size:
+        - 8
+        - 16
+        - 32
+        - 64

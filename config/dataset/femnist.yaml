@@ -1,0 +1,7 @@
+name: fmnist
+clustering: false
+val_fraction: 0.2
+num_clients: 3400
+num_classes: 62
+class_distribution: iid
+data_dim: 28

@@ -1,12 +1,12 @@
 """Mechanisms for image reconstruction from parameter gradients."""
-
+import os
 
 import torch
 import torchvision
 from collections import defaultdict, OrderedDict
 import matplotlib.pyplot as plt
-from inversefed.nn import MetaMonkey
-from inversefed.utils import save_to_table
+from ..inversefed.nn import MetaMonkey
+from ..inversefed.utils import save_to_table
 from .metrics import total_variation as TV
 from .metrics import InceptionScore
 from .medianfilt import MedianPool2d
@@ -76,7 +76,7 @@ class GradientReconstructor():
 
         self.exp_stats = []
 
-    def reconstruct(self, input_data, labels, img_shape=(3, 32, 32), dryrun=False, set_eval=True, tol=None):
+    def reconstruct(self, input_data, labels, img_shape=(3, 32, 32), dryrun=False, set_eval=True, tol=None, base_path=''):
         """Reconstruct image from gradient."""
         start_time = time.time()
         if set_eval:
@@ -124,7 +124,7 @@ class GradientReconstructor():
 
         try:
             for trial in range(self.config['restarts']):
-                x_trial, labels = self._run_trial(trial, x[trial], input_data, labels, dryrun=dryrun)
+                x_trial, labels = self._run_trial(trial, x[trial], input_data, labels, base_path, dryrun=dryrun)
                 # Finalize
                 scores[trial] = self._score_trial(x_trial, input_data, labels)
                 x[trial] = x_trial
@@ -174,7 +174,7 @@ class GradientReconstructor():
         else:
             raise ValueError()
 
-    def _run_trial(self, trial, x_trial, input_data, labels, dryrun=False):
+    def _run_trial(self, trial, x_trial, input_data, labels, base_path, dryrun=False):
         x_trial.requires_grad = True
         if self.reconstruct_label:
             output_test = self.model(x_trial)
@@ -225,7 +225,7 @@ class GradientReconstructor():
                     trial_stats['rec_loss'].append(rec_loss.item())
                     trial_stats['history'].append(x_trial.detach())
                     trial_stats['idx'].append(iteration)
-                    self._save_trial_img(trial_stats)
+                    self._save_trial_img(trial_stats, base_path)
 
                 if self.config['lr_decay']:
                     scheduler.step()
@@ -246,7 +246,7 @@ class GradientReconstructor():
                         else:
                             raise ValueError()
 
-                    if (iteration+1)%10 == 0:
+                    if (iteration+1)%100 == 0:
                         print(f'It: {iteration}. Rec. loss: {rec_loss.item():2.4f}.')
 
                 if dryrun:
@@ -316,8 +316,8 @@ class GradientReconstructor():
         print(f'Optimal result score: {stats["opt"]:2.4f}')
         return x_optimal, stats
 
-    def _save_trial_img(self, trial_stats):
-
+    def _save_trial_img(self, trial_stats, base_path):
+        os.makedirs(f'{base_path}/trial_histories', exist_ok=True)
         dm, ds = self.mean_std
         plot_cols = 10
         plot_rows = 5
@@ -334,7 +334,7 @@ class GradientReconstructor():
                     plt.imshow(pil_img)
                 plt.title(trial_stats['idx'][i])
                 plt.axis('off')
-            plt.savefig(f"trial_histories/{trial_stats['name']}_img{img_idx}_history.png")
+            plt.savefig(f"{base_path}/trial_histories/{trial_stats['name']}_img{img_idx}_history.png")
             plt.close()
 
 

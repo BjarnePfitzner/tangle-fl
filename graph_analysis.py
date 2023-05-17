@@ -19,9 +19,9 @@ def get_cluster_id(tx_name, tangle):
     Returns:
         int: The cluster ID.
     """
-    if 'clusterId' not in tangle.transactions[tx_name].metadata:
+    if 'cluster_id' not in tangle.transactions[tx_name].metadata:
         return None
-    return tangle.transactions[tx_name].metadata['clusterId']
+    return tangle.transactions[tx_name].metadata['cluster_id']
 
 
 def future_set(tx, approving_transactions, future_set_cache={}):
@@ -132,9 +132,9 @@ def compute_within_cluster_direct_approval_fraction(tangle, num_cluster=4):
     for i in range(num_cluster):
         cluster_absolutes[i] = (0, 0)     # within_cluster_direct_approvals, total_cluster_approvals,
     for x, tx in tangle.transactions.items():
-        if 'clusterId' not in tx.metadata:
+        if 'cluster_id' not in tx.metadata:
             continue
-        cluster_id = tx.metadata['clusterId']
+        cluster_id = tx.metadata['cluster_id']
         within_cluster_direct_approvals = 0
         for unique_parent in tx.parents:
             parent_cluster_id = get_cluster_id(unique_parent, tangle)
@@ -169,12 +169,12 @@ def get_within_cluster_subgraphs(tangle, num_cluster=4):
 
     for x, tx in tangle.transactions.items():
         # add node and attribute
-        if 'clusterId' not in tx.metadata:
+        if 'cluster_id' not in tx.metadata:
             continue
-        cluster_id = tx.metadata['clusterId']
+        cluster_id = tx.metadata['cluster_id']
         graphs[cluster_id].add_node(x)
         for unique_parent in tx.parents:
-            if tx.metadata['clusterId'] == get_cluster_id(unique_parent, tangle):
+            if tx.metadata['cluster_id'] == get_cluster_id(unique_parent, tangle):
                 graphs[cluster_id].add_edge(x, unique_parent)
 
     for i in range(num_cluster):

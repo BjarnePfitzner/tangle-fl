@@ -18,11 +18,11 @@ def load(tangle_json_path):
     clients_to_clusters = {}
 
     for n in tangle_data['nodes']:
-        if 'issuer' in n['metadata']:
-            nid_to_client[n['id']] = n['metadata']['issuer']
+        if 'client_id' in n['metadata']:
+            nid_to_client[n['id']] = n['metadata']['client_id']
 
-            if 'clusterId' in n['metadata']:
-                clients_to_clusters[n['metadata']['issuer']] = n['metadata']['clusterId']
+            if 'cluster_id' in n['metadata']:
+                clients_to_clusters[n['metadata']['client_id']] = n['metadata']['cluster_id']
         else:
             nid_to_client[n['id']] = 'genesis'
 
