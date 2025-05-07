@@ -1,13 +1,16 @@
 # Federated Learning DAG Experiments
 
-This repository contains software artifacts to reproduce the experiments presented in the Middleware '21 paper "Implicit Model Specialization through DAG-based Decentralized Federated Learning"
+This repository contains software artifacts to reproduce the experiments presented in the Middleware '21 paper "Implicit Model Specialization through DAG-based Decentralized Federated Learning".
 It was later adapted for personal use by Bjarne Pfitzner to facilitate further experimentation for his doctoral thesis.
 
 ## General Usage
 
 Install packages using conda: `conda env create -f environment.yml`.
+
 Activate environment: `conda activate tangle-fl`.
+
 Basic usage: `python main.py --experiment={experiment_file} {parameter.overwrite}={value}`
+
 Experiment configuration is managed with the Hydra package, which reads the configuration from the `config` folder.
 
 The project uses Weights and Biases (WandB) for logging. Either disable it by adding `wandb.disabled=True` to the main call, or alter the wandb setup in `main.py:58`.
