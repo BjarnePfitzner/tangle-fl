@@ -1,0 +1,33 @@
+# @package _global_
+
+defaults:
+  - override /dataset: fmnist-clustered
+  - override /hydra/sweeper: wandb
+
+experiment_name: fmnist-clustered-cnn-base_training-${tip-selector.type}
+
+clean_up:
+  transactions: False
+  tangle_data: False
+
+node:
+  num_tips: 2
+  sample_size: 35
+  test_reference_avg_top: 35
+  publish_if_better_than: REFERENCE
+
+run:
+  num_rounds: 200
+  clients_per_round: 0.01
+  lr: 0.05
+  local_epochs: 1
+  batch_size: 16
+  save_every: 50
+  eval_every: 201
+  test_on_fraction: 0.05
+  resample_test_fraction: True
+  reduce_tangle_json_size: True
+
+tip_selector:
+  type: random
+  alpha: 0.001

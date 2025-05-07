@@ -71,12 +71,18 @@ class LabTransactionStore(TransactionStore):
 
         return sha1.hexdigest()
 
-    def save_tangle(self, tangle, tangle_name):
+    def save_tangle(self, tangle, tangle_name, reduce_size=False):
         os.makedirs(self.dest_tangle_path, exist_ok=True)
 
-        n = [{'id': t.id,
-              'parents': list(t.parents),
-              'metadata': t.metadata } for _, t in tangle.transactions.items()]
+        if reduce_size:
+            n = [{'id': t.id,
+                  'parents': list(t.parents),
+                  'metadata': {key: value for key, value in t.metadata.items() if key in ['client_id', 'cluster_id', 'poisoned', 'time']}}
+                 for _, t in tangle.transactions.items()]
+        else:
+            n = [{'id': t.id,
+                  'parents': list(t.parents),
+                  'metadata': t.metadata } for _, t in tangle.transactions.items()]
         #print({key: type(val) for key, val in n[1]['metadata'].items()})
 
         with open(f'{self.dest_tangle_path}/tangle_{tangle_name}.json', 'w') as outfile:

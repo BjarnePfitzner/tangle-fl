@@ -12,18 +12,20 @@ class MaliciousNode(Node):
     def __init__(self, tangle, tx_store, tip_selector, client_id, cluster_id, data, model=None, poison_type=PoisonType.Disabled, config=NodeConfiguration()):
         self.poison_type = poison_type
 
-        if self.poison_type == PoisonType.LabelFlip:
+        if self.poison_type in [PoisonType.LabelFlip, PoisonType.LabelSwap]:
             def flip_labels(x_batch, y_batch):
                 flip_forward = tf.equal(y_batch, FLIP_FROM_CLASS)
-                flip_backward = tf.equal(y_batch, FLIP_TO_CLASS)
                 y_batch = tf.where(flip_forward, tf.ones_like(y_batch) * FLIP_TO_CLASS, y_batch)
-                y_batch = tf.where(flip_backward, tf.ones_like(y_batch) * FLIP_FROM_CLASS, y_batch)
+                if self.poison_type == PoisonType.LabelSwap:
+                    flip_backward = tf.equal(y_batch, FLIP_TO_CLASS)
+                    y_batch = tf.where(flip_backward, tf.ones_like(y_batch) * FLIP_FROM_CLASS, y_batch)
 
                 return x_batch, y_batch
 
             data['train'] = data['train'].map(flip_labels)
             data['val'] = data['val'].map(flip_labels)
-            #data['test'] = data['test'].map(flip_labels)
+            # Don't swap test data, as we want to test on the original data
+            # data['test'] = data['test'].map(flip_labels)
 
         super().__init__(tangle, tx_store, tip_selector, client_id, cluster_id, data, model=model, config=config)
 

@@ -92,7 +92,16 @@ def letter_to_vec_poets(letter):
     index = ALL_LETTERS_POETS.find(letter)
     if (index == -1):
         index = NUM_LETTERS_POETS - 1
-    return _one_hot(index, NUM_LETTERS_POETS)
+    return np.squeeze(np.array(_one_hot(index, NUM_LETTERS_POETS)))
+
+def letter_to_index_poets(letter):
+    '''returns one-hot representation of given letter
+       All unknown characters will be mapped to the last item
+    '''
+    index = ALL_LETTERS_POETS.find(letter)
+    if (index == -1):
+        index = NUM_LETTERS_POETS - 1
+    return index
 
 
 def word_to_indices_poets(word):
@@ -111,7 +120,7 @@ def word_to_indices_poets(word):
         if (index == -1):
             index = NUM_LETTERS_POETS - 1
         indices.append(index)
-    return indices
+    return np.array(indices)
 
 # ------------------------
 # utils for sent140 dataset

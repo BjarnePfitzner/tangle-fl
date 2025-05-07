@@ -1,0 +1,10 @@
+name: FEMNIST
+data_dir: /dhc/home/bjarne.pfitzner/workspace/federated-learning-tangle/data/femnist-clustered-relaxed/
+clustering: false
+val_fraction: 0.2
+limit_clients: -1
+num_clients: 3498
+num_classes: 10
+data_dim: 28
+data_ch: 1
+model_class: mnist_cnn

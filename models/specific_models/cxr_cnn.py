@@ -5,11 +5,11 @@ from models.model import Model
 
 
 class ClientModel(Model):
-    def __init__(self, seed, lr, cfg):
+    def __init__(self, seed, lr, cfg, prox_mu=0):
         self.num_classes = cfg.num_classes
         self.data_dim = cfg.data_dim
         self.data_ch = cfg.data_ch
-        super(ClientModel, self).__init__(seed, lr)
+        super(ClientModel, self).__init__(seed, lr, prox_mu=prox_mu)
 
     def create_model(self):
         """Model function for CNN."""

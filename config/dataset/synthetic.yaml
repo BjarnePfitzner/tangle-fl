@@ -1,0 +1,9 @@
+name: Synthetic
+data_dir: /dhc/home/bjarne.pfitzner/workspace/federated-learning-tangle/data/synthetic_fedprox_0.5_0.5/
+clustering: false
+val_fraction: 0.2
+limit_clients: -1
+num_clients: 30
+num_classes: 10
+data_dim: 60
+model_class: synthetic_mclr

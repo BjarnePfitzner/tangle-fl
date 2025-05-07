@@ -14,6 +14,7 @@ from zlib import crc32
 from data.abstract_dataset import AbstractDataset
 from tangle.lab import Lab
 from tangle.core import Node, MaliciousNode, PoisonType
+from tangle.core.malicious_node import FLIP_FROM_CLASS, FLIP_TO_CLASS
 from tangle.progress import Progress
 
 
@@ -26,7 +27,11 @@ class FedAvg:
     def __init__(self, dataset: AbstractDataset, cfg: DictConfig):
         self.dataset = dataset
         self.active_clients_list = self.dataset.client_ids[:]
+        self.test_clients = None
         self.cfg = cfg
+        self.poisoning_type = PoisonType.make_type_from_cfg(self.cfg.poisoning.type)
+        if cfg.run.save_per_client_metrics:
+            self.per_client_test_metrics = wandb.Table(columns=["client_id", "round", "accuracy", "loss"])#, "conf_matrix"])
 
         # Set the random seed if provided (affects client sampling, and batching)
         random.seed(1 + cfg.seed)
@@ -61,8 +66,12 @@ class FedAvg:
             total_weight = 0
             all_metrics = []
             for param_diff, weight, metrics in all_updates:
-                param_update += param_diff * weight
-                total_weight += weight
+                if self.cfg.experiment_type=='fedavg' and self.cfg.run.weighted_average:
+                    param_update += param_diff * weight
+                    total_weight += weight
+                else:
+                    param_update += param_diff
+                    total_weight += 1
                 total_client_contributions += 1
                 all_metrics.append(metrics)
 
@@ -130,7 +139,7 @@ class FedAvg:
         # Final evaluation
         if final_test_metrics is None:
             final_test_metrics = self.test(round, use_all_clients=True)
-        self.print_test_results(final_test_metrics, round)
+        self.print_test_results(final_test_metrics, round, log_per_client_table=self.cfg.run.save_per_client_metrics)
         wandb.log({'train/rounds_to_target_accuracy': round}, step=round)
         return round
 
@@ -152,7 +161,7 @@ class FedAvg:
         # to have it consistent over the entire experiment run
         # https://stackoverflow.com/questions/40351791/how-to-hash-strings-into-a-float-in-01
         use_poisoning_node = \
-            self.cfg.poisoning.type != "disabled" and \
+            self.poisoning_type != PoisonType.Disabled and \
             self.cfg.poisoning.from_round <= round and \
             (float(crc32(client_id.encode('utf-8')) & 0xffffffff) / 2 ** 32) < self.cfg.poisoning.fraction
 
@@ -182,35 +191,48 @@ class FedAvg:
             'old_val_accuracy': old_model_metrics['accuracy']
         }
 
-        return old_params - new_params, self.dataset.get_dataset_size_for_client(client_id), metrics
+        local_size = self.dataset.get_dataset_size_for_client(client_id)
+        if isinstance(local_size, tuple):
+            local_size = local_size[0]
+        return old_params - new_params, local_size, metrics
 
     def test(self, round, use_all_clients=False):
         logging.info('Test for round %s' % round)
+        use_all_clients = use_all_clients or self.cfg.run.test_on_fraction == 1.0
+
+        # randomly choose test clients again
+        if self.cfg.run.resample_test_fraction:
+            self.test_clients = None
 
         # select clients - potentially fairly from clusters
-        if use_all_clients:
-            clients = self.dataset.client_ids
-        elif self.dataset.get_cluster_id_for_client(self.dataset.client_ids[0]) == -1:
-            # No clusters used
-            clients = self.dataset.select_clients(round, self.cfg.run.test_on_fraction, sample_clients=False,
-                                                  log_number_of_clients=False)
-        else:
-            # clusters used
-            client_indices = []
-            clusters = np.array(list(map(self.dataset.get_cluster_id_for_client, self.dataset.client_ids)))
-            unique_clusters = set(clusters)
-            num = max(min(int(len(self.dataset.client_ids) * self.cfg.run.test_on_fraction), len(self.dataset.client_ids)), 1)
-            div = len(unique_clusters)
-            clients_per_cluster = [num // div + (1 if x < num % div else 0) for x in range(div)]
-            for cluster_id in unique_clusters:
-                cluster_client_ids = np.where(clusters == cluster_id)[0]
-                client_indices.extend(
-                    np.random.choice(cluster_client_ids, clients_per_cluster[cluster_id], replace=False))
-            clients = [self.dataset.client_ids[i] for i in client_indices]
-        logging.debug(f"Clients for testing: {clients}")
-        return [self.test_single(client_id, random.randint(0, 4294967295)) for client_id in clients]
+        if self.test_clients is None and not use_all_clients:
+            if self.dataset.get_cluster_id_for_client(self.dataset.client_ids[0]) == -1:
+                # No clusters used
+                self.test_clients = self.dataset.select_clients(round, self.cfg.run.test_on_fraction, sample_clients=False,
+                                                      log_number_of_clients=False)
+            else:
+                # clusters used
+                client_indices = []
+                clusters = np.array(list(map(self.dataset.get_cluster_id_for_client, self.dataset.client_ids)))
+                unique_clusters = set(clusters)
+                num = max(min(int(len(self.dataset.client_ids) * self.cfg.run.test_on_fraction),
+                              len(self.dataset.client_ids)), 1)
+                div = len(unique_clusters)
+                clients_per_cluster = [num // div + (1 if x < num % div else 0) for x in range(div)]
+                for cluster_id in unique_clusters:
+                    cluster_client_ids = np.where(clusters == cluster_id)[0]
+                    client_indices.extend(
+                        np.random.choice(cluster_client_ids, clients_per_cluster[cluster_id], replace=False))
+                self.test_clients = [self.dataset.client_ids[i] for i in client_indices]
 
-    def test_single(self, client_id, seed):
+        if use_all_clients:
+            test_clients = self.dataset.client_ids
+        else:
+            test_clients = self.test_clients
+        logging.debug(f"Clients for testing: {test_clients}")
+        return [self.test_single(client_id, round, random.randint(0, 4294967295)) for client_id in test_clients]
+
+    def test_single(self, client_id, round, seed):
         random.seed(1 + seed)
         np.random.seed(12 + seed)
         tf.compat.v1.set_random_seed(123 + seed)
@@ -222,10 +244,15 @@ class FedAvg:
 
         metrics = node.test(self.global_params, 'test')
 
+        # Add to wandb table
+        if self.cfg.run.save_per_client_metrics:
+            self.per_client_test_metrics.add_data(client_id, round, metrics['accuracy'], metrics['loss'])  # ,
+            # metrics['conf_matrix'])
+
         return metrics
 
 
-    def print_test_results(self, results, rnd):
+    def print_test_results(self, results, rnd, log_per_client_table=False):
         avg_acc = np.average([r['accuracy'] for r in results])
         avg_loss = np.average([r['loss'] for r in results])
 
@@ -234,15 +261,32 @@ class FedAvg:
             'test/loss': avg_loss
         }, step=rnd)
 
+        if log_per_client_table:
+            wandb.log({'per_client_metrics': self.per_client_test_metrics}, step=rnd)
+
         logging.info(f'Average accuracy: {avg_acc}\nAverage loss: {avg_loss}')
 
-        if self.cfg.poisoning.type != "disabled":
+        if self.poisoning_type != PoisonType.Disabled:
             # Todo poisoning test logging
             avg_approved_poisoned_transactions = np.average([r['num_approved_poisoned_transactions'] for r in results])
             wandb.log({
-                'test/num_approved_poisoned_transactions': avg_approved_poisoned_transactions
+                'poisoning/num_approved_poisoned_transactions': avg_approved_poisoned_transactions
             }, step=rnd)
             logging.info(f'Average number of approved poisoned transactions: {avg_approved_poisoned_transactions}')
+
+            if self.poisoning_type in [PoisonType.LabelFlip, PoisonType.LabelSwap]:
+                conf_mat = np.sum([r['conf_matrix'] for r in results], axis=0)
+                logging.info(conf_mat)
+
+                if self.poisoning_type == PoisonType.LabelFlip:
+                    miscls = conf_mat[FLIP_FROM_CLASS, FLIP_TO_CLASS] / np.sum(conf_mat[FLIP_FROM_CLASS]) * 100
+                else:
+                    miscls = (conf_mat[FLIP_FROM_CLASS, FLIP_TO_CLASS] + conf_mat[FLIP_TO_CLASS, FLIP_FROM_CLASS]) / \
+                             (np.sum(conf_mat[FLIP_FROM_CLASS]) + np.sum(conf_mat[FLIP_TO_CLASS])) * 100
+                wandb.log({
+                    'poisoning/misclassification_rate': miscls
+                }, step=rnd)
+                logging.info(f'Misclassification rate: {miscls}')
 
         import csv
         import os

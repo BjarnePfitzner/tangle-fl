@@ -4,14 +4,26 @@ from abc import ABC, abstractmethod
 import numpy as np
 import tensorflow as tf
 import logging
+from copy import deepcopy
 
+
+def flatten(values):
+    if isinstance(values[0], np.ndarray):
+        return np.concatenate([value.flatten() for value in values],
+                              axis=0)
+    else:
+        return tf.concat([tf.reshape(value, [-1]) for value in values],
+                         axis=0)
 
 class Model(ABC):
     num_classes: int
 
-    def __init__(self, seed, lr, optimizer=None):
+    def __init__(self, seed, lr, optimizer=None, prox_mu=0):
         self.lr = lr
         self.seed = seed
+        self.prox_mu = prox_mu
+        if prox_mu > 0:
+            logging.debug(f'Using proximal term with mu={prox_mu}')
         self._optimizer = optimizer
 
         tf.random.set_seed(123 + seed)
@@ -57,11 +69,17 @@ class Model(ABC):
         """
         logging.debug("Training...")
         data_size = tf.constant(0, dtype=tf.int32)
+        if self.prox_mu > 0:
+            initial_weights = deepcopy(self.get_params())
         for x_batch, y_batch in data:
             data_size += tf.shape(x_batch)[0]
             with tf.GradientTape() as tape:
                 logits = self.model(x_batch, training=True)
                 loss_value = self.loss_fn(y_batch, logits)
+                if self.prox_mu > 0:
+                    #logging.debug(f'Proximal term: {tf.add_n([tf.nn.l2_loss(w1 - w2) for w1, w2 in zip(self.get_params(), initial_weights)])}')
+                    #loss_value += self.prox_mu * tf.add_n([tf.nn.l2_loss(w1 - w2) for w1, w2 in zip(self.get_params(), initial_weights)])
+                    loss_value += self.prox_mu / 2 * tf.norm(flatten(self.get_params()) - flatten(initial_weights))**2
             grads = tape.gradient(loss_value, self.model.trainable_weights)
             self.optimizer.apply_gradients(zip(grads, self.model.trainable_weights))
         logging.debug("Done Training.")
@@ -86,7 +104,7 @@ class Model(ABC):
             labels = tf.argmax(input=logits, axis=1)
             avg_test_loss.update_state(self.loss_fn(y_batch, logits))
             accuracy.update_state(y_batch, labels)
-            total_conf_matrix += tf.math.confusion_matrix(labels, labels, num_classes=self.num_classes)
+            total_conf_matrix += tf.math.confusion_matrix(y_batch, labels, num_classes=self.num_classes)
 
         return {'accuracy': accuracy.result().numpy(), 'conf_matrix': total_conf_matrix.numpy(),
                 'loss': avg_test_loss.result().numpy(), 'additional_metrics': None}

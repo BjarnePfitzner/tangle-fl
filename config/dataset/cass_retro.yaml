@@ -1,0 +1,8 @@
+name: Cass_Retro
+clustering: false
+val_fraction: 0.2
+num_clients: 5
+num_classes: 2
+class_distribution: niid
+data_dim: 96
+model_class: cassretro_mlp

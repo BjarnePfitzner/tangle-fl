@@ -5,3 +5,5 @@ num_clients: 500
 num_classes: 10
 class_distribution: iid
 data_dim: 28
+data_ch: 1
+model_class: mnist_cnn

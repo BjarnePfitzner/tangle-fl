@@ -1,4 +1,5 @@
 import random
+import logging
 
 import numpy as np
 
@@ -37,7 +38,31 @@ class TipSelector:
                     continue
                 self.approving_transactions[unique_parent].append(x)
 
+        self.tips = []
+        for x, tx in self.tangle.transactions.items():
+            if len(self.approving_transactions[x]) == 0:
+                self.tips.append(x)
+
         self.trace = []
+
+    def update_tangle(self, tangle):
+        self.tangle = tangle
+        self.trace = []
+        self.rated_transactions = set(self.tangle.transactions.keys())
+
+        # Re-build a map of transactions that directly approve a given transaction
+        self.approving_transactions = {x: [] for x in self.rated_transactions}
+        for x in self.rated_transactions:
+            for unique_parent in self.tangle.transactions[x].parents:
+                if unique_parent not in self.rated_transactions:
+                    continue
+                self.approving_transactions[unique_parent].append(x)
+
+        self.tips = []
+        for x, tx in self.tangle.transactions.items():
+            if len(self.approving_transactions[x]) == 0:
+                self.tips.append(x)
+        logging.debug(f"tip nodes set to {self.tips}")
 
     def tx_rating(self, tx, node):
         return self.ratings[tx]

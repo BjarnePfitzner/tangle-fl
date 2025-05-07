@@ -16,11 +16,6 @@ class AccuracyTipSelector(TipSelector):
         super().__init__(tangle, particle_settings=particle_settings)
         self.settings = tip_selection_settings
 
-        self.tips = []
-        for x, tx in self.tangle.transactions.items():
-            if len(self.approving_transactions[x]) == 0:
-                self.tips.append(x)
-
     def tip_selection(self, num_tips, node):
         if self.settings[TipSelectorSettings.SELECTION_STRATEGY] == "GLOBAL":
             self.tips.sort(key=lambda x: self.tx_rating(x, node), reverse=True)
@@ -37,6 +32,7 @@ class AccuracyTipSelector(TipSelector):
         rating = {}
 
         txs = self._get_transactions_to_compute(tx)
+        logging.debug(f"node {node.client_id} computes ratings for {len(txs)} transactions (tx={tx})")
 
         for tx_id in txs:
             rating[tx_id] = np.float64(node.test(node.tx_store.load_transaction_weights(tx_id), 'val')['accuracy'])   # Todo maybe use test dataset instead

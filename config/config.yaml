@@ -23,7 +23,7 @@ wandb:
   project: Tangle
 
 seed: 0
-tangle_dir: tangle_data
+tangle_dir: thesis_tangle_data
 load_tangle_from:
 
 node:
@@ -44,10 +44,16 @@ run:
   local_epochs: 1
   batch_size: 16
   test_batch_size: 64
-  test_on_fraction: 0.1
+  test_on_fraction: 1.0
+  resample_test_fraction: False
   model: cnn
-  eval_every: 10
+  eval_every: 5
+  save_every: 10
+  reduce_tangle_json_size: True
   target_accuracy: 1.0
+  save_per_client_metrics: False
+  prox_mu: 0
+  weighted_average: True
 
 poisoning:
   type: disabled              # choices=['disabled', 'random', 'labelflip']

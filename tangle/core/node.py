@@ -1,4 +1,5 @@
 import logging
+import time
 
 from tangle.core.transaction import Transaction
 
@@ -15,9 +16,9 @@ class NodeConfiguration:
         self.reference_avg_top = reference_avg_top
         self.publish_if_better_than = publish_if_better_than
 
-
 class Node:
-    def __init__(self, tangle, tx_store, tip_selector, client_id, cluster_id, data, model=None, config=NodeConfiguration()):
+    def __init__(self, tangle, tx_store, tip_selector, client_id, cluster_id, data, model=None,
+                 approved_transactions_cache={}, config=NodeConfiguration()):
         self.tangle = tangle
         self.tx_store = tx_store
         self.tip_selector = tip_selector
@@ -26,6 +27,7 @@ class Node:
         self.cluster_id = cluster_id
         self.data = data
         self.config = config
+        self.approved_transactions_cache = approved_transactions_cache
 
         # Initialize tip selector
         tip_selector.compute_ratings(self)
@@ -94,32 +96,32 @@ class Node:
 
         # Find best tips
         if num_tips < sample_size:
-            # Choose tips with lowest test loss
+            # Choose tips with lowest val loss
             tip_losses = []
             loss_cache = {}
             for tip in tip_txs:
                 if tip.id in loss_cache.keys():
                     tip_losses.append((tip, loss_cache[tip.id]))
                 else:
-                    loss = self.test(self.tx_store.load_transaction_weights(tip.id), 'test')['loss']
+                    loss = self.test(self.tx_store.load_transaction_weights(tip.id), 'val')['loss']
                     tip_losses.append((tip, loss))
                     loss_cache[tip.id] = loss
-            best_tips = sorted(tip_losses, key=lambda tup: tup[1], reverse=False)[:num_tips]
+            best_tips = sorted(tip_losses, key=lambda tup: tup[1], reverse=False)[:num_tips]    # ascending
             tip_txs = [tup[0] for tup in best_tips]
 
         return tip_txs
 
-    def compute_confidence(self, approved_transactions_cache={}):
+    def compute_confidence(self):
         num_sampling_rounds = 5
 
         transaction_confidence = {x: 0 for x in self.tangle.transactions}
 
         def approved_transactions(transaction):
-            if transaction not in approved_transactions_cache:
+            if transaction not in self.approved_transactions_cache:
                 result = set([transaction]).union(*[approved_transactions(parent) for parent in self.tangle.transactions[transaction].parents])
-                approved_transactions_cache[transaction] = result
+                self.approved_transactions_cache[transaction] = result
 
-            return approved_transactions_cache[transaction]
+            return self.approved_transactions_cache[transaction]
 
         for i in range(num_sampling_rounds):
             tips = self.choose_tips()
@@ -129,29 +131,29 @@ class Node:
 
         return {tx: float(transaction_confidence[tx]) / (num_sampling_rounds * 2) for tx in self.tangle.transactions}
 
-    def compute_cumulative_score(self, transactions, approved_transactions_cache={}):
+    def compute_cumulative_score(self, transactions):
         def compute_approved_transactions(transaction):
-            if transaction not in approved_transactions_cache:
+            if transaction not in self.approved_transactions_cache:
                 result = set([transaction]).union(*[compute_approved_transactions(parent) for parent in self.tangle.transactions[transaction].parents])
-                approved_transactions_cache[transaction] = result
+                self.approved_transactions_cache[transaction] = result
 
-            return approved_transactions_cache[transaction]
+            return self.approved_transactions_cache[transaction]
 
         return {tx: len(compute_approved_transactions(tx)) for tx in transactions}
 
     def obtain_reference_params(self, avg_top=1):
         # Establish the 'current best'/'reference' weights from the tangle
 
-        approved_transactions_cache = {}
+        #approved_transactions_cache = {}
 
         # 1. Perform tip selection n times, establish confidence for each transaction
         # (i.e. which transactions were already approved by most of the current tips?)
-        transaction_confidence = self.compute_confidence(approved_transactions_cache=approved_transactions_cache)
+        transaction_confidence = self.compute_confidence()
 
         # 2. Compute cumulative score for transactions
         # (i.e. how many other transactions does a given transaction indirectly approve?)
         keys = [x for x in self.tangle.transactions]
-        scores = self.compute_cumulative_score(keys, approved_transactions_cache=approved_transactions_cache)
+        scores = self.compute_cumulative_score(keys)
 
         # 3. For the top avg_top transactions, compute the average
         best = sorted(

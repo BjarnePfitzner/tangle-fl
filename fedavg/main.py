@@ -8,7 +8,7 @@ from fedavg.fed_avg import FedAvg
 
 
 def main(cfg: DictConfig):
-    dataset = get_dataset_instance(cfg.dataset, cfg.log_sample_data)
+    dataset = get_dataset_instance(cfg.dataset, log_sample_data=cfg.log_sample_data)
     dataset.preprocess_datasets(cfg.run.batch_size, cfg.run.test_batch_size, cfg.run.local_epochs)
 
     fedavg = FedAvg(dataset, cfg)

@@ -74,59 +74,57 @@ def main(cfg: DictConfig):
             f.write(yaml)
     start_time = datetime.datetime.now()
 
-    if cfg.experiment_type == 'tangle':
-        total_rounds_of_training = tangle_main.main(cfg)
-    elif cfg.experiment_type == 'centralised':
-        total_rounds_of_training = centralised_main.main(cfg)
-    elif cfg.experiment_type == 'fedavg':
-        total_rounds_of_training = fedavg_main.main(cfg)
+    try:
+        if cfg.experiment_type == 'tangle':
+            total_rounds_of_training = tangle_main.main(cfg)
+        elif cfg.experiment_type == 'centralised':
+            total_rounds_of_training = centralised_main.main(cfg)
+        elif cfg.experiment_type in ['fedavg', 'fedprox']:
+            total_rounds_of_training = fedavg_main.main(cfg)
 
-    # Document end of training
-    logging.info(f'Training finished after {total_rounds_of_training} rounds.')
+        # Document end of training
+        logging.info(f'Training finished after {total_rounds_of_training} rounds.')
 
-    end_time = datetime.datetime.now()
-    logging.info('StartTime: %s' % start_time)
-    logging.info('EndTime: %s' % end_time)
-    logging.info('Duration Training: %s' % (end_time - start_time))
+        end_time = datetime.datetime.now()
+        logging.info('StartTime: %s' % start_time)
+        logging.info('EndTime: %s' % end_time)
+        logging.info('Duration Training: %s' % (end_time - start_time))
 
-    if cfg.run_tangle_analyser and cfg.experiment_type == 'tangle':
-        print('Analysing tangle...')
-        analysis_folder = cfg.experiment_folder + '/tangle_analysis'
-        os.makedirs(analysis_folder, exist_ok=True)
-        analysator = TangleAnalyser(f'{cfg.experiment_folder}/{cfg.tangle_dir}', total_rounds_of_training,
-                                    analysis_folder)
-        analysator.save_statistics(include_reference_statistics=(cfg.node.publish_if_better_than == 'REFERENCE'),
-                                   include_cluster_statistics=cfg.dataset.clustering,
-                                   include_poisoning_statistics=(cfg.poisoning.type != 'disabled'))
-        wandb.save(f'{analysis_folder}/*')
+        if cfg.run_tangle_analyser and cfg.experiment_type == 'tangle':
+            print('Analysing tangle...')
+            analysis_folder = cfg.experiment_folder + '/tangle_analysis'
+            os.makedirs(analysis_folder, exist_ok=True)
+            analysator = TangleAnalyser(f'{cfg.experiment_folder}/{cfg.tangle_dir}', total_rounds_of_training,
+                                        analysis_folder)
+            analysator.save_statistics(include_reference_statistics=(cfg.node.publish_if_better_than == 'REFERENCE'),
+                                       include_cluster_statistics=cfg.dataset.clustering,
+                                       include_poisoning_statistics=(cfg.poisoning.type != 'disabled'))
+            wandb.save(f'{analysis_folder}/*')
+    finally:
+        # Clean up
+        if cfg.experiment_type == 'tangle' and (cfg.clean_up.transactions or cfg.clean_up.tangle_data):
+            import shutil
+            cleanup_path = f'{cfg.experiment_folder}/{cfg.tangle_dir}/'
+            if not OmegaConf.is_missing(HydraConfig.get().job, "num"):
+                cleanup_path = HydraConfig.get().sweep.dir + HydraConfig.get().sweep.subdir + '/' + cleanup_path[2:]
 
-    # Clean up
-    if cfg.experiment_type == 'tangle' and (cfg.clean_up.transactions or cfg.clean_up.tangle_data):
-        import shutil
-        cleanup_path = f'{cfg.experiment_folder}/{cfg.tangle_dir}/'
-        if not OmegaConf.is_missing(HydraConfig.get().job, "num"):
-            cleanup_path = HydraConfig.get().sweep.dir + HydraConfig.get().sweep.subdir + '/' + cleanup_path[2:]
+            if cfg.clean_up.transactions:
+                # Delete .npy files with models
+                logging.info(f'Cleaning up large transaction files in {to_absolute_path(cleanup_path)}')
+                shutil.rmtree(to_absolute_path(cleanup_path + 'transactions'), ignore_errors=True)
 
-        if cfg.clean_up.transactions:
-            # Delete .npy files with models
-            logging.info(f'Cleaning up large transaction files in {to_absolute_path(cleanup_path)}')
-            shutil.rmtree(to_absolute_path(cleanup_path + 'transactions'), ignore_errors=True)
-
-        if cfg.clean_up.tangle_data:
-            # Delete .json files of tangle data
-            all_tangle_files = next(os.walk(cleanup_path))[2]
-            largest_round_number = max([int(f.split('_')[-1].split('.')[0]) for f in all_tangle_files])
-            [os.remove(cleanup_path + f) for f in all_tangle_files if int(f.split('_')[-1].split('.')[0]) < largest_round_number]
+            if cfg.clean_up.tangle_data:
+                # Delete .json files of tangle data
+                all_tangle_files = next(os.walk(cleanup_path))[2]
+                largest_round_number = max([int(f.split('_')[-1].split('.')[0]) for f in all_tangle_files])
+                [os.remove(cleanup_path + f) for f in all_tangle_files if int(f.split('_')[-1].split('.')[0]) < largest_round_number]
 
 
 def prepare_exp_folder(cfg):
     experiments_base = './experiments'
     os.makedirs(experiments_base, exist_ok=True)
 
-    if not cfg.experiment_name:
-        prefix = "%s-%s" % (cfg.dataset.name, cfg.run.model)
-    else:
-        prefix = cfg.experiment_name
+    prefix = cfg.wandb.name or cfg.experiment_name or f'{cfg.dataset.name}-{cfg.run.model}'
 
     # Find other experiments with default names
     all_experiments = next(os.walk(experiments_base))[1]
@@ -140,7 +138,14 @@ def prepare_exp_folder(cfg):
         default_exp_ids.sort()
         next_default_exp_id = default_exp_ids[-1] + 1
 
-    cfg.experiment_name = "%s-%d" % (prefix, next_default_exp_id)
+    if cfg.wandb.name:
+        # treat named wandb runs differently
+        if len(default_exps) == 0:
+            cfg.experiment_name = cfg.wandb.name
+        else:
+            cfg.experiment_name = "%s-%d" % (prefix, len(default_exps) + 1)
+    else:
+        cfg.experiment_name = "%s-%d" % (prefix, next_default_exp_id)
 
     experiment_folder = experiments_base + '/' + cfg.experiment_name
     os.makedirs(experiment_folder, exist_ok=True)
