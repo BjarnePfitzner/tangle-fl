@@ -1,0 +1,25 @@
+# @package _global_
+
+defaults:
+  - override /dataset: synthetic
+  - override /hydra/sweeper: wandb
+
+experiment_name: synthetic-mclr
+
+run:
+  num_rounds: 100
+  lr: 0.01
+  batch_size: 10
+  eval_every: 1
+  save_every: 101
+  clients_per_round: 10
+  sample_clients: False
+  local_epochs: 20
+
+node:
+  num_tips: 3
+  test_reference_avg_top: 10
+
+tip_selector:
+  type: lazy_accuracy
+  alpha: 10.0

@@ -1,0 +1,10 @@
+name: Poets
+data_dir: /dhc/home/bjarne.pfitzner/workspace/federated-learning-tangle/data/poets-balanced/
+clustering: false
+val_fraction: 0.2
+limit_clients: -1
+num_clients: 317
+num_classes: 89
+seq_len: 80
+n_hidden: 256
+model_class: poets_stacked_lstm

@@ -1,0 +1,50 @@
+# @package _global_
+
+defaults:
+  - override /dataset: cass_retro
+  - override /hydra/sweeper: wandb
+
+experiment_name: cass_retro-nn
+
+run:
+  lr: 0.01
+
+hydra:
+  sweeper:
+    params:
+      ray_enabled:
+        - False
+      node.num_tips:
+        - 2
+        - 3
+        - 4
+      #node.sample_size:
+      #  - 2
+      #  - 3
+      #  - 4
+      node.publish_if_better_than:
+        - REFERENCE
+        - PARENTS
+      #node.reference_avg_top:
+      #  - 1
+      #  - 2
+      #  - 3
+      run.clients_per_round:
+        - 5
+        - 10
+        - 20
+        - 50
+      run.lr:
+        - 0.001
+        - 0.01
+        - 0.05
+        - 0.1
+      run.num_epochs:
+        - 1
+        - 5
+        - 10
+      run.batch_size:
+        - 8
+        - 16
+        - 32
+        - 64

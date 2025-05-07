@@ -1,0 +1,127 @@
+defaults:
+  - _self_
+  - dataset: femnist
+  - override hydra/job_logging: disabled
+  - override hydra/launcher: submitit_slurm
+
+experiment_name: ???
+experiment_folder:
+debug: False
+resume_trial:
+run_tangle_analyser: False
+clean_up:
+  transactions: True
+  tangle_data: True
+log_sample_data: False
+experiment_type: tangle
+
+wandb:
+  disabled: False
+  run_id:
+  group:
+  name:
+  project: Tangle
+
+seed: 0
+tangle_dir: thesis_tangle_data
+load_tangle_from:
+
+node:
+  num_tips: 2
+  sample_size: 2
+  publish_if_better_than: REFERENCE # choices:['REFERENCE', 'PARENTS']
+  reference_avg_top: 1
+  test_reference_avg_top: 1
+  differential_privacy:
+    enabled: False
+
+run:
+  num_rounds: 100
+  start_from_round: 0
+  clients_per_round: 0.05
+  sample_clients: True
+  lr: 0.1
+  local_epochs: 1
+  batch_size: 16
+  test_batch_size: 64
+  test_on_fraction: 1.0
+  resample_test_fraction: False
+  model: cnn
+  eval_every: 5
+  save_every: 10
+  reduce_tangle_json_size: True
+  target_accuracy: 1.0
+  save_per_client_metrics: False
+  prox_mu: 0
+  weighted_average: True
+
+poisoning:
+  type: disabled              # choices=['disabled', 'random', 'labelflip']
+  fraction: 0.1
+  from_round: 1
+  use_random_ts: False        # Use random tip selector (instead of accuracy) for poisoned nodes
+
+tip_selector:
+  type: random                # choices=['random', 'accuracy', 'lazy_accuracy']
+  strategy: WALK              # strategy how to select the next tips, choices=['WALK', 'GLOBAL']
+  cumulate_ratings: False     # whether after calculating accuracies should be cumulated
+  ratings_to_weights: ALPHA  # algorithm to generate weights from ratings. Has effect only if used with WALK, choices=['LINEAR', 'ALPHA']
+  select_from_weights: WEIGHTED_CHOICE
+  alpha: 1.0
+  particles:
+    enabled: False
+    depth_start: 10
+    depth_end: 20
+    number: 10
+
+
+hydra:
+  output_subdir: null
+  run:
+    dir: . #/outputs/${experiment.model}_${dataset.name}/${now:%Y-%m-%d_%H-%M-%S}/
+  sweep:
+    dir: sweep/${experiment_name}/${now:%Y-%m-%d}/${now:%H-%M-%S}/
+    subdir: ${hydra.job.num}
+  sweeper:
+    _target_: hydra_plugins.hydra_wandb_sweeper.wandb_sweeper.WandbSweeper
+    wandb_sweep_config:
+      name: ${experiment_name}_${now:%d-%m_%H-%M}
+      method: random
+      metric:
+        goal: maximize
+        name: test/accuracy
+        target: 1.0 #${run.target_accuracy}
+      num_agents: 5
+      budget: 1000
+      project: Tangle
+      early_terminate:
+        type: hyperband
+        min_iter: 4
+        eta: 2
+      sweep_id:
+      notes: ${hydra.overrides.task}
+      tags:
+        - ${run.model}
+        - ${tip_selector.type}
+        - ${experiment_type}
+        - ${dataset.name}
+      entity: bjarnepfitzner
+      count: 1
+      max_run_failure_rate: 1.0
+      max_agent_failure_rate: 1.0
+  launcher:
+    submitit_folder: ${hydra.sweep.dir}/.submitit/%j
+    timeout_min: 4319
+    cpus_per_task: 8
+    mem_gb: 128
+    name: tangle_${experiment_name}
+    stderr_to_stdout: True
+    _target_: hydra_plugins.hydra_submitit_launcher.submitit_launcher.SlurmLauncher
+    partition: "gpua100,gpupro,gpu"
+    # partition: "sorcery"
+    gpus_per_task: 1
+    signal_delay_s: 120
+    max_num_timeout: 0
+    additional_parameters: {  }
+    # additional_parameters: {"container-name": "tff", "container-mounts": "/hpi/fs00/home/bjarne.pfitzner/workspace:/mnt/workspace,/hpi/fs00/share/fg-arnrich/datasets:/mnt/dsets", "container-workdir": "/mnt/workspace/tff", "account": "arnrich", "constraint": "GPU_SKU:A100"}
+    array_parallelism: 5

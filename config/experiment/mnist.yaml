@@ -1,0 +1,52 @@
+# @package _global_
+
+defaults:
+  - override /dataset: mnist_200
+  - override /hydra/sweeper: wandb
+
+experiment_name: mnist-cnn
+
+run:
+  lr: 0.1
+  batch_size: 16
+  eval_every: 5
+  save_every: 101
+#  clients_per_round: 0.125
+#  local_epochs: 5
+
+#node:
+#  num_tips: 3
+#  test_reference_avg_top: 10
+
+#tip_selector:
+#  alpha: 0.01
+#  strategy: WALK
+
+
+hydra:
+  sweeper:
+    params:
+      node.num_tips:
+        - 2
+        - 3
+        - 4
+      node.publish_if_better_than:
+        - REFERENCE
+        - PARENTS
+      run.clients_per_round:
+        - 10
+        - 20
+        - 50
+      run.local_epochs:
+        - 1
+        - 5
+        - 10
+      tip_selector.alpha:
+        - 0.001
+        - 0.01
+        - 0.1
+        - 1.0
+        - 10.0
+      tip_selector.ratings_to_weights:
+        - ALPHA
+        - LINEAR

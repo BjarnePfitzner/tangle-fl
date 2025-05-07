@@ -1,0 +1,9 @@
+name: CXR
+clustering: false
+val_fraction: 0.1
+num_clients: 12
+num_classes: 2
+class_distribution: iid
+data_dim: 128
+data_ch: 1
+model_class: cxr_cnn

@@ -1,0 +1,39 @@
+# @package _global_
+
+defaults:
+  - override /dataset: fmnist
+  - override /hydra/sweeper: wandb
+
+experiment_name: fmnist-cnn-targeted_poisoning-${tip-selector.type}-${poisoning.fraction}_${poisoning.from_round}
+load_tangle_from: experiments/fmnist-cnn-base_training-random/thesis_tangle_data
+
+clean_up:
+  transactions: False
+  tangle_data: False
+
+node:
+  num_tips: 2
+  sample_size: 35
+  test_reference_avg_top: 35
+  publish_if_better_than: REFERENCE
+
+run:
+  num_rounds: 300
+  start_from_round: 200
+  clients_per_round: 0.01
+  lr: 0.05
+  local_epochs: 1
+  batch_size: 16
+  save_every: 50
+  test_on_fraction: 0.05
+  resample_test_fraction: True
+  reduce_tangle_json_size: True
+
+tip_selector:
+  type: random
+  alpha: 0.001
+
+poisoning:
+  type: labelflip
+  fraction: 0.2
+  from_round: 200

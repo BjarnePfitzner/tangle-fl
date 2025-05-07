@@ -1,0 +1,14 @@
+# @package _global_
+
+defaults:
+  - override /dataset: mnist_200
+  - override /hydra/sweeper: wandb
+
+experiment_name: mnist-cnn-fedavg
+
+experiment_type: fedavg
+
+run:
+  lr: 0.1
+  batch_size: 16
+  eval_every: 10

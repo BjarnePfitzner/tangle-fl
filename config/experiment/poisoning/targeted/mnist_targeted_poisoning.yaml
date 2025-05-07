@@ -1,0 +1,57 @@
+# @package _global_
+
+defaults:
+  - override /dataset: mnist
+  - override /hydra/sweeper: wandb
+
+experiment_name: mnist-cnn-targeted_poisoning
+
+node:
+  num_tips: 2
+  publish_if_better_than: REFERENCE
+
+run:
+  batch_size: 16
+
+poisoning:
+  type: labelflip
+
+
+hydra:
+  sweeper:
+    params:
+      node.sample_size:
+        - 2
+        - 3
+        - 4
+      #node.reference_avg_top:
+      #  - 1
+      #  - 2
+      #  - 3
+      run.clients_per_round:
+        - 5
+        - 10
+        - 20
+        - 50
+      run.lr:
+        - 0.01
+        - 0.1
+      run.num_epochs:
+        - 1
+        - 5
+      #  - 10
+      poisoning.fraction:
+        - 0.1
+        - 0.2
+        - 0.3
+        - 0.4
+        - 0.5
+      poisoning.from_round:
+        - 1
+        - 10
+        - 20
+        - 50
+      tip_selector.alpha:
+        - 0.1
+        - 1.0
+        - 10.0

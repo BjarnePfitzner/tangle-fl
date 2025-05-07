@@ -1,0 +1,9 @@
+name: MNIST
+clustering: false
+val_fraction: 0.2
+num_clients: 500
+num_classes: 10
+class_distribution: iid
+data_dim: 28
+data_ch: 1
+model_class: mnist_cnn

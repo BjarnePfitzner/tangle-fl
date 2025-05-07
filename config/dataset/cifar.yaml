@@ -1,0 +1,10 @@
+name: CIFAR100
+data_dir: /dhc/home/bjarne.pfitzner/workspace/federated-learning-tangle/data/cifar_joined_five_clients/
+clustering: false
+val_fraction: 0.2
+num_clients: 94
+num_classes: 100
+class_distribution: iid
+data_dim: 32
+data_ch: 3
+model_class: cifar_cnn

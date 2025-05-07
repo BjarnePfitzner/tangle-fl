@@ -1,0 +1,26 @@
+# @package _global_
+
+defaults:
+  - override /dataset: fmnist-clustered
+  - override /hydra/sweeper: wandb
+
+experiment_name: fedavg-fmnist-clustered-cnn
+
+experiment_type: fedavg
+
+wandb:
+  disabled: False
+  run_id:
+  group:
+  name: fmnist-clustered-accuracy-fedavg
+  project: Tangle_Thesis
+
+run:
+  lr: 0.05
+  local_epochs: 1
+  batch_size: 10
+  clients_per_round: 10
+  save_per_client_metrics: True
+  test_on_fraction: 0.05
+  reduce_tangle_json_size: False
+  save_every: 50

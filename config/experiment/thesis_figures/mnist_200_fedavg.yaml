@@ -1,0 +1,20 @@
+# @package _global_
+
+defaults:
+  - override /dataset: mnist_200
+  - override /hydra/sweeper: wandb
+
+experiment_name: best_hyperparams_mnist_fedavg_200
+experiment_type: fedavg
+
+wandb:
+  name: best_hyperparams_mnist_fedavg_200
+  project: Tangle_Thesis
+
+run:
+  lr: 0.1
+  batch_size: 16
+  eval_every: 5
+  save_every: 101
+  clients_per_round: 0.05
+  local_epochs: 5

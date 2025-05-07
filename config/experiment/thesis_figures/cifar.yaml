@@ -1,0 +1,34 @@
+# @package _global_
+
+defaults:
+  - override /dataset: cifar
+  - override /hydra/sweeper: wandb
+
+experiment_name: cifar-cnn
+
+wandb:
+  disabled: False
+  run_id:
+  group:
+  name: cifar-accuracy-ATS
+  project: Tangle_Thesis
+
+run:
+  lr: 0.01
+  local_epochs: 5
+  batch_size: 10
+  clients_per_round: 0.1
+  save_per_client_metrics: True
+  test_on_fraction: 1.0
+  reduce_tangle_json_size: False
+  save_every: 50
+
+node:
+  test_reference_avg_top: 10
+  publish_if_better_than: REFERENCE
+  num_tips: 3
+  sample_size: 3
+
+tip_selector:
+  type: lazy_accuracy
+  alpha: 10.0

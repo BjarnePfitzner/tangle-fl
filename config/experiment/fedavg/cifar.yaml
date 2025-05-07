@@ -1,0 +1,15 @@
+# @package _global_
+
+defaults:
+  - override /dataset: cifar
+  - override /hydra/sweeper: wandb
+
+experiment_name: cifar-cnn-fedavg
+
+experiment_type: fedavg
+
+run:
+  lr: 0.01
+  batch_size: 8
+  eval_every: 10
+  local_epochs: 5
