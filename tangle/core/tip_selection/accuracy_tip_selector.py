@@ -35,7 +35,7 @@ class AccuracyTipSelector(TipSelector):
         logging.debug(f"node {node.client_id} computes ratings for {len(txs)} transactions (tx={tx})")
 
         for tx_id in txs:
-            rating[tx_id] = np.float64(node.test(node.tx_store.load_transaction_weights(tx_id), 'val')['accuracy'])   # Todo maybe use test dataset instead
+            rating[tx_id] = np.float64(node.test(node.tx_store.load_transaction_weights(tx_id), 'val')['accuracy'])
 
         # We (currently) do not care about the future-set-size-based rating
         # future_set_cache = {}
@@ -75,7 +75,6 @@ class AccuracyTipSelector(TipSelector):
         return self.tangle.transactions.keys()
 
     def _update_ratings(self, node_id, rating):
-        # todo: node_id is not used
         self.ratings = rating
 
     #### Override weight functions with accuracy related settings

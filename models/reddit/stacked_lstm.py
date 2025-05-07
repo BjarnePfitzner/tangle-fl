@@ -47,7 +47,7 @@ class ClientModel(Model):
             inputs = tf.nn.embedding_lookup(embedding, features)
 
             # LSTM
-            output, state = self._build_rnn_graph(inputs) # TODO: check!
+            output, state = self._build_rnn_graph(inputs)
 
             # softmax
             with tf.variable_scope('softmax'):
